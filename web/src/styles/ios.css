@@ -841,3 +841,9 @@ html[data-idiom="mac"] .ios-app .uppercase.tracking-wide { font-size: 11px; line
 .ios-card-icon.is-small { width: 26px; height: 26px; }
 html[data-idiom="mac"] .ios-card-icon { width: 22px; height: 22px; border-radius: 6px; }
 html[data-idiom="mac"] .ios-card-icon svg { width: 14px !important; height: 14px !important; }
+
+/* Sign-in: a livelier wallpaper so the glass card reads as glass. */
+.ios-login { --wp: 2.4; }
+html[data-wallpaper="off"] .ios-login { --wp: 1.4; }
+.ios-login-card .ios-list { background: rgb(var(--ios-grouped-2) / 0.92); }
+.ios-login-card .ios-row { min-height: 50px; }

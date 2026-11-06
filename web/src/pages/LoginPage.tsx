@@ -74,70 +74,76 @@ export default function LoginPage() {
     }
   }
 
+  const sso = providers?.sso;
   return (
-    <div className="relative flex h-full w-full items-center justify-center">
-      <div className="relative w-full max-w-[400px] px-5">
-        <div className="vocat-enter vocat-enter-1 mb-8 text-center">
-          <div className="mx-auto mb-5 flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-bg-2 shadow-[0_4px_20px_rgba(0,0,0,0.08)] ring-1 ring-separator dark:bg-white/10 dark:ring-white/10">
+    // Sign in on a Liquid Glass card over the ambient wallpaper, with the
+    // credentials as one inset grouped field group (like Settings > Apple
+    // Account sign-in).
+    <div className="ios-app ios-login relative flex h-full w-full items-center justify-center overflow-y-auto px-4 py-10">
+      <div className="ios-login-card glass-thick relative w-full max-w-[400px] rounded-[var(--radius-xl)] px-6 pb-7 pt-9">
+        <div className="vocat-enter vocat-enter-1 mb-7 text-center">
+          <div className="mx-auto mb-4 flex h-[76px] w-[76px] items-center justify-center rounded-[22px] bg-[rgb(var(--ios-grouped-2))] shadow-[0_6px_22px_rgb(0_0_0/0.1)]">
             <BrandLogo className="h-12 w-12 text-accent" />
           </div>
-          <h1 className="font-display text-[28px] font-semibold leading-none tracking-[-0.04em] text-label dark:text-label">
-            Halo
-          </h1>
-          <p className="mt-2 text-[14px] tracking-tight text-label-2 dark:text-white/45">{t("高通模块专业测试工具")}</p>
+          <h1 className="text-[28px] font-bold leading-[34px] tracking-[0.01em] text-label">Halo</h1>
+          <p className="mt-1 ios-subhead text-label-2">{t("高通模块专业测试工具")}</p>
         </div>
 
         {ssoNotice ? (
-          <div role={ssoNotice.error ? "alert" : "status"} className={`mb-4 rounded-2xl border px-4 py-3 text-[14px] leading-relaxed ${ssoNotice.error ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200" : "border-separator bg-bg-2 text-label-2 dark:border-white/10 dark:bg-white/5 dark:text-white/70"}`}>
+          <div role={ssoNotice.error ? "alert" : "status"} className={`mb-4 rounded-[18px] px-4 py-3 ios-subhead ${ssoNotice.error ? "bg-sys-orange/15 text-sys-orange" : "bg-fill-3 text-label-2"}`}>
             {t(ssoNotice.text)}
           </div>
         ) : null}
 
-        <form onSubmit={submit} className="space-y-3">
-          <label className="vocat-enter vocat-enter-2 halo-login-field flex items-center gap-3 px-4">
-            <PersonRegular className="h-5 w-5 shrink-0 text-label-3 dark:text-white/35" />
-            <input
-              className="h-12 w-full bg-transparent text-[16px] tracking-tight text-label outline-none placeholder:text-label-3 dark:text-white dark:placeholder:text-white/30"
-              placeholder={t("用户名")}
-              type="text"
-              autoComplete="username"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-            />
-          </label>
-          <label className="vocat-enter vocat-enter-2 halo-login-field flex items-center gap-3 px-4">
-            <LockClosedRegular className="h-5 w-5 shrink-0 text-label-3 dark:text-white/35" />
-            <input
-              className="h-12 w-full bg-transparent text-[16px] tracking-tight text-label outline-none placeholder:text-label-3 dark:text-white dark:placeholder:text-white/30"
-              placeholder={t("密码")}
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
+        <form onSubmit={submit}>
+          <div className="vocat-enter vocat-enter-2 ios-list mb-4">
+            <label className="ios-row">
+              <PersonRegular className="h-5 w-5 shrink-0 text-label-3" />
+              <span className="ios-row-body">
+                <input
+                  className="w-full bg-transparent ios-body text-label outline-none placeholder:text-label-3"
+                  placeholder={t("用户名")}
+                  type="text"
+                  autoComplete="username"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+              </span>
+            </label>
+            <label className="ios-row">
+              <LockClosedRegular className="h-5 w-5 shrink-0 text-label-3" />
+              <span className="ios-row-body">
+                <input
+                  className="w-full bg-transparent ios-body text-label outline-none placeholder:text-label-3"
+                  placeholder={t("密码")}
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </span>
+            </label>
+          </div>
 
           <button
             type="submit"
             disabled={working}
-            className="vocat-enter vocat-enter-3 flex h-[50px] w-full items-center justify-center rounded-full bg-accent text-[17px] font-semibold text-[var(--color-on-primary)] shadow-[0_8px_22px_rgb(var(--color-primary-rgb)/0.32)] transition-transform duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-70"
+            className="vocat-enter vocat-enter-3 ios-press flex h-[50px] w-full items-center justify-center rounded-full bg-accent text-[17px] font-semibold text-[var(--color-on-primary)] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {t("登录")}
+            {working ? t("正在登录…") : t("登录")}
           </button>
         </form>
 
-        {providers?.sso.enabled ? (
+        {sso?.enabled ? (
           <a
             href={`/api/auth/sso/start?${new URLSearchParams({ redirect }).toString()}`}
-            className="vocat-enter vocat-enter-3 mt-3 flex h-[50px] w-full items-center justify-center rounded-full border border-separator bg-bg-2 text-[16px] font-semibold text-label-2 transition-transform duration-[180ms] active:scale-[0.97] dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+            className="vocat-enter vocat-enter-3 glass glass-interactive mt-3 flex h-[50px] w-full items-center justify-center rounded-full text-[17px] font-semibold text-label"
           >
-            {t("通过 {provider} 登录").replace("{provider}", providers.sso.displayName || "SSO")}
+            {t("通过 {provider} 登录").replace("{provider}", sso.displayName || "SSO")}
           </a>
         ) : null}
 
-        <p className="vocat-enter vocat-enter-4 mt-8 text-center text-[12px] leading-relaxed tracking-tight text-black/30 dark:text-white/30">
-          Halo
-          <br />
+        <p className="vocat-enter vocat-enter-4 mt-7 text-center ios-caption text-label-3">
           {t("基于 VoCat，原作者 Vocat Project Authors")}
         </p>
       </div>
