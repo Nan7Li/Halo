@@ -31,10 +31,11 @@ type Recorder struct {
 
 // New creates a stereo WAV at path and writes a placeholder header.
 func New(path string) (*Recorder, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	// Call recordings are as private as the database: owner-only.
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, err
 	}
-	file, err := os.Create(path)
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -86,12 +87,43 @@ func (recorder *Recorder) append(samples []int16, buffer *[]int16) {
 	if recorder.closed || recorder.file == nil || len(samples) == 0 {
 		return
 	}
-	const maxBuffered = 8000 * 30
 	*buffer = append(*buffer, samples...)
-	if len(*buffer) > maxBuffered {
-		drop := len(*buffer) - maxBuffered
-		*buffer = (*buffer)[drop:]
+	recorder.pairLocked()
+	// One side may never send audio (a listen-only browser without a
+	// microphone, a muted bridge). Once the other side is more than
+	// maxBuffered ahead, treat the silent side as silence instead of
+	// discarding the older audio.
+	if excess := len(*buffer) - maxBuffered; excess > 0 {
+		recorder.writeLocked((*buffer)[:excess], buffer == &recorder.downBuf)
+		*buffer = (*buffer)[excess:]
 	}
+}
+
+const maxBuffered = 8000 * 30
+
+// writeLocked writes samples on one channel with silence on the other.
+func (recorder *Recorder) writeLocked(samples []int16, downlink bool) {
+	if recorder.file == nil || len(samples) == 0 {
+		return
+	}
+	offset := 2
+	if downlink {
+		offset = 0
+	}
+	frame := make([]byte, len(samples)*4)
+	for index, sample := range samples {
+		binary.LittleEndian.PutUint16(frame[index*4+offset:], uint16(sample))
+	}
+	if _, err := recorder.file.Write(frame); err != nil {
+		_ = recorder.file.Close()
+		recorder.file = nil
+		return
+	}
+	recorder.frames += int64(len(samples))
+}
+
+// pairLocked writes every sample position both channels have reached.
+func (recorder *Recorder) pairLocked() {
 	frame := make([]byte, 0, 4096)
 	for len(recorder.downBuf) > 0 && len(recorder.upBuf) > 0 {
 		count := len(recorder.downBuf)

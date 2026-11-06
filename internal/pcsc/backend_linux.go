@@ -134,15 +134,18 @@ func (backend *nativeBackend) Readers(ctx context.Context) ([]Reader, error) {
 	if err != nil && len(physical) > 0 {
 		ensurePCSCDService(ctx)
 		dialDeadline := time.Now().Add(1500 * time.Millisecond)
+	waitForDaemon:
 		for time.Now().Before(dialDeadline) {
 			select {
 			case <-ctx.Done():
-				break
+				// A bare break would only leave the select and keep dialing
+				// with a canceled context until the deadline.
+				break waitForDaemon
 			case <-time.After(200 * time.Millisecond):
 			}
 			if c, dialErr := backend.dial(ctx); dialErr == nil {
 				client, err = c, nil
-				break
+				break waitForDaemon
 			}
 		}
 	}

@@ -62,3 +62,42 @@ func TestRecorderStereoHeaderAndSamples(t *testing.T) {
 		t.Fatalf("sizes riff=%d data=%d payload=%d", riffSize, dataSize, len(payload))
 	}
 }
+
+func TestRecorderKeepsOneSidedAudioAndIsPrivate(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "calls", "listen-only.wav")
+	recorder, err := New(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 60 s of remote audio with no microphone: twice the pairing window.
+	chunk := make([]int16, 160)
+	for index := range chunk {
+		chunk[index] = 7
+	}
+	const chunks = 60 * 8000 / 160
+	for range chunks {
+		recorder.WriteDownlink(chunk)
+	}
+	if err := recorder.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := binary.LittleEndian.Uint32(data[40:44]), uint32(chunks*160*4); got != want {
+		t.Fatalf("data bytes = %d, want %d", got, want)
+	}
+	if left, right := int16(binary.LittleEndian.Uint16(data[44:46])), int16(binary.LittleEndian.Uint16(data[46:48])); left != 7 || right != 0 {
+		t.Fatalf("first frame = %d/%d, want 7/0", left, right)
+	}
+	for _, check := range []string{path, filepath.Dir(path)} {
+		info, err := os.Stat(check)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.Mode().Perm()&0o077 != 0 {
+			t.Fatalf("%s mode = %v, want owner-only", check, info.Mode().Perm())
+		}
+	}
+}
