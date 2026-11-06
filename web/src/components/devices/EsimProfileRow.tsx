@@ -43,7 +43,7 @@ export function EsimProfileRow(props: EsimProfileRowProps) {
                 <span className={cx("h-2 w-2 flex-shrink-0 rounded-full", active ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600")} />
                 <span className="min-w-0 truncate text-sm font-medium text-gray-900 dark:text-white">{p.name || p.iccid}</span>
                 <Tag type={active ? "success" : "info"} className="flex-shrink-0">
-                  {p.stateText}
+                  {p.stateText ? t(p.stateText) : null}
                 </Tag>
               </div>
               <div className="ml-4 mt-0.5 flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">

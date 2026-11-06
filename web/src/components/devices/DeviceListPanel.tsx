@@ -88,7 +88,7 @@ export function DeviceListPanel(props: DeviceListPanelProps) {
         open={Boolean(menu)}
         anchor={menu}
         onClose={() => setMenu(null)}
-        title={t("显示")}
+        title={t("筛选与排序")}
         items={[
           { label: t("全部设备"), icon: check(statusFilter === "all"), onSelect: () => props.onStatusFilterChange("all") },
           { label: t("仅在线"), icon: check(statusFilter === "online"), onSelect: () => props.onStatusFilterChange("online") },

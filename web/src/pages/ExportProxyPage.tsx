@@ -221,7 +221,7 @@ export default function ExportProxyPage() {
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-sm"><span>{t("名称")}</span><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("例如：EC20 漫游出口")} /></label>
-          <label className="space-y-1.5 text-sm"><span>{t("设备")}</span><Select value={form.deviceId} onChange={chooseDevice} options={devices.map((device) => ({ value: device.id, label: `${device.name || device.id} · ${device.interface}` }))} /></label>
+          <label className="space-y-1.5 text-sm"><span>{t("目标设备")}</span><Select value={form.deviceId} onChange={chooseDevice} options={devices.map((device) => ({ value: device.id, label: `${device.name || device.id} · ${device.interface}` }))} /></label>
           <label className="space-y-1.5 text-sm"><span>{t("网络接口")}</span><Input value={form.interface} readOnly disabled /></label>
           <label className="space-y-1.5 text-sm"><span>{t("协议")}</span><Select value={form.mode} onChange={(value) => setForm({ ...form, mode: value as "http" | "socks5" })} options={[{ value: "socks5", label: "SOCKS5" }, { value: "http", label: "HTTP" }]} /></label>
           <label className="space-y-1.5 text-sm"><span>{t("监听地址")}</span><Input value={form.listenHost} onChange={(event) => setForm({ ...form, listenHost: event.target.value })} /></label>

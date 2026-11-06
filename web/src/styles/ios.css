@@ -870,8 +870,11 @@ html[data-wallpaper="off"] .ios-login { --wp: 1.4; }
 }
 .ios-form-row:last-child::after { display: none; }
 .ios-form-label {
-  flex: 0 0 34%;
-  max-width: 180px;
+  /* Size to the label so "Confirmation Code" stays on one line, but keep
+     at least a third of the row (controls roughly align) and at most half. */
+  flex: 0 0 auto;
+  min-width: 34%;
+  max-width: min(50%, 220px);
   padding-top: 8px;
   font-size: 17px;
   line-height: 22px;
