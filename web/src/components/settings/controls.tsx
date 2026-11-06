@@ -129,7 +129,10 @@ export function FieldRow({
   );
 }
 
-// Field：label + 控件 + 可选说明，对应参考里反复出现的 space-y-1 字段块。
+// Field: an iOS form row. The label sits on the leading side and the
+// control fills the rest of the row, borderless, like Settings > Wi-Fi >
+// Configure Proxy. Consecutive rows share hairline separators; multi-line
+// controls (textarea, lists) stack under their label.
 export function Field({
   label,
   hint,
@@ -142,10 +145,12 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <div className={cx("space-y-1", className)}>
-      <label className={LABEL_CLASS}>{label}</label>
-      {children}
-      {hint ? <div className="mt-1 text-[10px] text-gray-400">{hint}</div> : null}
+    <div className={cx("ios-form-row", className)}>
+      <label className="ios-form-label">{label}</label>
+      <div className="ios-form-control">
+        {children}
+        {hint ? <div className="ios-form-hint">{hint}</div> : null}
+      </div>
     </div>
   );
 }

@@ -847,3 +847,88 @@ html[data-idiom="mac"] .ios-card-icon svg { width: 14px !important; height: 14px
 html[data-wallpaper="off"] .ios-login { --wp: 1.4; }
 .ios-login-card .ios-list { background: rgb(var(--ios-grouped-2) / 0.92); }
 .ios-login-card .ios-row { min-height: 50px; }
+
+/* ---- iOS form rows (settings and dialogs) ---- */
+.ios-form-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 52px;
+  padding: 7px 0;
+}
+/* Every row draws its own bottom hairline (rows can sit in grids, so
+   sibling selectors miss some); the last row in its container does not. */
+.ios-form-row::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0.5px;
+  background: rgb(var(--ios-separator));
+}
+.ios-form-row:last-child::after { display: none; }
+.ios-form-label {
+  flex: 0 0 34%;
+  max-width: 180px;
+  padding-top: 8px;
+  font-size: 17px;
+  line-height: 22px;
+  color: rgb(var(--ios-label));
+}
+.ios-form-control { flex: 1; min-width: 0; }
+.ios-form-hint { margin-top: 2px; font-size: 13px; line-height: 18px; color: rgb(var(--ios-label-2)); }
+/* Controls inside a row lose their own chrome: the row is the field. */
+.ios-form-row input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+.ios-form-row .halo-select-trigger {
+  height: 38px;
+  padding-left: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 17px;
+}
+.ios-form-row input:focus { box-shadow: none !important; }
+.ios-form-row select {
+  height: 38px;
+  border: 0 !important;
+  border-radius: 0;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0;
+  font-size: 17px;
+}
+.ios-form-row .halo-select-trigger { justify-content: space-between; }
+/* Multi-line controls stack under the label. */
+.ios-form-row:has(textarea),
+.ios-form-row:has(.ios-form-stack) { flex-direction: column; gap: 6px; }
+.ios-form-row:has(textarea) .ios-form-label,
+.ios-form-row:has(.ios-form-stack) .ios-form-label { flex: none; max-width: none; padding-top: 4px; }
+.ios-form-row:has(textarea) .ios-form-control { width: 100%; }
+@media (max-width: 380px) {
+  .ios-form-row { flex-direction: column; gap: 2px; }
+  .ios-form-label { flex: none; max-width: none; }
+}
+html[data-idiom="mac"] .ios-form-row { min-height: 38px; padding: 5px 0; gap: 10px; }
+html[data-idiom="mac"] .ios-form-label { padding-top: 6px; font-size: 13px; line-height: 16px; }
+html[data-idiom="mac"] .ios-form-hint { font-size: 11px; line-height: 14px; }
+html[data-idiom="mac"] .ios-form-row input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+html[data-idiom="mac"] .ios-form-row .halo-select-trigger,
+html[data-idiom="mac"] .ios-form-row select { height: 28px; font-size: 13px; }
+
+/* Grid items default to min-width:auto; a long select value would push a
+   form row wider than the sheet. */
+.ios-form-row { min-width: 0; }
+/* In sheets, form rows sit on white inset-grouped sections (iOS sheets use
+   the grouped background with white sections). */
+.ios-sheet .grid:has(> .ios-form-row),
+.ios-sheet .space-y-4:has(> .ios-form-row) {
+  padding: 0 16px;
+  border-radius: var(--radius-lg);
+  background: rgb(var(--ios-grouped-2));
+}
+.ios-sheet.glass-thick .grid:has(> .ios-form-row),
+.ios-sheet.glass-thick .space-y-4:has(> .ios-form-row) { background: rgb(var(--ios-grouped-2) / 0.9); }
+.ios-sheet .space-y-4:has(> .ios-form-row) > * + * { margin-top: 0; }

@@ -148,7 +148,6 @@ function currentDeviceICCID(device?: DeviceListItem) {
   return String(device?.modem?.iccid || device?.vowifiRuntime?.iccid || "").trim();
 }
 
-const fieldLabel = "mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-200";
 
 export default function AutomaticTasksPage() {
   const { t } = useI18n();
@@ -584,28 +583,28 @@ export default function AutomaticTasksPage() {
           </>
         }
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="md:col-span-2"><label className={fieldLabel}>{t("任务名称")}</label><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("例如：每日短信保活")} /></div>
-          <div><label className={fieldLabel}>{t("设备")}</label><Select value={form.deviceId} onChange={chooseDevice} options={devices.map((device) => ({ value: device.id, label: `${device.name || device.id} (${device.id})` }))} /></div>
-          <div><label className={fieldLabel}>{t("SIM / Profile")}</label><Select value={form.profileIccid} onChange={chooseProfile} disabled={profileLoading || !form.deviceId} placeholder={profileLoading ? t("读取 Profile 中...") : t("请选择 SIM / Profile")} options={profiles.map((profile) => ({ value: profile.iccid, label: profile.label }))} /></div>
-          <div><label className={fieldLabel}>{t("任务类型")}</label><Select value={form.taskType} onChange={(value) => chooseTaskType(value as TaskType)} options={taskTypeOptions} /></div>
-          <div><label className={fieldLabel}>{t("执行环境")}</label><Select value={form.environment} onChange={(value) => setForm({ ...form, environment: value as TaskEnvironment })} disabled={form.taskType === "public_ip" || form.taskType === "cellular_attach" || selectedTaskDeviceIsReader} options={environmentOptions} /></div>
+        <div className="grid gap-x-6 md:grid-cols-2">
+          <div className="ios-form-row md:col-span-2"><label className="ios-form-label">{t("任务名称")}</label><div className="ios-form-control"><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("例如：每日短信保活")} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("设备")}</label><div className="ios-form-control"><Select value={form.deviceId} onChange={chooseDevice} options={devices.map((device) => ({ value: device.id, label: `${device.name || device.id} (${device.id})` }))} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("SIM / Profile")}</label><div className="ios-form-control"><Select value={form.profileIccid} onChange={chooseProfile} disabled={profileLoading || !form.deviceId} placeholder={profileLoading ? t("读取 Profile 中...") : t("请选择 SIM / Profile")} options={profiles.map((profile) => ({ value: profile.iccid, label: profile.label }))} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("任务类型")}</label><div className="ios-form-control"><Select value={form.taskType} onChange={(value) => chooseTaskType(value as TaskType)} options={taskTypeOptions} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("执行环境")}</label><div className="ios-form-control"><Select value={form.environment} onChange={(value) => setForm({ ...form, environment: value as TaskEnvironment })} disabled={form.taskType === "public_ip" || form.taskType === "cellular_attach" || selectedTaskDeviceIsReader} options={environmentOptions} /></div></div>
 		  {selectedTaskDeviceIsReader ? <div className="md:col-span-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300">{t("USB SIM读卡器仅支持VoWiFi短信和通话任务")}</div> : null}
 
-          {(form.taskType === "sms" || form.taskType === "call") ? <div><label className={fieldLabel}>{t("号码")}</label><Input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="+447700900123" /></div> : null}
-          {form.taskType === "call" ? <div><label className={fieldLabel}>{t("自动挂断")}</label><Input type="number" min={1} max={600} value={form.durationSeconds} suffix="s" onChange={(event) => setForm({ ...form, durationSeconds: Number(event.target.value) })} /></div> : null}
-          {form.taskType === "sms" ? <div className="md:col-span-2"><label className={fieldLabel}>{t("短信内容")}</label><Textarea rows={4} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} /></div> : null}
+          {(form.taskType === "sms" || form.taskType === "call") ? <div className="ios-form-row"><label className="ios-form-label">{t("号码")}</label><div className="ios-form-control"><Input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="+447700900123" /></div></div> : null}
+          {form.taskType === "call" ? <div className="ios-form-row"><label className="ios-form-label">{t("自动挂断")}</label><div className="ios-form-control"><Input type="number" min={1} max={600} value={form.durationSeconds} suffix="s" onChange={(event) => setForm({ ...form, durationSeconds: Number(event.target.value) })} /></div></div> : null}
+          {form.taskType === "sms" ? <div className="ios-form-row md:col-span-2"><label className="ios-form-label">{t("短信内容")}</label><div className="ios-form-control"><Textarea rows={4} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} /></div></div> : null}
 		  {advancedTasksAvailable && form.taskType === "public_ip" ? <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">{t("该任务固定使用基站直连和自动选网；执行时会开启漫游数据，并通过模块接口访问 ipinfo.io。")}</div> : null}
 
           {form.taskType === "cellular_attach" ? <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">{t("固定使用基站直连和自动选网，关闭数据连接后等待注册成功；结束后恢复原卡策略，原策略可能重新开启数据连接。")}</div> : null}
 
-          <div><label className={fieldLabel}>{t("首次执行日期")}</label><Input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></div>
-          <div><label className={fieldLabel}>{t("执行时间")}</label><Input type="time" value={form.runTime} onChange={(event) => setForm({ ...form, runTime: event.target.value })} /></div>
-          <div><label className={fieldLabel}>{t("执行周期")}</label><Input type="number" min={1} max={365} value={form.intervalDays} suffix={t("天")} onChange={(event) => setForm({ ...form, intervalDays: Number(event.target.value) })} /></div>
-          <div><label className={fieldLabel}>{t("任务失败重试次数")}</label><Select value={String(form.retryCount)} onChange={(value) => setForm({ ...form, retryCount: Number(value) })} options={Array.from({ length: 11 }, (_, count) => ({ value: String(count), label: t("{count} 次").replace("{count}", String(count)) }))} /></div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-white/10"><div><div className="text-sm font-semibold">{t("启用任务")}</div><div className="text-xs text-gray-400">{t("停用后不会进入执行队列")}</div></div><Switch checked={form.enabled} onChange={(enabled) => setForm({ ...form, enabled })} /></div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-white/10"><div><div className="text-sm font-semibold">{t("完成后推送通知")}</div><div className="text-xs text-gray-400">{t("发送到全部已配置并启用的通知渠道")}</div></div><Switch checked={form.notify} onChange={(notify) => setForm({ ...form, notify })} /></div>
-          <div className="md:col-span-2 flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-white/10"><div><div className="text-sm font-semibold">{t("任务完成后切回原卡")}</div><div className="text-xs text-gray-400">{t("若执行前活跃卡与任务卡不同，任务完成后自动切回执行前的 SIM / Profile 并恢复其网络策略")}</div></div><Switch checked={form.revertProfile} onChange={(revertProfile) => setForm({ ...form, revertProfile })} /></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("首次执行日期")}</label><div className="ios-form-control"><Input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("执行时间")}</label><div className="ios-form-control"><Input type="time" value={form.runTime} onChange={(event) => setForm({ ...form, runTime: event.target.value })} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("执行周期")}</label><div className="ios-form-control"><Input type="number" min={1} max={365} value={form.intervalDays} suffix={t("天")} onChange={(event) => setForm({ ...form, intervalDays: Number(event.target.value) })} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("任务失败重试次数")}</label><div className="ios-form-control"><Select value={String(form.retryCount)} onChange={(value) => setForm({ ...form, retryCount: Number(value) })} options={Array.from({ length: 11 }, (_, count) => ({ value: String(count), label: t("{count} 次").replace("{count}", String(count)) }))} /></div></div>
+          <div className="ios-form-row items-center justify-between"><div><div className="ios-body">{t("启用任务")}</div><div className="ios-footnote text-label-2">{t("停用后不会进入执行队列")}</div></div><Switch checked={form.enabled} onChange={(enabled) => setForm({ ...form, enabled })} /></div>
+          <div className="ios-form-row items-center justify-between"><div><div className="ios-body">{t("完成后推送通知")}</div><div className="ios-footnote text-label-2">{t("发送到全部已配置并启用的通知渠道")}</div></div><Switch checked={form.notify} onChange={(notify) => setForm({ ...form, notify })} /></div>
+          <div className="ios-form-row items-center justify-between md:col-span-2"><div><div className="ios-body">{t("任务完成后切回原卡")}</div><div className="ios-footnote text-label-2">{t("若执行前活跃卡与任务卡不同，任务完成后自动切回执行前的 SIM / Profile 并恢复其网络策略")}</div></div><Switch checked={form.revertProfile} onChange={(revertProfile) => setForm({ ...form, revertProfile })} /></div>
         </div>
       </Modal>
     </Page>

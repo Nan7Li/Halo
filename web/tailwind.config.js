@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  // Modal derives "md:max-w-*" from the legacy width prop at runtime, so the
+  // scanner never sees those class names.
+  safelist: [{ pattern: /^max-w-(xs|sm|md|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl)$/, variants: ["md"] }],
   darkMode: "class",
   theme: {
     extend: {
