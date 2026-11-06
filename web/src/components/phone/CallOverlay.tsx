@@ -146,11 +146,11 @@ function InCallScreen() {
         <div className="max-w-full break-all ios-large-title !text-[38px] !font-semibold tracking-tight">
           {formatNumber(current.number || "") || t("未知号码")}
         </div>
-        <div className="mt-2 font-mono text-[19px] tabular-nums text-white/75">{status}</div>
+        <div className="mt-2 text-[19px] font-medium tabular-nums text-white/75">{status}</div>
         {phase === "active" && audio === "connecting" ? <div className="mt-2 ios-footnote text-white/60">{t("正在连接浏览器音频…")}</div> : null}
         {phase === "active" && audio === "error" ? <div className="mt-2 ios-footnote text-[#FF9F0A]">{t("浏览器音频连接失败")}</div> : null}
         {listenOnly ? (
-          <div className="mt-4 flex max-w-sm items-start gap-2 rounded-2xl bg-white/12 px-4 py-3 text-left ios-footnote text-white/85 backdrop-blur">
+          <div className="mt-4 flex max-w-sm items-start gap-2 rounded-2xl bg-white/[0.12] px-4 py-3 text-left ios-footnote text-white/85 backdrop-blur">
             <SpeakerMuteRegular className="mt-0.5 h-4 w-4 shrink-0 text-[#FF9F0A]" />
             <span>{t(micReason)}</span>
           </div>
@@ -213,7 +213,7 @@ function ControlButton({ label, icon, active, disabled, onClick }: { label: stri
         disabled={disabled && !active}
         className={cx(
           "inline-flex h-[72px] w-[72px] items-center justify-center rounded-full backdrop-blur-xl transition-[background-color,transform] duration-200 active:scale-95 [&_svg]:h-8 [&_svg]:w-8",
-          active ? "bg-white text-black" : "bg-white/18 text-white",
+          active ? "bg-white text-black" : "bg-white/[0.16] text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.22),inset_0_10px_16px_-12px_rgb(255_255_255/0.7)]",
           disabled && !active && "opacity-40",
           !onClick && "pointer-events-none",
         )}

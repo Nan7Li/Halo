@@ -74,7 +74,7 @@ export function AppearanceCard() {
             </button>
           );
         })}
-        <label className="flex items-center gap-2 rounded-full border border-black/8 bg-black/[0.03] px-3 py-1.5 text-[13px] font-medium tracking-tight dark:border-separator dark:bg-[var(--color-input)] dark:text-label">
+        <label className="flex items-center gap-2 rounded-full border border-black/[0.08] bg-black/[0.03] px-3 py-1.5 text-[13px] font-medium tracking-tight dark:border-separator dark:bg-[var(--color-input)] dark:text-label">
           <input
             type="color"
             value={normalizeHex(accent) || accent}
