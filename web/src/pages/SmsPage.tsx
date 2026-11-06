@@ -633,9 +633,10 @@ export default function SmsPage() {
 
   // macOS: the title sits in the 52pt toolbar row; iOS: large title.
   const listHeader = (
-    <div className={cx("flex justify-between gap-3", mac ? "-mx-1 mb-2 h-[52px] items-center" : "mb-3 items-end pt-[max(8px,env(safe-area-inset-top))]")}>
-      <h1 className={mac ? "text-[15px] font-bold leading-5 tracking-[-0.016em] text-label" : "ios-large-title text-label"}>{t("信息")}</h1>
-      <div className={cx("flex items-center gap-2", !mac && "pb-1")}>
+    <div className={cx(mac ? "-mx-1 mb-2 flex h-[52px] items-center justify-between gap-3" : "mb-3 grid h-[56px] w-full min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 pt-[env(safe-area-inset-top)]")}>
+      {mac ? null : <span />}
+      <h1 className={mac ? "text-[15px] font-bold leading-5 tracking-[-0.016em] text-label" : "ios-headline text-label"}>{t("信息")}</h1>
+      <div className="flex items-center justify-end gap-2">
         <BarGroup>
           <GroupButton icon={<ArrowDownloadRegular />} aria-label={t("导出短信")} title={t("导出短信")} onClick={() => setExportOpen(true)} />
           <GroupButton icon={<ComposeRegular />} aria-label={t("新信息")} title={t("新信息")} onClick={openNewSms} />
@@ -674,7 +675,7 @@ export default function SmsPage() {
       ) : null}
       <div className={cx("flex min-h-0 flex-1", isDesktop && "gap-0 md:p-2.5 md:pl-0")}>
         {showContactColumn ? (
-          <div className={cx("flex min-h-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[var(--radius-xl)] md:border-r-[0.5px] md:border-separator" : "flex-1")}>
+          <div className={cx("flex min-h-0 min-w-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[var(--radius-xl)] md:border-r-[0.5px] md:border-separator" : "flex-1")}>
             <ContactList
               isMobile={isMobile}
               isDesktop={isDesktop}

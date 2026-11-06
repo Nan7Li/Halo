@@ -42,7 +42,7 @@ export function Glass({ as: Tag = "div", variant = "regular", interactive = fals
 export function IconTile({ color = "blue", children, size = 30, className }: { color?: string; children: ReactNode; size?: number; className?: string }) {
   const background = /^(#|rgb|var|hsl)/.test(color) ? color : `rgb(var(--ios-${color}))`;
   return (
-    <span className={cx("ios-row-icon", className)} style={size === 30 ? { background } : { background, width: size, height: size, borderRadius: size * 0.24 }}>
+    <span className={cx("ios-row-icon", className)} style={size === 30 ? { backgroundColor: background } : { backgroundColor: background, width: size, height: size, borderRadius: size * 0.24 }}>
       {children}
     </span>
   );
@@ -66,12 +66,16 @@ export function useScrolledPast(threshold = 24) {
   const container = useScrollContainer();
   const [scrolled, setScrolled] = useState(false);
   useLayoutEffect(() => {
-    const element = container?.current;
-    if (!element) return;
-    const update = () => setScrolled(element.scrollTop > threshold);
-    update();
-    element.addEventListener("scroll", update, { passive: true });
-    return () => element.removeEventListener("scroll", update);
+    // Listen in the capture phase at the document so it works no matter
+    // when the scroll container mounts (lazy routes, Suspense reveals).
+    const read = (element: Element | null) => setScrolled(Boolean(element && element.scrollTop > threshold));
+    read(container?.current ?? document.querySelector(".ios-scroll"));
+    const onScroll = (event: Event) => {
+      const target = event.target as Element | null;
+      if (target instanceof Element && target.classList.contains("ios-scroll")) read(target);
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => document.removeEventListener("scroll", onScroll, { capture: true });
   }, [container, threshold]);
   return scrolled;
 }

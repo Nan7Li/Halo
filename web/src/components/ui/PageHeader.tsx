@@ -20,8 +20,10 @@ export function PageFrame({ children, className, wide = false }: { children: Rea
  */
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   const embedded = useContext(EmbeddedPageContext);
-  const mac = useIsMac();
-  const scrolled = useScrolledPast(mac ? 4 : 40);
+  // Inline bar title on every platform (see ios/page.tsx).
+  void useIsMac();
+  const mac = true;
+  const scrolled = useScrolledPast(4);
   if (embedded) {
     if (!subtitle && !actions) return null;
     return (

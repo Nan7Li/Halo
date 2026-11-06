@@ -258,15 +258,16 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
    fades instead of meeting a solid bar background. */
 .ios-navbar-bg {
   position: absolute;
-  inset: 0 0 -28px 0;
+  inset: 0 0 -36px 0;
   z-index: -1;
   opacity: 0;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgb(var(--ios-grouped) / 0.92), rgb(var(--ios-grouped) / 0.6) 55%, rgb(var(--ios-grouped) / 0));
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent);
-  mask-image: linear-gradient(to bottom, #000 45%, transparent);
+  /* Progressive blur: strong behind the title, dissolving below the bar. */
+  background: linear-gradient(to bottom, rgb(var(--ios-grouped) / 0.9), rgb(var(--ios-grouped) / 0.72) 50%, rgb(var(--ios-grouped) / 0));
+  -webkit-backdrop-filter: blur(14px) saturate(1.6);
+  backdrop-filter: blur(14px) saturate(1.6);
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent);
   transition: opacity 200ms ease-out;
 }
 .ios-navbar.is-scrolled .ios-navbar-bg { opacity: 1; }
@@ -337,7 +338,7 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
   position: relative;
   display: flex;
   width: 100%;
-  min-height: 48px;
+  min-height: 52px;
   align-items: center;
   gap: 14px;
   padding: 0 16px;
@@ -380,6 +381,8 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
   border-radius: var(--radius-xs);
   color: #fff;
   font-size: 20px;
+  /* iOS 26 Settings icons: lit from the top. */
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 60%, rgb(0 0 0 / 0.06));
 }
 .ios-row-icon svg { width: 20px; height: 20px; }
 .ios-chevron { color: rgb(var(--ios-label-4)); width: 14px; height: 14px; flex-shrink: 0; }
@@ -443,37 +446,32 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
 .ios-segmented.is-pill .ios-segment-thumb { top: 3px; bottom: 3px; border-radius: var(--radius-pill); }
 html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
 
-/* ---- Switch (51x31) ---- */
+/* ---- Switch (iOS 26: 63 x 28 track, 38 x 24 capsule knob) ---- */
 .ios-switch {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
-  width: 51px;
-  height: 31px;
+  width: 63px;
+  height: 28px;
   border-radius: 999px;
   background: var(--ios-fill);
   transition: background-color 260ms var(--spring-smooth);
 }
 .ios-switch.is-on { background: rgb(var(--ios-green)); }
-.ios-switch.is-small { width: 40px; height: 24px; }
+.ios-switch.is-small { width: 51px; height: 24px; }
 .ios-switch-knob {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 27px;
-  height: 27px;
+  width: 38px;
+  height: 24px;
   border-radius: 999px;
   background: #fff;
-  box-shadow: 0 3px 8px rgb(0 0 0 / 0.15), 0 3px 1px rgb(0 0 0 / 0.06);
-  transition: transform var(--dur-spring-snappy) var(--spring-snappy), width 200ms var(--spring-smooth);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.04);
 }
-.ios-switch.is-small .ios-switch-knob { width: 20px; height: 20px; }
-.ios-switch:active .ios-switch-knob { width: 33px; }
-.ios-switch.is-small:active .ios-switch-knob { width: 25px; }
-.ios-switch.is-on .ios-switch-knob { transform: translateX(20px); }
-.ios-switch.is-on:active .ios-switch-knob { transform: translateX(14px); }
-.ios-switch.is-small.is-on .ios-switch-knob { transform: translateX(16px); }
-.ios-switch.is-small.is-on:active .ios-switch-knob { transform: translateX(11px); }
+.ios-switch.is-small .ios-switch-knob { width: 30px; height: 20px; }
+.ios-switch.is-on .ios-switch-knob { transform: translateX(21px); }
+.ios-switch.is-small.is-on .ios-switch-knob { transform: translateX(17px); }
 
 /* ---- Slider ---- */
 .ios-slider {
@@ -593,10 +591,10 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
 /* ---- Search field ---- */
 .ios-search {
   display: flex;
-  height: 40px;
+  height: 44px;
   align-items: center;
   gap: 6px;
-  padding: 0 12px;
+  padding: 0 14px;
   border-radius: var(--radius-pill);
   background: var(--ios-fill-3);
   color: rgb(var(--ios-label-2));

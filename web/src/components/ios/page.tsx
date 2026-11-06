@@ -39,9 +39,11 @@ export function Page({
   className?: string;
   contentClassName?: string;
 }) {
-  // macOS has no large titles: the window title sits in the toolbar.
-  const mac = useIsMac();
-  if (mac) largeTitle = false;
+  // Titles sit in the bar: centered on iOS (as iOS 26 apps like Phone's
+  // Keypad and Telegram do), at the leading edge of the macOS toolbar.
+  // Large titles took a whole row and left screens feeling empty.
+  void useIsMac();
+  largeTitle = false;
   const scrolled = useScrolledPast(largeTitle ? 40 : 4);
   return (
     <div className={cx("ios-content ios-page", wide && "is-wide", className)}>
