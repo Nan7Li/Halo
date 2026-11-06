@@ -46,15 +46,7 @@ func TestHaloSchema24GainsUpstreamColumns(t *testing.T) {
 	`); err != nil {
 		t.Fatal(err)
 	}
-	legacy := &Store{db: raw}
-	if _, err := legacy.SaveAutomaticTask(ctx, AutomaticTask{
-		Name: "Halo SMS", Enabled: true, DeviceID: "modem", ProfileICCID: "8901410",
-		TaskType: "sms", Environment: "cellular", IntervalDays: 1,
-		StartDate: "2026-10-02", RunTime: "12:00", Timezone: "UTC",
-		Payload: []byte(`{"phone":"10086","message":"test"}`), NextRunAt: time.Now().Add(time.Hour),
-	}); err != nil {
-		t.Fatal(err)
-	}
+	mustSeedLegacyTask(t, raw, "Halo SMS", "sms", "{\"phone\":\"10086\",\"message\":\"test\"}")
 	if _, err := raw.ExecContext(ctx, `PRAGMA user_version = 24`); err != nil {
 		t.Fatal(err)
 	}
@@ -122,15 +114,7 @@ func TestUpstreamSchema25GainsHaloTables(t *testing.T) {
 	`); err != nil {
 		t.Fatal(err)
 	}
-	legacy := &Store{db: raw}
-	if _, err := legacy.SaveAutomaticTask(ctx, AutomaticTask{
-		Name: "Attach", Enabled: true, DeviceID: "modem", ProfileICCID: "8901410",
-		TaskType: "cellular_attach", Environment: "cellular", IntervalDays: 1,
-		StartDate: "2026-10-02", RunTime: "12:00", Timezone: "UTC",
-		Payload: []byte(`{}`), NextRunAt: time.Now().Add(time.Hour),
-	}); err != nil {
-		t.Fatal(err)
-	}
+	mustSeedLegacyTask(t, raw, "Attach", "cellular_attach", "{}")
 	var tunnels int
 	if err := raw.QueryRowContext(ctx, `SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'wireguard_tunnels'`).Scan(&tunnels); err != nil || tunnels != 0 {
 		t.Fatalf("upstream database already has wireguard_tunnels: count=%d err=%v", tunnels, err)
@@ -293,4 +277,96 @@ func columnExists(t *testing.T, db *sql.DB, table, column string) bool {
 		t.Fatal(err)
 	}
 	return false
+}
+
+// mustSeedLegacyTask inserts a task with only the columns that existed before
+// Halo migration 29 (VoCat 26) added revert_profile.
+func mustSeedLegacyTask(t *testing.T, db *sql.DB, name, taskType, payload string) {
+	t.Helper()
+	next := time.Now().Add(time.Hour).Unix()
+	if _, err := db.ExecContext(context.Background(), `
+		INSERT INTO automatic_tasks (
+			name, enabled, device_id, profile_iccid, task_type, environment,
+			interval_days, start_date, run_time, timezone, payload_json,
+			next_run_at, created_at, updated_at
+		) VALUES (?, 1, 'modem', '8901410', ?, 'cellular', 1, '2026-10-02', '12:00', 'UTC', ?, ?, 1, 1)
+	`, name, taskType, payload, next); err != nil {
+		t.Fatalf("seed legacy automatic task: %v", err)
+	}
+}
+
+// A Halo 1.1.14 database (user_version 28) gains the VoCat v0.3.16-v0.3.42
+// schema as Halo 29-34 without losing rows.
+func TestHaloSchema28GainsVoCat042Schema(t *testing.T) {
+	ctx := context.Background()
+	raw, path := openLineageDB(t)
+	applySchemaVersions(t, raw, 1, 28)
+	mustSeedDevice(t, raw, "modem")
+	if _, err := raw.ExecContext(ctx, `
+		INSERT INTO wireguard_tunnels (id, name, interface, config_text, autostart, created_at, updated_at)
+		VALUES ('wg1', 'home', 'wg-halo', 'config', 1, 10, 10)
+	`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `
+		INSERT INTO card_policies (iccid, source, created_at, updated_at) VALUES ('8901410', 'manual', 1, 1)
+	`); err != nil {
+		t.Fatal(err)
+	}
+	mustSeedLegacyTask(t, raw, "Halo SMS", "sms", `{}`)
+	if _, err := raw.ExecContext(ctx, `PRAGMA user_version = 28`); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	database := openTestStore(t, path)
+	assertSchemaVersion(t, database)
+	for _, table := range []string{"wireguard_tunnels", "call_records", "epdg_probe_status", "sms_raw_records", "api_tokens", "sso_bindings", "sso_flows"} {
+		assertTable(t, database, table)
+	}
+	var revert int
+	if err := database.db.QueryRowContext(ctx, `SELECT revert_profile FROM automatic_tasks WHERE name = 'Halo SMS'`).Scan(&revert); err != nil || revert != 1 {
+		t.Fatalf("revert_profile = %d, %v", revert, err)
+	}
+	var secure int
+	if err := database.db.QueryRowContext(ctx, `SELECT count(*) FROM pragma_table_info('sessions') WHERE name IN ('login_method', 'sso_binding_id', 'secure_cookies')`).Scan(&secure); err != nil || secure != 3 {
+		t.Fatalf("session columns = %d, %v", secure, err)
+	}
+	var tunnel string
+	if err := database.db.QueryRowContext(ctx, `SELECT name FROM wireguard_tunnels WHERE id = 'wg1'`).Scan(&tunnel); err != nil || tunnel != "home" {
+		t.Fatalf("wireguard tunnel = %q, %v", tunnel, err)
+	}
+}
+
+// A VoCat v0.3.42 database is at user_version 30 after VoCat migrations
+// 26-30 (Halo 29-33), and never ran Halo 20/21/28. Halo 31-34 must tolerate
+// the VoCat columns and restore the Halo-only tables.
+func TestVoCat042Schema30GainsHaloTables(t *testing.T) {
+	ctx := context.Background()
+	raw, path := openLineageDB(t)
+	applySchemaVersions(t, raw, 1, 19)
+	applySchemaVersions(t, raw, 22, 27)
+	applySchemaVersions(t, raw, 29, 33)
+	mustSeedDevice(t, raw, "modem")
+	if _, err := raw.ExecContext(ctx, `INSERT INTO api_tokens (name, token_hash, created_at) VALUES ('agent', X'4321', 1)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := raw.ExecContext(ctx, `PRAGMA user_version = 30`); err != nil {
+		t.Fatal(err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	database := openTestStore(t, path)
+	assertSchemaVersion(t, database)
+	for _, table := range []string{"wireguard_tunnels", "call_records", "epdg_probe_status", "sso_bindings"} {
+		assertTable(t, database, table)
+	}
+	var name string
+	if err := database.db.QueryRowContext(ctx, `SELECT name FROM api_tokens`).Scan(&name); err != nil || name != "agent" {
+		t.Fatalf("api token = %q, %v", name, err)
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -22,7 +23,18 @@ var (
 	ErrUnauthorized       = errors.New("unauthorized")
 	ErrInvalidCSRF        = errors.New("invalid csrf token")
 	ErrEmptyPassword      = errors.New("password cannot be empty")
+	ErrInvalidTokenName   = errors.New("invalid api token name")
+	ErrDuplicateTokenName = errors.New("api token name already exists")
+	ErrUnknownToken       = errors.New("unknown api token")
 )
+
+// APITokenPrefix marks bearer credentials so they are identifiable in logs
+// and detectable by secret scanners.
+const APITokenPrefix = "vcat_"
+
+// apiTokenTouchInterval throttles the last_used_at write so each
+// authenticated request does not become a database write.
+const apiTokenTouchInterval = 5 * time.Minute
 
 const bcryptPasswordLimit = 72
 
@@ -53,10 +65,18 @@ type Credentials struct {
 }
 
 type AuthenticatedSession struct {
-	Principal Principal
-	ExpiresAt time.Time
-	tokenHash []byte
-	csrfHash  []byte
+	Principal     Principal
+	ExpiresAt     time.Time
+	LoginMethod   string
+	SecureCookies bool
+	tokenHash     []byte
+	csrfHash      []byte
+}
+
+// TokenHash returns a copy of the session digest for atomic authorization checks.
+// The browser's raw session credential is never exposed by an authenticated view.
+func (s AuthenticatedSession) TokenHash() []byte {
+	return append([]byte(nil), s.tokenHash...)
 }
 
 func New(database *store.Store, options Options) (*Service, error) {
@@ -142,7 +162,8 @@ func (s *Service) ResetAdminCredentials(ctx context.Context, username string, pa
 	return nil
 }
 
-func (s *Service) Login(ctx context.Context, username string, password string) (Credentials, error) {
+// Login verifies the local password and persists fresh session and CSRF credentials before returning them.
+func (s *Service) Login(ctx context.Context, username string, password string, secureCookies bool) (Credentials, error) {
 	admin, err := s.store.AdminByUsername(ctx, strings.TrimSpace(username))
 	if errors.Is(err, store.ErrNotFound) {
 		_ = comparePassword(s.dummyHash, password)
@@ -158,6 +179,20 @@ func (s *Service) Login(ctx context.Context, username string, password string) (
 	if err := s.store.DeleteExpiredSessions(ctx, time.Now()); err != nil {
 		return Credentials{}, err
 	}
+	credentials, err := s.PrepareCredentials(Principal{ID: admin.ID, Username: admin.Username})
+	if err != nil {
+		return Credentials{}, err
+	}
+	if err := s.store.CreateSession(ctx, admin.ID, hashToken(credentials.SessionToken), hashToken(credentials.CSRFToken), credentials.ExpiresAt, secureCookies); err != nil {
+		return Credentials{}, err
+	}
+	return credentials, nil
+}
+
+// PrepareCredentials generates independent local Session and CSRF material
+// without persisting it. The caller must atomically commit SSO authorization
+// before delivering these raw credentials to the browser.
+func (s *Service) PrepareCredentials(principal Principal) (Credentials, error) {
 	sessionToken, err := randomToken()
 	if err != nil {
 		return Credentials{}, err
@@ -167,26 +202,15 @@ func (s *Service) Login(ctx context.Context, username string, password string) (
 		return Credentials{}, err
 	}
 	expiresAt := time.Now().UTC().Add(s.sessionTTL)
-	if err := s.store.CreateSession(
-		ctx,
-		admin.ID,
-		hashToken(sessionToken),
-		hashToken(csrfToken),
-		expiresAt,
-	); err != nil {
-		return Credentials{}, err
-	}
 	return Credentials{
 		SessionToken: sessionToken,
 		CSRFToken:    csrfToken,
 		ExpiresAt:    expiresAt,
-		Principal: Principal{
-			ID:       admin.ID,
-			Username: admin.Username,
-		},
+		Principal:    principal,
 	}, nil
 }
 
+// Authenticate resolves a live session and exposes its principal, expiry, and original login method.
 func (s *Service) Authenticate(ctx context.Context, sessionToken string) (AuthenticatedSession, error) {
 	if sessionToken == "" {
 		return AuthenticatedSession{}, ErrUnauthorized
@@ -208,9 +232,11 @@ func (s *Service) Authenticate(ctx context.Context, sessionToken string) (Authen
 			ID:       session.Admin.ID,
 			Username: session.Admin.Username,
 		},
-		ExpiresAt: session.ExpiresAt,
-		tokenHash: tokenHash,
-		csrfHash:  session.CSRFHash,
+		ExpiresAt:     session.ExpiresAt,
+		LoginMethod:   session.LoginMethod,
+		SecureCookies: session.SecureCookies,
+		tokenHash:     tokenHash,
+		csrfHash:      session.CSRFHash,
 	}, nil
 }
 
@@ -280,6 +306,122 @@ func (s *Service) Logout(ctx context.Context, sessionToken string) error {
 		return err
 	}
 	return nil
+}
+
+// APITokenCredentials is returned once at creation; the raw token is never
+// stored or retrievable again.
+type APITokenCredentials struct {
+	Token     string
+	Name      string
+	ReadOnly  bool
+	ExpiresAt time.Time // zero means the token never expires
+}
+
+// APITokenPrincipal identifies an authenticated bearer credential.
+type APITokenPrincipal struct {
+	Name     string
+	ReadOnly bool
+}
+
+// CreateAPIToken issues a bearer credential. ttl <= 0 creates a token that
+// never expires.
+func (s *Service) CreateAPIToken(
+	ctx context.Context,
+	name string,
+	readOnly bool,
+	ttl time.Duration,
+) (APITokenCredentials, error) {
+	if !validTokenName(name) {
+		return APITokenCredentials{}, fmt.Errorf("%w: use 1-64 letters, digits, dots, underscores, or hyphens", ErrInvalidTokenName)
+	}
+	if _, err := s.store.APITokenByName(ctx, name); err == nil {
+		return APITokenCredentials{}, fmt.Errorf("%w: %s", ErrDuplicateTokenName, name)
+	} else if !errors.Is(err, store.ErrNotFound) {
+		return APITokenCredentials{}, fmt.Errorf("auth: read api tokens: %w", err)
+	}
+	random, err := randomToken()
+	if err != nil {
+		return APITokenCredentials{}, err
+	}
+	token := APITokenPrefix + random
+	var expiresAt time.Time
+	if ttl > 0 {
+		expiresAt = time.Now().UTC().Add(ttl)
+	}
+	if _, err := s.store.CreateAPIToken(ctx, name, hashToken(token), readOnly, expiresAt); err != nil {
+		return APITokenCredentials{}, fmt.Errorf("auth: create api token: %w", err)
+	}
+	return APITokenCredentials{
+		Token:     token,
+		Name:      name,
+		ReadOnly:  readOnly,
+		ExpiresAt: expiresAt,
+	}, nil
+}
+
+// AuthenticateAPIToken validates a presented bearer credential. Opportunistic
+// cleanup and usage bookkeeping never reject an otherwise valid credential:
+// a transient store hiccup must not read as "invalid token" to the client.
+func (s *Service) AuthenticateAPIToken(ctx context.Context, token string) (APITokenPrincipal, error) {
+	if !strings.HasPrefix(token, APITokenPrefix) {
+		return APITokenPrincipal{}, ErrUnauthorized
+	}
+	digest := hashToken(token)
+	if err := s.store.DeleteExpiredAPITokens(ctx, time.Now()); err != nil {
+		slog.Warn("prune expired api tokens failed", "error", err)
+	}
+	stored, err := s.store.APITokenByHash(ctx, digest)
+	if errors.Is(err, store.ErrNotFound) {
+		return APITokenPrincipal{}, ErrUnauthorized
+	}
+	if err != nil {
+		return APITokenPrincipal{}, fmt.Errorf("auth: load api token: %w", err)
+	}
+	if !stored.ExpiresAt.IsZero() && !stored.ExpiresAt.After(time.Now().UTC()) {
+		return APITokenPrincipal{}, ErrUnauthorized
+	}
+	if err := s.store.TouchAPIToken(ctx, digest, apiTokenTouchInterval); err != nil {
+		slog.Warn("touch api token failed", "error", err)
+	}
+	return APITokenPrincipal{Name: stored.Name, ReadOnly: stored.ReadOnly}, nil
+}
+
+// ListAPITokens returns the stored token inventory, never the credentials.
+func (s *Service) ListAPITokens(ctx context.Context) ([]store.APIToken, error) {
+	tokens, err := s.store.APITokens(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("auth: list api tokens: %w", err)
+	}
+	return tokens, nil
+}
+
+// RevokeAPIToken deletes one token by name.
+func (s *Service) RevokeAPIToken(ctx context.Context, name string) error {
+	if err := s.store.DeleteAPIToken(ctx, name); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return fmt.Errorf("%w: %s", ErrUnknownToken, name)
+		}
+		return fmt.Errorf("auth: revoke api token: %w", err)
+	}
+	return nil
+}
+
+// validTokenName applies the same character rules as device IDs; callers trim
+// surrounding whitespace before calling.
+func validTokenName(name string) bool {
+	if len(name) < 1 || len(name) > 64 {
+		return false
+	}
+	for index, character := range name {
+		if character >= 'a' && character <= 'z' ||
+			character >= 'A' && character <= 'Z' ||
+			character >= '0' && character <= '9' ||
+			(index > 0 && (character == '.' || character == '_' || character == '-')) {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 // ChangePassword verifies the current password, replaces it with a fresh
@@ -369,3 +511,6 @@ func hashToken(token string) []byte {
 	digest := sha256.Sum256([]byte(token))
 	return digest[:]
 }
+
+// TokenHash derives the digest used by the store for session and CSRF material.
+func TokenHash(token string) []byte { return hashToken(token) }

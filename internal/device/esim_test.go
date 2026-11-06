@@ -295,6 +295,90 @@ func TestDisableProfileCommandErrorAndSGP22Results(t *testing.T) {
 	}
 }
 
+func TestESIMCSIMDialectFallbackAndLearnedShape(t *testing.T) {
+	client := &transcriptClient{steps: []clientStep{
+		{
+			command:  `AT+CSIM=10,"0070000001"`,
+			response: modem.Response{Final: "ERROR"},
+			err:      &modem.CommandError{Command: `AT+CSIM=10,"0070000001"`, Final: "ERROR"},
+		},
+		{command: `AT+CSIM=10,0070000001`, response: okResponse(`+CSIM: 6,019000`)},
+		{command: `AT+CSIM=10,0070800100`, response: okResponse(`+CSIM: 4,9000`)},
+	}}
+	manager, id := newStartedTestManager(t, client)
+
+	payload, sw, err := manager.csim(context.Background(), id, []byte{0x00, 0x70, 0x00, 0x00, 0x01})
+	if err != nil {
+		t.Fatalf("first CSIM exchange: %v", err)
+	}
+	if !bytes.Equal(payload, []byte{0x01}) || sw != 0x9000 {
+		t.Fatalf("first CSIM response = %X/%04X, want 01/9000", payload, sw)
+	}
+
+	payload, sw, err = manager.csim(context.Background(), id, []byte{0x00, 0x70, 0x80, 0x01, 0x00})
+	if err != nil {
+		t.Fatalf("learned-shape CSIM exchange: %v", err)
+	}
+	if len(payload) != 0 || sw != 0x9000 {
+		t.Fatalf("learned-shape CSIM response = %X/%04X, want empty/9000", payload, sw)
+	}
+	client.assertDone(t)
+}
+
+func TestESIMCSIMSharesManagerAPDUDialect(t *testing.T) {
+	client := &transcriptClient{steps: []clientStep{
+		{
+			command:  `AT+CSIM=4,"00A4"`,
+			response: modem.Response{Final: "ERROR"},
+			err:      &modem.CommandError{Command: `AT+CSIM=4,"00A4"`, Final: "ERROR"},
+		},
+		{command: `AT+CSIM=4,00A4`, response: okResponse(`+CSIM: 4,9000`)},
+		{command: `AT+CSIM=4,00B0`, response: okResponse(`+CSIM: 4,9000`)},
+	}}
+	manager, id := newStartedTestManager(t, client)
+
+	if _, sw, err := manager.csim(context.Background(), id, []byte{0x00, 0xA4}); err != nil || sw != 0x9000 {
+		t.Fatalf("eSIM CSIM exchange = %04X, %v; want 9000", sw, err)
+	}
+	response, err := manager.ExecuteAPDU(context.Background(), id, modem.APDUCSIM, 0, []byte{0x00, 0xB0})
+	if err != nil || !bytes.Equal(response, []byte{0x90, 0x00}) {
+		t.Fatalf("Manager.ExecuteAPDU response = %X, %v; want 9000", response, err)
+	}
+	client.assertDone(t)
+}
+
+func TestESIMCSIMPreservesTransientFailureWithoutQuotingRetry(t *testing.T) {
+	const command = `AT+CSIM=10,"0070000001"`
+	client := &transcriptClient{steps: []clientStep{{
+		command:  command,
+		response: modem.Response{Final: "+CME ERROR: 0"},
+		err:      &modem.CommandError{Command: command, Final: "+CME ERROR: 0"},
+	}}}
+	manager, id := newStartedTestManager(t, client)
+	_, _, err := manager.csim(context.Background(), id, []byte{0x00, 0x70, 0x00, 0x00, 0x01})
+	if !isTransientEuiccCME(err) {
+		t.Fatalf("initial card failure must retain eSIM recovery classification: %v", err)
+	}
+	client.assertDone(t)
+}
+
+func TestOpenEuiccRetriesTransientFailureWithOriginalQuoting(t *testing.T) {
+	const command = `AT+CSIM=10,"0070000001"`
+	client := &transcriptClient{steps: []clientStep{
+		{command: command, err: &modem.CommandError{Command: command, Final: "+CME ERROR: 0"}},
+		{command: command, response: okResponse(`+CSIM: 6,"019000"`)},
+		{command: fmt.Sprintf(`AT+CSIM=42,"01A4040010%s"`, isdRAID), response: okResponse(`+CSIM: 4,"9000"`)},
+		{command: `AT+CSIM=10,"0070800100"`, response: okResponse(`+CSIM: 4,"9000"`)},
+	}}
+	manager, id := newStartedTestManager(t, client)
+	channel, err := manager.openEuiccAID(context.Background(), id, isdRAID)
+	if err != nil {
+		t.Fatalf("transient card failure did not reach the existing recovery retry: %v", err)
+	}
+	channel.close(context.Background())
+	client.assertDone(t)
+}
+
 func TestESIMSwitchProfileFallsBackToAIDOnCommandError(t *testing.T) {
 	const targetICCID = "894921007608519523"
 	targetAIDHex := "A0000005591010FFFFFFFF8900000101"
@@ -330,8 +414,8 @@ func TestESIMSwitchProfileFallsBackToAIDOnCommandError(t *testing.T) {
 	}
 
 	client := &transcriptClient{steps: []clientStep{
-		{command: "AT+CFUN?", response: okResponse("+CFUN: 1")},
-		{command: "AT+CFUN?", response: okResponse("+CFUN: 1")},
+		{command: "AT+CFUN?", response: okResponse("+CFUN: 4")},
+		{command: "AT+CFUN?", response: okResponse("+CFUN: 4")},
 		manageChannelOpen,
 		selectISDR,
 		enableICCIDStoreData,
@@ -458,15 +542,19 @@ func TestUsesATCSimEUICCForQuectelATManager(t *testing.T) {
 	}
 }
 
-func TestOpenEuiccGETResponsePreservesTransportError(t *testing.T) {
+func TestOpenEuiccGETResponsePreservesTransportErrorAndSanitizesRejection(t *testing.T) {
 	for _, test := range []struct {
-		name  string
-		cause error
+		name          string
+		cause         error
+		commandReject bool
 	}{
-		{name: "transient_CME", cause: &modem.CommandError{Command: `AT+CSIM=10,"81C0000010"`, Final: "+CME ERROR: 0"}},
-		{name: "timeout", cause: modem.ErrCommandTimeout},
-		{name: "canceled", cause: context.Canceled},
-		{name: "deadline", cause: context.DeadlineExceeded},
+		{name: "command timeout", cause: modem.ErrCommandTimeout},
+		{name: "context canceled", cause: context.Canceled},
+		{name: "deadline exceeded", cause: context.DeadlineExceeded},
+		{
+			name: "CME command rejection", commandReject: true,
+			cause: &modem.CommandError{Command: `AT+CSIM=10,"81C0000010"`, Final: "+CME ERROR: 0"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			client := &transcriptClient{steps: []clientStep{
@@ -477,17 +565,19 @@ func TestOpenEuiccGETResponsePreservesTransportError(t *testing.T) {
 			}}
 			manager, id := newStartedTestManager(t, client)
 			channel, err := manager.openEuiccOnceAID(context.Background(), id, isdRAID)
-			if channel != nil || !errors.Is(err, test.cause) {
-				t.Fatalf("open eUICC = %v, %v; want original transport error %v", channel, err, test.cause)
+			if channel != nil || errors.Is(err, errNoEUICC) {
+				t.Fatalf("open eUICC = %v, %v; want a command failure, not absent eUICC", channel, err)
 			}
-			if errors.Is(err, errNoEUICC) {
-				t.Fatalf("transport error must not indicate absent eUICC: %v", err)
-			}
-			if !strings.Contains(err.Error(), "GET RESPONSE AID="+isdRAID) {
-				t.Fatalf("transport error lost the SELECT AID context: %v", err)
-			}
-			if isTransientEuiccCME(err) != isTransientEuiccCME(test.cause) {
-				t.Fatalf("transport error changed transient CME classification: %v", err)
+			if test.commandReject {
+				var rejected *modem.APDUCommandRejectedError
+				if !errors.As(err, &rejected) || rejected.Final != "+CME ERROR: 0" {
+					t.Fatalf("open eUICC rejection = %T; want sanitized CME rejection", err)
+				}
+				if strings.Contains(err.Error(), `AT+CSIM=10,"81C0000010"`) {
+					t.Fatal("eSIM rejection leaked the original AT command")
+				}
+			} else if !errors.Is(err, test.cause) {
+				t.Fatalf("open eUICC error = %v; want transport error class %v", err, test.cause)
 			}
 			client.assertDone(t)
 		})
@@ -504,6 +594,12 @@ func TestTransientEuiccCMEClassification(t *testing.T) {
 	}
 	if isTransientEuiccCME(&modem.CommandError{Final: "+CME ERROR: 13"}) {
 		t.Fatal("SIM failure must not be classified as a transient SELECT error")
+	}
+	if !isTransientEuiccCME(&modem.APDUCommandRejectedError{
+		Command: modem.APDUCSIM,
+		Final:   "+CME ERROR: 0",
+	}) {
+		t.Fatal("sanitized +CME ERROR: 0 must retain transient eUICC recovery classification")
 	}
 }
 

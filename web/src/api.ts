@@ -1,9 +1,15 @@
 import type {
   ApiErrorBody,
+  ApiTokenListItem,
   LoggingSettings,
   LoginResponse,
   SecuritySettings,
   Session,
+  SSOProviders,
+  SSOSettings,
+  SSOSaveRequest,
+  SSOCheckResult,
+  SSOUnbindResult,
 } from "./types";
 import { tl } from "./lib/i18n";
 
@@ -199,6 +205,28 @@ export async function logout() {
   }
 }
 
+export function getApiTokens() {
+  return api<{ tokens: ApiTokenListItem[] }>("/settings/tokens");
+}
+
+export function createApiToken(request: {
+  name: string;
+  readOnly: boolean;
+  ttlHours: number;
+}) {
+  return api<{ token: string; name: string; readOnly: boolean; expiresAt: string }>(
+    "/settings/tokens",
+    {
+      method: "POST",
+      body: { name: request.name, readOnly: request.readOnly, ttlHours: request.ttlHours },
+    },
+  );
+}
+
+export function revokeApiToken(name: string) {
+  return api<{ revoked: boolean }>(`/settings/tokens/${encodeURIComponent(name)}`, { method: "DELETE" });
+}
+
 export function getSecuritySettings() {
   return api<SecuritySettings>("/settings/security");
 }
@@ -219,17 +247,48 @@ export function updateLoggingSettings(settings: {
   mode: LoggingSettings["mode"];
   count: number;
   days: number;
+  level: LoggingSettings["level"];
 }) {
   return api<LoggingSettings>("/settings/logging", { method: "PUT", body: settings });
+}
+
+/** Load public SSO capability without caching provider availability. */
+export function getSSOProviders() {
+  return api<SSOProviders>("/auth/providers", { cache: "no-store" });
+}
+
+/** Load browser-authorized SSO settings without caching credentials-related metadata. */
+export function getSSOSettings() {
+  return api<SSOSettings>("/settings/sso", { cache: "no-store" });
+}
+
+/** Save writable SSO settings and report any resulting browser-session revocation. */
+export function saveSSOSettings(request: SSOSaveRequest) {
+  return api<SSOSettings>("/settings/sso", { method: "PUT", body: request });
+}
+
+/** Check provider readiness for an explicit saved configuration revision. */
+export function checkSSOSettings(expectedRevision: number) {
+  return api<SSOCheckResult>("/settings/sso/check", { method: "POST", body: { expectedRevision } });
+}
+
+/** Start binding an external identity to the current administrator at the expected revision. */
+export function bindSSOAccount(expectedRevision: number) {
+  return api<{ authorizationUrl: string }>("/auth/sso/bind", {
+    method: "POST",
+    body: { expectedRevision },
+  });
+}
+
+/** Remove the saved external binding and report whether the current session needs reauthentication. */
+export function unbindSSOAccount(expectedRevision: number) {
+  return api<SSOUnbindResult>("/auth/sso/binding", { method: "DELETE", body: { expectedRevision } });
 }
 
 export function apiMessage(error: unknown) {
   if (error instanceof ApiError) {
     const suffix = error.requestId ? `（${tl("请求")} ${error.requestId}）` : "";
-    const message = error.code === "rf_off_restart_blocked"
-      ? tl("蜂窝射频已关闭，已阻止整机重启。关闭 VoWiFi 和飞行模式后才能重启，这会开启蜂窝射频。")
-      : error.message;
-    return `${message}${suffix}`;
+    return `${error.message}${suffix}`;
   }
   if (error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError")) {
     return tl("请求超时，请稍后重试");

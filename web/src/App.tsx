@@ -29,6 +29,7 @@ import LogsPage from "./pages/LogsPage";
 import SettingsPage from "./pages/SettingsPage";
 import WireGuardPage from "./pages/WireGuardPage";
 import ExtensionPage from "./pages/ExtensionPage";
+import { safeRedirect } from "./lib/safeRedirect";
 
 const DISCLAIMER_KEY = "vocat_disclaimer_agreed_at";
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -82,9 +83,12 @@ function RequireAuth({ children }: { children: ReactElement }) {
   return children;
 }
 
+/** Redirect authenticated visitors only to safe local destinations; otherwise show the login shell. */
 function LoginLayout({ isDark, onToggleTheme }: { isDark: boolean; onToggleTheme: () => void }) {
   const { ready, isAuthenticated } = useAuth();
-  if (ready && isAuthenticated) return <Navigate to="/" replace />;
+  const location = useLocation();
+  const redirect = safeRedirect(new URLSearchParams(location.search).get("redirect"), window.location.origin);
+  if (ready && isAuthenticated) return <Navigate to={redirect} replace />;
   return <UnauthenticatedShell isDark={isDark} onToggleTheme={onToggleTheme} />;
 }
 

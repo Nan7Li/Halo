@@ -15,7 +15,7 @@ import { DeviceUssdTab } from "../components/devices/DeviceUssdTab";
 import { DeviceConfigTab } from "../components/devices/DeviceConfigTab";
 import { CardPolicyPanel } from "../components/devices/CardPolicyPanel";
 import { DeviceAddDialog } from "../components/devices/DeviceAddDialog";
-import { CarrierWebsheetDialog, type CarrierWebsheet } from "../components/devices/CarrierWebsheetDialog";
+import { E911SetupDialog } from "../components/devices/E911SetupDialog";
 import { copyText, isDeviceOnline, isQmiControl, isRecoveringPhase, readEventStream, simOperatorDisplay } from "../components/devices/shared";
 import type { AddDeviceForm, DeviceDetail, LoadError } from "../components/devices/types";
 import { tf, useI18n } from "../lib/i18n";
@@ -70,14 +70,12 @@ export default function DevicesPage() {
   const [rebooting, setRebooting] = useState(false);
   const [reconnectingVoWiFi, setReconnectingVoWiFi] = useState(false);
   const [rescanning, setRescanning] = useState(false);
-  const [e911Starting, setE911Starting] = useState(false);
   const [discovered, setDiscovered] = useState<DiscoveredDevice[]>([]);
   const [discovering, setDiscovering] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addSelected, setAddSelected] = useState<DiscoveredDevice | null>(null);
   const [addConfig, setAddConfig] = useState<AddDeviceForm>(EMPTY_ADD);
   const [addSaving, setAddSaving] = useState(false);
-  const [websheet, setWebsheet] = useState<CarrierWebsheet | null>(null);
   const [websheetOpen, setWebsheetOpen] = useState(false);
   const [cardPolicy, setCardPolicy] = useState<CardPolicy | null>(null);
   const [query, setQuery] = useState("");
@@ -471,8 +469,18 @@ export default function DevicesPage() {
       message.warning(t("系统已发现 USB 读卡器，但 PC/SC 驱动未加载；请安装 libccid 或厂商驱动后重新扫描。"));
       return;
     }
+    if (d.discoveryIssue === "at_probe_pending") {
+      message.warning(t("设备识别尚未完成，请稍后重新扫描。"));
+      return;
+    }
     if (d.discoveryIssue === "at_port_missing") {
-      message.warning(t("已发现该模组，但未找到 AT 串口：通常是 option 驱动未认该 PID 或模组处于 MBIM/RNDIS 组态。可 `echo 2c7c <pid> | sudo tee /sys/bus/usb-serial/drivers/option1/new_id` 后重扫，或用 AT+QCFG 切到 QMI+AT 组态。"));
+      message.warning(
+        t(
+          d.vendorId === 0x19d2
+            ? "已发现该模组，但未找到 AT 串口：通常是 usbserial 通用驱动未绑定该 PID。可执行 `echo 19d2 <pid> | sudo tee /sys/bus/usb-serial/drivers/generic/new_id` 后重新扫描。"
+            : "已发现该模组，但未找到 AT 串口：通常是 option 驱动未认该 PID 或模组处于 MBIM/RNDIS 组态。可 `echo 2c7c <pid> | sudo tee /sys/bus/usb-serial/drivers/option1/new_id` 后重扫，或用 AT+QCFG 切到 QMI+AT 组态。",
+        ),
+      );
       return;
     }
     if (d.degraded) {
@@ -524,22 +532,10 @@ export default function DevicesPage() {
 
   const setupE911 = useCallback(async () => {
     const id = selectedIdRef.current.trim();
-    if (!id || e911Starting) return;
-    setE911Starting(true);
-    try {
-      const data = await api<CarrierWebsheet>(`/devices/${id}/vowifi/e911/websheet`, { method: "POST" });
-      setWebsheet(data);
-      setWebsheetOpen(true);
-    } catch (e) {
-      message.error(apiMessage(e) || t("E911地址设置页面打开失败"));
-    } finally {
-      setE911Starting(false);
-    }
-  }, [e911Starting]);
+    if (id) setWebsheetOpen(true);
+  }, []);
 
   const handleWebsheetDone = useCallback(async () => {
-    setWebsheetOpen(false);
-    setWebsheet(null);
     await refreshAll();
   }, [refreshAll]);
 
@@ -712,7 +708,7 @@ export default function DevicesPage() {
         trafficSpeedTx={''}
         trafficMinuteRx={''}
         trafficMinuteTx={''}
-        e911Starting={e911Starting}
+        e911Starting={false}
         onSetupE911={setupE911}
         onRefresh={refreshAll}
       />
@@ -850,9 +846,10 @@ export default function DevicesPage() {
         onConfigChange={setAddConfig}
         onSave={saveAdd}
       />
-      <CarrierWebsheetDialog
+      <E911SetupDialog
+        key={selectedId}
         open={websheetOpen}
-        websheet={websheet}
+        deviceId={selectedId}
         onClose={() => setWebsheetOpen(false)}
         onDone={handleWebsheetDone}
       />

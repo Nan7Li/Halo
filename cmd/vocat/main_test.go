@@ -237,4 +237,71 @@ func TestProvisionedDeviceTypeRecognizesNativeWWAN(t *testing.T) {
 	if got := provisionedDeviceType(usb); got != store.DeviceTypePCIeEC20EC25 {
 		t.Fatalf("USB modem type = %q, want %q", got, store.DeviceTypePCIeEC20EC25)
 	}
+
+	// The verified ZXIC USB identity gets the dedicated type so the VoWiFi
+	// adapter dispatch selects the ZXIC dialect. A sibling product under the
+	// same vendor is not classified: a vendor ID alone does not identify a
+	// chipset or its AT dialect.
+	zxic := modem.Candidate{
+		VendorID: "19d2", ProductID: "0536",
+		ATPort: modem.Port{Path: "/dev/ttyUSB2"},
+	}
+	if got := provisionedDeviceType(zxic); got != store.DeviceTypeZXIC {
+		t.Fatalf("ZXIC type = %q, want %q", got, store.DeviceTypeZXIC)
+	}
+
+	unverifiedZxic := modem.Candidate{
+		VendorID: "19d2", ProductID: "ffff",
+		ATPort: modem.Port{Path: "/dev/ttyUSB2"},
+	}
+	if got := provisionedDeviceType(unverifiedZxic); got == store.DeviceTypeZXIC {
+		t.Fatalf("unverified ZXIC sibling type = %q, want a non-ZXIC type", got)
+	}
+}
+
+func TestProvisionDiscoveredDevicesSkipsIssueAndNoAT(t *testing.T) {
+	database, err := store.Open(context.Background(), ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+
+	manager, err := device.NewManager(device.Options{
+		Discoverer: fakeDiscoverer{candidates: []modem.Candidate{
+			{
+				ID:             "mhi-wwan0",
+				HardwareKind:   "wwan",
+				DiscoveryIssue: "at_port_missing",
+			},
+			{
+				ID:           "mhi-wwan1",
+				HardwareKind: "wwan",
+			},
+			{
+				ID:           "valid-modem",
+				HardwareKind: "usb",
+				Product:      "EC20",
+				ATPort:       modem.Port{Path: "/dev/ttyUSB2", Role: modem.PortRoleAT},
+			},
+		}},
+		Opener: fakeOpener{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := manager.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Stop(context.Background())
+
+	if err := provisionDiscoveredDevices(context.Background(), database, manager); err != nil {
+		t.Fatal(err)
+	}
+	devices, err := database.ListDevices(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(devices) != 1 || devices[0].ID != "valid-modem" {
+		t.Fatalf("provisioned devices = %#v, want only valid-modem", devices)
+	}
 }

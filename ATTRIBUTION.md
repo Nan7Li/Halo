@@ -1,9 +1,9 @@
 # Attribution
 
-Halo 1.1.14 is a personal interface and release. It is **based on VoCat**.
+Halo 1.1.15 is a personal interface and release. It is **based on VoCat**.
 
 - Upstream project: [MengMengCode/VoCat](https://github.com/MengMengCode/VoCat)
-- Synced through: VoCat v0.3.15 (`41b6ac6`)
+- Synced through: VoCat v0.3.42 (`eba11d5`)
 - Copyright: Copyright (c) 2026 Vocat Project Authors
 - License: [Vocat Research & Evaluation License](LICENSE)
 
@@ -17,7 +17,7 @@ Halo does not replace VoCat and is not an official Vocat product. The Vocat name
 - Bugfix for Vodafone UK MT SMS, sent upstream as [VoCat#39](https://github.com/MengMengCode/VoCat/pull/39)
 - Halo phone page, call history/recording, ePDG probe UI, radio triad, diagnostics pack
 
-The modem control, IMS / WiFi Calling, SMS, eSIM, proxy and notification foundations come from VoCat; this branch additionally integrates the optional CellBridge call bridge described below. Halo 1.1.14 includes VoCat v0.3.15 (`41b6ac6`).
+The modem control, IMS / WiFi Calling, SMS, eSIM, proxy and notification foundations come from VoCat; this branch additionally integrates the optional CellBridge call bridge described below. Halo 1.1.15 includes VoCat v0.3.42 (`eba11d5`).
 
 ## CellBridge
 

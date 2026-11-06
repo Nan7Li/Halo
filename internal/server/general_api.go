@@ -48,6 +48,9 @@ func (s *Server) routeGeneralAPI(w http.ResponseWriter, r *http.Request) bool {
 	if s.routeSettingsAPI(w, r, cleanPath) {
 		return true
 	}
+	if s.routeTokensAPI(w, r, cleanPath) {
+		return true
+	}
 	switch cleanPath {
 	case "logs/history":
 		s.handleLogHistory(w, r)
@@ -429,6 +432,7 @@ func runningInDocker() bool {
 	return strings.EqualFold(strings.TrimSpace(os.Getenv("VOCAT_CONTAINER")), "docker")
 }
 
+// handleUpdateApply applies an update from the configured trusted repository and revokes sessions before restarting.
 func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) {
 		return
@@ -522,7 +526,7 @@ func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "update_session_revocation_failed", "The update was installed, but active sessions could not be revoked; restart the service and sign in again.")
 		return
 	}
-	s.clearAuthCookies(w)
+	s.clearAuthCookies(w, r)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"data": map[string]any{
 			"applied":                   true,
@@ -537,6 +541,7 @@ func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 	guardTransferred = s.scheduleUpdateRestart()
 }
 
+// handlePasswordChange validates the current credentials and requires reauthentication after changing the local password.
 func (s *Server) handlePasswordChange(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) {
 		return
@@ -582,7 +587,7 @@ func (s *Server) handlePasswordChange(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	s.clearAuthCookies(w)
+	s.clearAuthCookies(w, r)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"data": map[string]any{"changed": true, "reauthentication_required": true},
 	})

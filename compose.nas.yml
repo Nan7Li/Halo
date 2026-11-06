@@ -10,7 +10,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: 1.1.14-cellbridge
+        VERSION: 1.1.15-cellbridge
     container_name: halo-cellbridge
     restart: unless-stopped
     network_mode: host

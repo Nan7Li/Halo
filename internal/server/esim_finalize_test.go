@@ -70,21 +70,14 @@ func TestESIMSwitchFinalizesAfterClientDisconnect(t *testing.T) {
 			if ctx.Err() == nil {
 				t.Fatal("client disconnect was not simulated")
 			}
-			// AT+CSIM now wakes the radio inside the device manager. The
-			// server only restores cellular mode directly; VoWiFi owns its
-			// RF-off transition through runtime reconciliation.
-			wantFlightCalls := 1
-			if tc.targetWiFi {
-				wantFlightCalls = 0
-			}
-			if len(controller.flightErrors) != wantFlightCalls {
-				t.Fatalf("flight calls = %d, want %d", len(controller.flightErrors), wantFlightCalls)
+			if len(controller.flightErrors) < 2 {
+				t.Fatal("post-switch flight mode was not applied")
 			}
 			for index, err := range controller.flightErrors {
 				if err != nil {
 					t.Errorf("flight call %d used canceled request: %v", index, err)
 				}
-				if !controller.flightDeadlines[index] {
+				if index > 0 && !controller.flightDeadlines[index] {
 					t.Errorf("flight call %d has no finalization deadline", index)
 				}
 			}

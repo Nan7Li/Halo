@@ -29,6 +29,8 @@ web/preview-shots/
 
 # ---- Local Halo binaries ----
 /halo-linux-*
+web/test-results/
+web/playwright-report/
 
 # ---- Go build ----
 *.test

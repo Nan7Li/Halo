@@ -59,10 +59,14 @@ func TestUnknownEnabledModemDefersUntilHealthyCLCC(t *testing.T) {
 	devices := &pollDevices{
 		entries: []device.Device{{ID: "modem", Discovered: true}, {ID: "idle", Discovered: true}},
 		at: func(id, command string) (modem.Response, error) {
-			polls++
-			if id != "modem" || command != "AT+CLCC" {
+			if command != "AT+CLCC" {
 				t.Errorf("unexpected AT %s %s", id, command)
 			}
+			// Data-off modems still receive calls (#164) and are polled too.
+			if id != "modem" {
+				return modem.Response{Final: "OK"}, nil
+			}
+			polls++
 			if atErr != nil {
 				return modem.Response{}, atErr
 			}

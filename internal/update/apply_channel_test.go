@@ -21,7 +21,7 @@ func TestApplyCellbridgeRejectsBadPayloadAndKeepsTarget(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("script binary")
 	}
-	version := "1.1.15-cellbridge-preview.1"
+	version := nextCellbridgePreview(t)
 	good := []byte("#!/bin/sh\necho vocat " + version + "\n")
 	cases := []struct {
 		name    string
@@ -114,7 +114,7 @@ func TestApplyCellbridgeInstallsMatchingBinary(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("script binary")
 	}
-	version := "1.1.15-cellbridge-preview.1"
+	version := nextCellbridgePreview(t)
 	body := []byte("#!/bin/sh\necho vocat " + version + "\n")
 	digest := sha256.Sum256(body)
 	dir := t.TempDir()

@@ -880,6 +880,8 @@ func decodeUserData(
 	udl int,
 	message *SMSMessage,
 ) error {
+	// Retain the available bytes even if UDL or UDH is corrupt/truncated.
+	message.RawUserData = strings.ToUpper(hex.EncodeToString(data))
 	alphabet := decodeSMSAlphabet(dcs)
 	expectedBytes := udl
 	if alphabet == smsAlphabetGSM7 {
@@ -889,7 +891,6 @@ func decodeUserData(
 		return errors.New("SMS user data is truncated")
 	}
 	data = data[:expectedBytes]
-	message.RawUserData = strings.ToUpper(hex.EncodeToString(data))
 
 	headerBytes := 0
 	if firstOctet&0x40 != 0 {

@@ -1,6 +1,7 @@
 package ike
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -331,6 +332,9 @@ func (transport *directUDP) RoundTripExchange(ctx context.Context, packets [][]b
 			if !ikeResponseMatchesRequest(buffer[:n], requestHeader) {
 				continue
 			}
+			if repeatedCookieChallenge(packets[0], buffer[:n]) {
+				continue
+			}
 			return n, nil
 		}
 	}
@@ -440,12 +444,14 @@ type socks5UDP struct {
 	readMu  sync.Mutex
 	writeMu sync.Mutex
 	config  transportConfig
+	route   vowifi.ProxyRoute
 	control net.Conn
 	udp     *net.UDPConn
 	relay   *net.UDPAddr
 	remote  *net.UDPAddr
 	remotes []*net.UDPAddr
 	floated bool
+	pinned  bool
 }
 
 func newSOCKS5UDP(
@@ -515,6 +521,7 @@ func newSOCKS5UDP(
 	_ = control.SetDeadline(time.Time{})
 	return &socks5UDP{
 		config:  config,
+		route:   route,
 		control: control,
 		udp:     udpConnection,
 		relay:   relay,
@@ -565,12 +572,38 @@ func readSOCKS5Reply(ctx context.Context, connection net.Conn, resolver *net.Res
 			resolver = net.DefaultResolver
 		}
 		addresses, err := resolver.LookupIPAddr(ctx, name)
-		if err != nil || len(addresses) == 0 {
-			return nil, fmt.Errorf("ike: resolve SOCKS5 UDP relay domain %q: %w", name, err)
+		if err != nil {
+			return nil, sanitizeSOCKS5RelayLookupError(err)
+		}
+		if len(addresses) == 0 {
+			return nil, errors.New("ike: SOCKS5 UDP relay domain resolved without IP addresses")
 		}
 		ip = addresses[0].IP
 	}
 	return &net.UDPAddr{IP: ip, Port: int(binary.BigEndian.Uint16(encodedPort[:]))}, nil
+}
+
+// The proxy controls the relay name and can echo credentials in it. DNS errors
+// also embed that name and resolver details, so neither text nor the original
+// error chain may escape into lifecycle logs or persisted failure states.
+func sanitizeSOCKS5RelayLookupError(err error) error {
+	const message = "ike: resolve SOCKS5 UDP relay domain"
+	switch {
+	case errors.Is(err, context.Canceled):
+		return fmt.Errorf("%s: %w", message, context.Canceled)
+	case errors.Is(err, context.DeadlineExceeded):
+		return fmt.Errorf("%s: %w", message, context.DeadlineExceeded)
+	}
+	var dnsError *net.DNSError
+	if errors.As(err, &dnsError) {
+		return fmt.Errorf("%s: %w", message, &net.DNSError{
+			Err:         "DNS lookup failed",
+			IsTimeout:   dnsError.IsTimeout,
+			IsTemporary: dnsError.IsTemporary,
+			IsNotFound:  dnsError.IsNotFound,
+		})
+	}
+	return errors.New(message + " failed")
 }
 
 func readSOCKSAddress(reader io.Reader, kind byte) (net.IP, string, error) {
@@ -618,11 +651,31 @@ func (transport *socks5UDP) RemoteAddr() *net.UDPAddr {
 	return cloneUDPAddr(transport.remote)
 }
 
-func (transport *socks5UDP) Float(_ context.Context) error {
+func (transport *socks5UDP) Float(ctx context.Context) error {
 	transport.mu.Lock()
 	defer transport.mu.Unlock()
-	transport.remote.Port = 4500
+	if transport.udp == nil {
+		return errors.New("ike: SOCKS5 UDP transport is closed")
+	}
+	if transport.floated {
+		return nil
+	}
+	remote := cloneUDPAddr(transport.remote)
+	remote.Port = 4500
+	replacement, err := newSOCKS5UDP(ctx, transport.config, transport.route, []*net.UDPAddr{remote})
+	if err != nil {
+		return fmt.Errorf("ike: reopen SOCKS5 association for UDP/4500: %w", err)
+	}
+	previousUDP, previousControl := transport.udp, transport.control
+	transport.udp = replacement.udp
+	transport.control = replacement.control
+	transport.relay = replacement.relay
+	transport.remote = remote
 	transport.floated = true
+	_ = previousUDP.Close()
+	if previousControl != nil {
+		_ = previousControl.Close()
+	}
 	return nil
 }
 
@@ -654,28 +707,19 @@ func (transport *socks5UDP) RoundTripExchange(ctx context.Context, packets [][]b
 	// egress can reach a different subset than the local host, so an initial
 	// timeout on one address must not make the entire hostname unavailable.
 	// Once a gateway answers, keep it pinned for the lifetime of the IKE SA.
-	if !transport.floated && requestHeader.Exchange == exchangeIKEInit && requestHeader.MessageID == 0 && len(transport.remotes) > 1 {
+	if !transport.pinned && !transport.floated && requestHeader.Exchange == exchangeIKEInit && requestHeader.MessageID == 0 && len(transport.remotes) > 1 {
 		var lastErr error
-		var cookieResponse [][]byte
 		for _, candidate := range transport.remotes {
 			transport.remote = cloneUDPAddr(candidate)
 			responses, attemptErr := transport.roundTripFragmentsLocked(ctx, packets, requestHeader)
 			if attemptErr == nil {
-				if len(responses) > 0 && ikeInitResponseHasCookie(responses[0]) {
-					if cookieResponse == nil {
-						cookieResponse = responses
-					}
-					continue
-				}
+				transport.pinned = true
 				return responses, nil
 			}
 			lastErr = attemptErr
 			if ctx.Err() != nil || !isNetworkTimeout(attemptErr) {
 				return nil, attemptErr
 			}
-		}
-		if cookieResponse != nil {
-			return cookieResponse, nil
 		}
 		return nil, fmt.Errorf("ike: all %d resolved ePDG addresses timed out: %w", len(transport.remotes), lastErr)
 	}
@@ -726,11 +770,38 @@ func (transport *socks5UDP) roundTripFragmentsLocked(ctx context.Context, packet
 			if !ikeResponseMatchesRequest(payload, requestHeader) {
 				continue
 			}
+			if repeatedCookieChallenge(packets[0], payload) {
+				continue
+			}
 			copy(buffer, payload)
 			return len(payload), nil
 		}
 	}
 	return roundTripFragments(ctx, transport.config.Timeout, writeAll, read, datagrams)
+}
+
+// Retransmitted IKE_SA_INIT requests can leave duplicate COOKIE replies queued
+// on the socket. Once we have echoed that cookie, wait for the gateway's real
+// response instead of counting a delayed copy as another challenge. A changed
+// cookie is still returned to the provider; the exchange deadline remains bounded.
+func repeatedCookieChallenge(request, response []byte) bool {
+	readCookie := func(packet []byte) []byte {
+		header, body, err := parseIKEPacket(packet)
+		if err != nil || header.Exchange != exchangeIKEInit || header.MessageID != 0 {
+			return nil
+		}
+		payloads, err := parsePayloadChain(header.NextPayload, body)
+		if err != nil {
+			return nil
+		}
+		cookie, found, err := ikeInitCookie(payloads)
+		if err != nil || !found {
+			return nil
+		}
+		return cookie
+	}
+	sent := readCookie(request)
+	return len(sent) > 0 && bytes.Equal(sent, readCookie(response))
 }
 
 func isNetworkTimeout(err error) bool {

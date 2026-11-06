@@ -1,6 +1,6 @@
 export type ApiStatus = "ok" | "error";
 
-export type DeviceType = "wifi_410" | "dji_4g" | "ml307" | "pcie_ec20_ec25" | "usb_sim_reader";
+export type DeviceType = "wifi_410" | "dji_4g" | "ml307" | "pcie_ec20_ec25" | "usb_sim_reader" | "zxic";
 
 export interface Session {
   authenticated: boolean;
@@ -413,6 +413,8 @@ export interface SMSMessage {
   peer: string;
   direction: "inbound" | "outbound" | "received" | "sent";
   body?: string;
+  decodeStatus?: "decoded" | "empty" | "failed";
+  decodeError?: string;
   content?: string;
   sender?: string;
   recipient?: string;
@@ -521,18 +523,30 @@ export interface EsimOverview {
   profiles: EsimEuiccProfiles[];
 }
 
+export type NotificationConfig<T = Record<string, unknown>> = T & {
+  deviceIds?: string[] | null; // Missing in older settings; null means all devices.
+};
+
 export interface NotificationSettings {
-  meow: { enabled: boolean; nickname: string; url: string; imgUrl: string };
-  telegram: Record<string, unknown>;
-  webhook: Record<string, unknown>;
-  bark: Record<string, unknown>;
-  email: Record<string, unknown>;
-  pushplus: Record<string, unknown>;
-  wecom: Record<string, unknown>;
-  lark: Record<string, unknown>;
+  meow: NotificationConfig<{ enabled: boolean; nickname: string; url: string; imgUrl: string }>;
+  telegram: NotificationConfig;
+  webhook: NotificationConfig;
+  bark: NotificationConfig;
+  email: NotificationConfig;
+  pushplus: NotificationConfig;
+  wecom: NotificationConfig;
+  lark: NotificationConfig;
 }
 
 // 网络访问控制策略：默认仅放行内网网段，可切换到对公网开放。
+export interface ApiTokenListItem {
+  name: string;
+  readOnly: boolean;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+}
+
 export interface SecuritySettings {
   mode: "internal" | "public";
   allowedCidrs: string[];
@@ -546,6 +560,7 @@ export interface LoggingSettings {
   mode: "unlimited" | "count" | "days";
   count: number;
   days: number;
+  level: "debug" | "info" | "warn" | "error";
   storedLogs: number;
   maxLogs: number;
 }
@@ -636,3 +651,63 @@ export type Notice = {
   title: string;
   detail?: string;
 } | null;
+
+export type SSOProviderKind = "pocketid" | "github" | "generic";
+
+export interface SSOConfigInput {
+  enabled: boolean;
+  kind: SSOProviderKind;
+  displayName: string;
+  publicOrigin: string;
+  clientId: string;
+  issuerUrl: string;
+  authUrl: string;
+  tokenUrl: string;
+  userInfoUrl: string;
+  userIdField: string;
+  scopes: string[];
+  tokenAuthMethod: "auto" | "client_secret_basic" | "client_secret_post";
+  pkceMode: "s256" | "disabled";
+}
+
+export interface SSOConfig extends SSOConfigInput {
+  revision: number;
+}
+
+export interface SSOBinding {
+  bound: boolean;
+  displayName: string;
+  email: string;
+  createdAt: string | null;
+  lastLoginAt: string | null;
+}
+
+export interface SSOSettings {
+  config: SSOConfig;
+  binding: SSOBinding;
+  configured: boolean;
+  hasClientSecret: boolean;
+  reauthenticationRequired?: boolean;
+}
+
+export interface SSOSaveRequest {
+  expectedRevision: number;
+  config: SSOConfigInput;
+  clientSecret?: string;
+  resetBinding?: boolean;
+}
+
+export interface SSOProviders {
+  sso: {
+    enabled: boolean;
+    displayName?: string;
+  };
+}
+
+export interface SSOCheckResult {
+  revision: number;
+}
+
+export interface SSOUnbindResult {
+  reauthenticationRequired: boolean;
+}

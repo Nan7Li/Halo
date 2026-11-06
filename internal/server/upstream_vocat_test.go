@@ -27,15 +27,15 @@ func TestUpstreamVocatCheckUsesOfficialRepository(t *testing.T) {
 		maxRequestBodyBytes: 1 << 20,
 		updateCheck: func(_ context.Context, repository, _, current string) (update.CheckResult, error) {
 			repo = repository
-			if current != "0.3.15" {
+			if current != defaultUpstreamVocatVersion {
 				t.Fatalf("synced version = %q", current)
 			}
 			return update.CheckResult{
 				Available:    true,
 				Current:      current,
-				Latest:       "0.3.16",
+				Latest:       "9.9.9",
 				ReleaseNotes: "IMS fix",
-				Release:      &update.Release{TagName: "v0.3.16"},
+				Release:      &update.Release{TagName: "v9.9.9"},
 			}, nil
 		},
 	}
@@ -54,12 +54,12 @@ func TestUpstreamVocatCheckUsesOfficialRepository(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if !envelope.Data.Available || envelope.Data.LatestVersion != "0.3.16" || envelope.Data.SyncedVersion != "0.3.15" {
+	if !envelope.Data.Available || envelope.Data.LatestVersion != "9.9.9" || envelope.Data.SyncedVersion != defaultUpstreamVocatVersion {
 		t.Fatalf("status = %#v", envelope.Data)
 	}
 
 	put := httptest.NewRecorder()
-	request = httptest.NewRequest(http.MethodPut, "/api/settings/upstream-vocat", strings.NewReader(`{"synced_version":"0.3.16"}`))
+	request = httptest.NewRequest(http.MethodPut, "/api/settings/upstream-vocat", strings.NewReader(`{"synced_version":"9.9.9"}`))
 	request.Header.Set("Content-Type", "application/json")
 	server.handleUpstreamVocat(put, request)
 	if put.Code != http.StatusOK {
@@ -68,7 +68,7 @@ func TestUpstreamVocatCheckUsesOfficialRepository(t *testing.T) {
 	if err := json.Unmarshal(put.Body.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if envelope.Data.Available || envelope.Data.SyncedVersion != "0.3.16" {
+	if envelope.Data.Available || envelope.Data.SyncedVersion != "9.9.9" {
 		t.Fatalf("marked synced = %#v", envelope.Data)
 	}
 }

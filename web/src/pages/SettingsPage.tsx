@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertRegular, ArrowDownloadRegular, CheckmarkRegular } from "@fluentui/react-icons";
-import { api, apiMessage, getSecuritySettings, updateSecuritySettings } from "../api";
-import type { AutoUpdateSettings, DeveloperSettings, HTTPSSettings, NotificationSettings, SecuritySettings, SMSSettings, SystemInfo, UpstreamVocatStatus } from "../types";
+import { api, apiMessage, getApiTokens, getSecuritySettings, revokeApiToken, updateSecuritySettings } from "../api";
+import type { ApiTokenListItem, AutoUpdateSettings, DeveloperSettings, DeviceListItem, DevicesResponse, HTTPSSettings, NotificationSettings, SecuritySettings, SMSSettings, SystemInfo, UpstreamVocatStatus } from "../types";
 import { Button, PageHeader, confirmDialog, message } from "../components/ui";
 import { CardDecor, CardIcon, CardTitle, SecurityCard, SystemInfoCard } from "../components/settings/Cards";
 import type { PasswordForm, UpdateInfo } from "../components/settings/Cards";
 import { NetworkAccessCard } from "../components/settings/NetworkAccessCard";
+import { ApiTokensCard } from "../components/settings/ApiTokensCard";
+import { SSOCard } from "../components/settings/SSOCard";
 import type { NetworkAccessForm } from "../components/settings/NetworkAccessCard";
-import { SegmentedTabs } from "../components/settings/controls";
-import { useI18n } from "../lib/i18n";
+import { NotificationDeviceScope, SegmentedTabs } from "../components/settings/controls";
+import { tf, useI18n } from "../lib/i18n";
 import { useAuth } from "../store/auth";
 import {
   buildBarkPayload,
@@ -55,15 +57,18 @@ export default function SettingsPage() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo>(EMPTY_SYSTEM_INFO);
   const [password, setPassword] = useState<PasswordForm>(EMPTY_PASSWORD);
   const [forms, setForms] = useState<NotifyForms>(defaultNotifyForms);
+  const [devices, setDevices] = useState<DeviceListItem[] | null>(null);
+  const [devicesFailed, setDevicesFailed] = useState(false);
+  const devicesRequested = useRef(false);
   const [clearedChannels, setClearedChannels] = useState<ClearableNotificationChannel[]>([]);
   const clearChannel = async (channel: ClearableNotificationChannel) => {
     const name = t(NOTIFY_TABS.find(tab => tab.key === channel)!.label);
     if (!await confirmDialog(
-      t("清空后将移除该渠道的账号、地址和凭据，其他选项恢复默认值。启用状态保持不变，点击“保存通知配置”后生效。"),
+      t("清空后将移除该渠道的账号、地址和凭据，其他选项恢复默认值。启用状态和适用设备保持不变，点击“保存通知配置”后生效。"),
       t("清空配置") + " · " + name,
       { type: "warning", confirmVariant: "danger", confirmText: t("清空配置"), cancelText: t("取消") },
     )) return;
-    setForms(prev => ({ ...prev, [channel]: { ...defaultNotifyForms()[channel], enabled: prev[channel].enabled } }));
+    setForms(prev => ({ ...prev, [channel]: { ...defaultNotifyForms()[channel], enabled: prev[channel].enabled, deviceIds: prev[channel].deviceIds } }));
     setClearedChannels(prev => prev.includes(channel) ? prev : [...prev, channel]);
   };
   const [testingMeow, setTestingMeow] = useState(false);
@@ -98,12 +103,23 @@ export default function SettingsPage() {
   const [loadingDeveloper, setLoadingDeveloper] = useState(false);
   const [savingDeveloper, setSavingDeveloper] = useState(false);
   const [savingSMSLimit, setSavingSMSLimit] = useState(false);
+  const [apiTokens, setApiTokens] = useState<ApiTokenListItem[]>([]);
+  const [tokensError, setTokensError] = useState(false);
+  const [loadingTokens, setLoadingTokens] = useState(false);
+  const [revokingToken, setRevokingToken] = useState<string | null>(null);
   const [smsAutoClear, setSMSAutoClear] = useState(true);
   const [loadingSMSSettings, setLoadingSMSSettings] = useState(false);
   const [savingSMSSettings, setSavingSMSSettings] = useState(false);
 
   const updateChannel = useCallback(<K extends keyof NotifyForms>(key: K, patch: Partial<NotifyForms[K]>) => {
     setForms((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  }, []);
+
+  useEffect(() => {
+    if (devicesRequested.current) return;
+    devicesRequested.current = true;
+    void api<DevicesResponse>("/devices").then(data => setDevices(data.devices ?? []))
+      .catch(() => setDevicesFailed(true));
   }, []);
 
   const fetchSystemInfo = useCallback(async () => {
@@ -126,6 +142,34 @@ export default function SettingsPage() {
       setLoadingNotif(false);
     }
   }, []);
+
+  const fetchApiTokens = useCallback(async () => {
+    setLoadingTokens(true);
+    setTokensError(false);
+    try {
+      const data = await getApiTokens();
+      setApiTokens(data.tokens ?? []);
+    } catch {
+      // Distinguish "could not load" from "none exist"; the card renders
+      // an error box with a retry instead of the empty-list hint.
+      setTokensError(true);
+    } finally {
+      setLoadingTokens(false);
+    }
+  }, []);
+
+  const onRevokeApiToken = useCallback(async (name: string) => {
+    setRevokingToken(name);
+    try {
+      await revokeApiToken(name);
+      message.success(tf("令牌 {name} 已吊销", { name }));
+      await fetchApiTokens();
+    } catch (e) {
+      message.error(apiMessage(e));
+    } finally {
+      setRevokingToken(null);
+    }
+  }, [fetchApiTokens]);
 
   const applySecurity = useCallback((data: SecuritySettings) => {
     setSecurity({
@@ -208,7 +252,8 @@ export default function SettingsPage() {
     void fetchAutoUpdate();
     void fetchUpstream();
     void fetchSMSSettings();
-  }, [fetchSystemInfo, fetchNotifications, fetchSecurity, fetchAutoUpdate, fetchUpstream, fetchSMSSettings]);
+    void fetchApiTokens();
+  }, [fetchSystemInfo, fetchNotifications, fetchSecurity, fetchAutoUpdate, fetchUpstream, fetchSMSSettings, fetchApiTokens]);
 
   useEffect(() => {
     if (systemInfo.developer) {
@@ -598,6 +643,14 @@ export default function SettingsPage() {
           onChange={(patch) => setSecurity((prev) => ({ ...prev, ...patch }))}
           onSave={onSaveSecurity}
         />
+        <ApiTokensCard
+          tokens={apiTokens}
+          loading={loadingTokens}
+          error={tokensError}
+          revoking={revokingToken}
+          onRevoke={(name) => void onRevokeApiToken(name)}
+          onRefresh={() => void fetchApiTokens()}
+        />
         <VoWiFiMTUCard />
         <SMSAutoClearCard
           enabled={smsAutoClear}
@@ -657,7 +710,8 @@ export default function SettingsPage() {
                 <TelegramTab onClear={() => void clearChannel("telegram")} value={forms.telegram} onChange={(p) => updateChannel("telegram", p)} />
               ) : null}
               {activeTab === "bark" ? (
-                <BarkTab value={forms.bark} onChange={(p) => updateChannel("bark", p)} testing={testingBark} onTest={onTestBark} />
+                <BarkTab value={forms.bark} onChange={(p) => updateChannel("bark", p)} testing={testingBark} onTest={onTestBark}
+                  devices={devices} devicesFailed={devicesFailed} />
               ) : null}
               {activeTab === "email" ? (
                 <EmailTab onClear={() => void clearChannel("email")} value={forms.email} onChange={(p) => updateChannel("email", p)} testing={testingEmail} onTest={onTestEmail} />
@@ -679,9 +733,12 @@ export default function SettingsPage() {
               {activeTab === "lark" ? (
                 <LarkTab value={forms.lark} onChange={(p) => updateChannel("lark", p)} testing={testingLark} onTest={onTestLark} />
               ) : null}
+              <NotificationDeviceScope value={forms[activeTab as keyof NotifyForms].deviceIds} devices={devices} failed={devicesFailed}
+                onChange={deviceIds => updateChannel(activeTab as keyof NotifyForms, { deviceIds })} />
             </fieldset>
           )}
         </div>
+        <SSOCard />
       </div>
     </div>
   );

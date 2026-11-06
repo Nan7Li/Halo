@@ -1,5 +1,6 @@
 package store
 
+// migrationStatements returns the ordered SQL statements for one schema version, or nil if unsupported.
 func migrationStatements(version int) []string {
 	switch version {
 	case 1:
@@ -523,7 +524,17 @@ func migrationStatements(version int) []string {
 				updated_at INTEGER NOT NULL,
 				FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
 			)`,
-			`INSERT INTO automatic_tasks SELECT * FROM automatic_tasks_v24`,
+			`INSERT INTO automatic_tasks (
+				id, name, enabled, device_id, profile_iccid, profile_aid, task_type,
+				environment, interval_days, start_date, run_time, timezone, payload_json,
+				retry_count, notify, next_run_at, last_run_at, last_status, last_error,
+				created_at, updated_at
+			) SELECT
+				id, name, enabled, device_id, profile_iccid, profile_aid, task_type,
+				environment, interval_days, start_date, run_time, timezone, payload_json,
+				retry_count, notify, next_run_at, last_run_at, last_status, last_error,
+				created_at, updated_at
+			FROM automatic_tasks_v24`,
 			`CREATE TABLE automatic_task_runs (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				task_id INTEGER NOT NULL,
@@ -611,6 +622,115 @@ func migrationStatements(version int) []string {
 				FOREIGN KEY (device_id) REFERENCES devices(id) ON DELETE CASCADE
 			)`,
 		}
+	case 29:
+		// VoCat migration 26.
+		return []string{
+			`ALTER TABLE automatic_tasks
+				ADD COLUMN revert_profile INTEGER NOT NULL DEFAULT 1
+				CHECK (revert_profile IN (0, 1))`,
+		}
+	case 30:
+		// VoCat migration 27.
+		return []string{
+			// Physical records are independent of decoded messages: even an
+			// unreadable sender or a failed multipart merge must remain recoverable.
+			`CREATE TABLE IF NOT EXISTS sms_raw_records (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				hardware_key TEXT NOT NULL,
+				device_id TEXT NOT NULL,
+				modem_imei TEXT NOT NULL DEFAULT '',
+				iccid TEXT NOT NULL DEFAULT '',
+				imsi TEXT NOT NULL DEFAULT '',
+				storage TEXT NOT NULL,
+				slot INTEGER NOT NULL,
+				pdu_hash TEXT NOT NULL,
+				raw_pdu TEXT NOT NULL,
+				raw_user_data TEXT NOT NULL DEFAULT '',
+				encoding TEXT NOT NULL DEFAULT '',
+				decode_error TEXT NOT NULL DEFAULT '',
+				first_seen INTEGER NOT NULL,
+				last_seen INTEGER NOT NULL,
+				UNIQUE(hardware_key, storage, slot, pdu_hash)
+			)`,
+			`CREATE INDEX IF NOT EXISTS sms_raw_records_device_idx ON sms_raw_records(device_id, id DESC)`,
+		}
+	case 31:
+		// VoCat migration 28.
+		return []string{
+			// Bearer credentials for non-browser API and MCP clients. Like
+			// sessions, only the SHA-256 digest of the token is stored.
+			`CREATE TABLE IF NOT EXISTS api_tokens (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				name TEXT NOT NULL UNIQUE,
+				token_hash BLOB NOT NULL UNIQUE,
+				read_only INTEGER NOT NULL DEFAULT 0 CHECK (read_only IN (0, 1)),
+				expires_at INTEGER NOT NULL DEFAULT 0,
+				created_at INTEGER NOT NULL,
+				last_used_at INTEGER NOT NULL DEFAULT 0
+			)`,
+		}
+	case 32:
+		// VoCat migration 29.
+		return []string{
+			`CREATE TABLE IF NOT EXISTS sso_bindings (
+				id TEXT PRIMARY KEY,
+				admin_id INTEGER NOT NULL UNIQUE REFERENCES admins(id) ON DELETE CASCADE,
+				provider_instance_id TEXT NOT NULL,
+				protocol TEXT NOT NULL CHECK (protocol IN ('oauth2', 'oidc')),
+				authority TEXT NOT NULL,
+				subject TEXT NOT NULL CHECK (length(subject) > 0),
+				display_name TEXT NOT NULL DEFAULT '',
+				email TEXT NOT NULL DEFAULT '',
+				created_at INTEGER NOT NULL,
+				updated_at INTEGER NOT NULL,
+				last_login_at INTEGER NOT NULL DEFAULT 0,
+				UNIQUE(provider_instance_id, authority, subject)
+			)`,
+			`ALTER TABLE sessions ADD COLUMN login_method TEXT NOT NULL DEFAULT 'password'
+				CHECK (login_method IN ('password', 'sso'))`,
+			`ALTER TABLE sessions ADD COLUMN sso_binding_id TEXT REFERENCES sso_bindings(id) ON DELETE CASCADE`,
+			`CREATE INDEX IF NOT EXISTS sessions_sso_binding_idx ON sessions(sso_binding_id)`,
+			`CREATE TRIGGER IF NOT EXISTS sessions_sso_insert_guard BEFORE INSERT ON sessions
+				WHEN (NEW.login_method = 'sso' AND (NEW.sso_binding_id IS NULL OR NOT EXISTS (
+					SELECT 1 FROM sso_bindings WHERE id = NEW.sso_binding_id AND admin_id = NEW.admin_id
+				))) OR (NEW.login_method = 'password' AND NEW.sso_binding_id IS NOT NULL)
+				BEGIN SELECT RAISE(ABORT, 'invalid session login source'); END`,
+			`CREATE TRIGGER IF NOT EXISTS sessions_sso_update_guard BEFORE UPDATE OF login_method, sso_binding_id, admin_id ON sessions
+				WHEN (NEW.login_method = 'sso' AND (NEW.sso_binding_id IS NULL OR NOT EXISTS (
+					SELECT 1 FROM sso_bindings WHERE id = NEW.sso_binding_id AND admin_id = NEW.admin_id
+				))) OR (NEW.login_method = 'password' AND NEW.sso_binding_id IS NOT NULL)
+				BEGIN SELECT RAISE(ABORT, 'invalid session login source'); END`,
+			`CREATE TABLE IF NOT EXISTS sso_flows (
+				id TEXT PRIMARY KEY,
+				state_hash BLOB NOT NULL UNIQUE CHECK (length(state_hash) = 32),
+				browser_token_hash BLOB NOT NULL CHECK (length(browser_token_hash) = 32),
+				purpose TEXT NOT NULL CHECK (purpose IN ('login', 'bind')),
+				provider_instance_id TEXT NOT NULL,
+				config_revision INTEGER NOT NULL,
+				initiating_session_hash BLOB REFERENCES sessions(token_hash) ON DELETE CASCADE,
+				admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
+				nonce_hash BLOB,
+				pkce_verifier TEXT NOT NULL DEFAULT '',
+				redirect_uri TEXT NOT NULL,
+				return_path TEXT NOT NULL,
+				created_at INTEGER NOT NULL,
+				expires_at INTEGER NOT NULL,
+				claimed_at INTEGER NOT NULL DEFAULT 0,
+				CHECK (expires_at > created_at),
+				CHECK ((purpose = 'login' AND initiating_session_hash IS NULL AND admin_id IS NULL)
+					OR (purpose = 'bind' AND initiating_session_hash IS NOT NULL AND admin_id IS NOT NULL))
+			)`,
+			`CREATE INDEX IF NOT EXISTS sso_flows_expires_idx ON sso_flows(expires_at)`,
+		}
+	case 33:
+		// VoCat migration 30.
+		return []string{
+			`ALTER TABLE sessions ADD COLUMN secure_cookies INTEGER NOT NULL DEFAULT 0 CHECK (secure_cookies IN (0, 1))`,
+		}
+	case 34:
+		// A VoCat database at user_version 28-30 skips Halo migration 28, so
+		// recreate the Halo-only tables. Every statement is IF NOT EXISTS.
+		return migrationStatements(28)
 	default:
 		return nil
 	}

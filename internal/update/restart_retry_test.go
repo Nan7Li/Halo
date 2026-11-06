@@ -16,7 +16,7 @@ func TestRetryInstalledUpdatePreservesRollbackBinary(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("script executable")
 	}
-	version := "1.1.15-cellbridge-preview.1"
+	version := nextCellbridgePreview(t)
 	body := []byte("#!/bin/sh\necho vocat " + version + "\n")
 	digest := sha256.Sum256(body)
 	target := filepath.Join(t.TempDir(), "halo")

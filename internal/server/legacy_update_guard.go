@@ -22,11 +22,10 @@ type legacySlot struct {
 }
 
 type legacyCandidate struct {
-	configID       string
-	physicalID     string
-	generation     string
-	networkEnabled bool
-	vowifiPolicy   bool
+	configID     string
+	physicalID   string
+	generation   string
+	vowifiPolicy bool
 }
 
 // legacyCallActivity reports a legacy voice call, a just-accepted dial still
@@ -59,7 +58,9 @@ func (s *Server) legacyCallActivity() bool {
 		if s.legacyGroupActiveLocked(ids, now) {
 			return true
 		}
-		if s.legacyGroupKnownLocked(ids) || candidate.vowifiPolicy || !candidate.networkEnabled {
+		// Cellular data being off does not stop voice calls (#164), so a
+		// modem with data disabled is unknown until its first healthy CLCC.
+		if s.legacyGroupKnownLocked(ids) || candidate.vowifiPolicy {
 			continue
 		}
 		return true
@@ -78,11 +79,10 @@ func (s *Server) legacyCandidates(configs []store.Device) []legacyCandidate {
 			continue
 		}
 		candidates = append(candidates, legacyCandidate{
-			configID:       config.ID,
-			physicalID:     physicalID,
-			generation:     entry.Candidate.USBGeneration,
-			networkEnabled: config.NetworkEnabled,
-			vowifiPolicy:   config.VoWiFiEnabled || s.callTransport(config.ID) == "vowifi",
+			configID:     config.ID,
+			physicalID:   physicalID,
+			generation:   entry.Candidate.USBGeneration,
+			vowifiPolicy: config.VoWiFiEnabled || s.callTransport(config.ID) == "vowifi",
 		})
 	}
 	return candidates

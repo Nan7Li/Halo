@@ -24,7 +24,7 @@
 
 **English** | [العربية](docs/README.ar.md) | [简体中文](docs/README.zh-CN.md) | [繁體中文](docs/README.zh-TW.md) | [Français](docs/README.fr.md) | [Русский](docs/README.ru.md) | [Español](docs/README.es.md) | [日本語](docs/README.ja.md)
 
-> **Halo 1.1.14** is a personal interface and release based on [VoCat](https://github.com/MengMengCode/VoCat) v0.3.15 (`41b6ac6`), by the Vocat Project Authors. The modem, IMS, WiFi Calling, eSIM, and proxy stack is their work. This branch keeps Halo's UI, branding, accent color, phone page, call history, recordings, and WireGuard tunnels, and includes the upstream fixes through that commit. The [Vocat Research & Evaluation License](LICENSE) still applies. See [ATTRIBUTION.md](ATTRIBUTION.md). CellBridge call audio is optional and documented in [docs/CellBridge.zh-CN.md](docs/CellBridge.zh-CN.md).
+> **Halo 1.1.15** is a personal interface and release based on [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42 (`eba11d5`), by the Vocat Project Authors. The modem, IMS, WiFi Calling, eSIM, and proxy stack is their work. This branch keeps Halo's UI, branding, accent color, phone page, call history, recordings, and WireGuard tunnels, and includes the upstream fixes through that commit. The [Vocat Research & Evaluation License](LICENSE) still applies. See [ATTRIBUTION.md](ATTRIBUTION.md). CellBridge call audio is optional and documented in [docs/CellBridge.zh-CN.md](docs/CellBridge.zh-CN.md).
 
 ### Halo + CellBridge：NAS 一套安装
 
@@ -59,7 +59,7 @@ The backend is written in Go, the interface is built with React and TypeScript, 
 | Proxy routing | Upstream SOCKS routing, device bindings, country rules, TCP reachability checks, and UDP Associate checks for WiFi Calling data paths. |
 | Notifications | New inbound SMS forwarding through Telegram, Bark, email, Pushplus, signed webhooks, WeCom, Feishu / Lark group bots, and MeoW. Each SMS is delivered as an individual notification. |
 | Telegram bot | Device status, installed-profile listing and switching, WiFi Calling controls, and SMS sending. Sensitive actions require administrator confirmation. |
-| Operations | Authentication, CSRF protection, access policies, audit events, live logs, log retention, health checks, responsive layout, dark mode, and English/Chinese application UI. |
+| Operations | Password and SSO authentication (Pocket ID, GitHub, Generic OAuth2), CSRF protection, access policies, audit events, live logs, log retention, health checks, responsive layout, dark mode, and English/Chinese application UI. |
 | Distribution | Static Linux binaries, systemd installation script, self-update with SHA-256 verification, Docker image, GHCR publishing, and GitHub Actions release builds. |
 
 ## Supported hardware
@@ -209,6 +209,26 @@ modem layouts. Mapping only individual nodes with `--device`, such as
 `/dev/ttyUSB2`, `/dev/cdc-wdm0`, or `/dev/wwan0qmi0`, limits the container to
 those fixed nodes and does not provide complete multi-device or hot-plug discovery.
 
+On OpenWrt hosts, the fw4 input chain drops new connections from interfaces it
+does not manage, including Vocat's per-session VoWiFi TUN. Vocat therefore
+inserts narrow `vocat-ims-*` accept rules (P-CSCF to the negotiated inner
+address) with the `nft` bundled in the image. Without them IMS registration and
+outgoing SMS still work, but incoming SMS and calls are rejected. If the bundled
+`nft` cannot read the host ruleset, Vocat logs `nft could not inspect the
+OpenWrt fw4 input chain`; point `VOCAT_NFT` at the host's own nft instead:
+
+```bash
+cat > /opt/vocat-host-nft <<'EOF'
+#!/bin/sh
+exec /host/lib/ld-musl-$(uname -m).so.1 --library-path /host/usr/lib:/host/lib /host/usr/sbin/nft "$@"
+EOF
+chmod 755 /opt/vocat-host-nft
+# Add to the docker run command above:
+#   -v /usr:/host/usr:ro -v /lib:/host/lib:ro \
+#   -v /opt/vocat-host-nft:/usr/local/bin/host-nft:ro \
+#   -e VOCAT_NFT=/usr/local/bin/host-nft
+```
+
 The GHCR image is published for `linux/amd64` and `linux/arm64`.
 
 > [!TIP]
@@ -239,6 +259,14 @@ Debian/Ubuntu uses `apt install libqmi-utils`; Arch Linux uses
 driver binding or asserting DTR. If the utility is unavailable, the command
 stops with an installation hint and leaves the current device state untouched.
 
+### AT cellular host data
+
+AT-backed ECM/RNDIS data requires Linux, iproute2 and BusyBox with `udhcpc`.
+VoCat must exclusively manage the modem network interface; disable competing
+DHCP clients or network-manager profiles for that interface. VoCat maintains
+an IPv4 lease and marked policy routes without changing the system default
+route or resolver. This path currently requires IPv4-capable service.
+
 ## Configuration
 
 Vocat reads an optional JSON configuration file from `VOCAT_CONFIG`, then applies `VOCAT_*` environment variables. Environment variables take precedence.
@@ -248,9 +276,11 @@ Vocat reads an optional JSON configuration file from `VOCAT_CONFIG`, then applie
 | `VOCAT_ADDR` | `0.0.0.0:7575` | HTTP listen address. |
 | `VOCAT_DATABASE_PATH` | `./data/vocat.db` | SQLite database path. |
 | `VOCAT_SESSION_TTL` | `24h` | Authentication session lifetime. |
-| `VOCAT_SECURE_COOKIES` | `false` | Marks session cookies as secure when HTTPS is used. |
+| `VOCAT_SECURE_COOKIES` | `false` | Optional force-Secure override for all entries; HTTP/HTTPS cookies otherwise adapt automatically. |
 | `VOCAT_SHUTDOWN_TIMEOUT` | `10s` | Graceful shutdown timeout. |
 | `VOCAT_MAX_REQUEST_BODY_BYTES` | `1048576` | Maximum API request body size. |
+| `VOCAT_MCP_ENABLED` | `true` | Serve the MCP endpoint at `/mcp` for AI agents. Set `false` to disable it. |
+| `VOCAT_PROBE_UNKNOWN_USB` | `false` | Opt in to probing unrecognized USB serial devices with AT commands. Probing changes serial settings and clears input; enable only when those ports are dedicated to modems. Verified modem identities are discovered automatically. JSON key: `probe_unknown_usb`. |
 | `VOCAT_REPO` | `Nan7Li/VoCat` | Trusted GitHub repository used by the self-updater, in `owner/name` form. |
 | `GITHUB_TOKEN` | empty | Optional GitHub token for private repositories or higher API limits. |
 
@@ -275,6 +305,213 @@ configuration cannot set or overwrite the administrator username or password.
 
 Do not store Telegram tokens, SMTP passwords, webhook secrets, SIM credentials, or other private data in the repository. Configure them through the application settings or protected environment files.
 
+## Single sign-on (SSO)
+
+VoCat supports Pocket ID through OpenID Connect, GitHub.com OAuth Apps, and
+Generic OAuth2 providers. Select one provider in **Settings → Single sign-on
+(SSO)**. SSO starts disabled and password login remains available. Sign in with
+the local administrator first, save a provider, and explicitly bind an external
+account before enabling SSO. Other external accounts cannot register or become
+administrators, including accounts sharing the bound account's email address.
+
+### Pocket ID
+
+1. Use an HTTPS origin for VoCat, such as `https://vocat.example.com`, and set
+   the HTTPS entry as the public origin. Cookie security is selected automatically for each browser entry; `VOCAT_SECURE_COOKIES=true` is only an optional global force-Secure override. In the SSO settings choose **Pocket ID**. The
+   public origin initially uses the current browser address; edit the visible
+   **VoCat public origin** field if necessary. The compact callback URL and Copy
+   button appear immediately, so the URL can be copied
+   before creating the OIDC client or saving any credentials:
+   `https://vocat.example.com/api/auth/sso/callback`.
+2. In Pocket ID create a separate **Confidential** OIDC client for VoCat. Register
+   the exact callback URL and verify that the intended user or group is allowed
+   to use this client. VoCat and Komari need separate clients and local sessions.
+3. In VoCat enter Pocket ID's exact public `APP_URL` as the Issuer, and enter the
+   Client ID and Client Secret issued for the client created in step 2. The
+   Client ID field includes a reminder of where to find this value.
+   Scopes and PKCE S256 are handled by VoCat.
+   Token authentication is selected from validated Discovery metadata, preferring
+   `client_secret_basic` over `client_secret_post`. Save while SSO remains disabled.
+   Origin edits update the displayed callback immediately; they take effect for
+   authorization after saving.
+4. Check the saved configuration; success displays **Configuration check passed**.
+   Then bind the account. Complete Pocket ID's Passkey login and consent, and
+   confirm the returned binding in VoCat.
+   Configuration checking validates metadata and connectivity; it cannot verify
+   a client secret or user authorization without this login.
+5. Enable SSO and save. Use a private browser window to verify SSO login, return
+   to the requested page, and the first state-changing request.
+
+The settings page shows the bound account and an unbind action. To change the
+external account, unbind it first, then bind the intended account and enable SSO
+again.
+
+The Issuer is matched exactly, including its path and trailing slash. Pocket ID
+login uses the verified ID Token's `issuer + sub`; a UserInfo endpoint or email
+claim is not required. Discovery and its authorization, Token and JWKS endpoints
+must use the configured Issuer's origin. Deployments using `INTERNAL_APP_URL`
+with a different backend origin are not supported in this release. Keep the
+public `APP_URL` as the Issuer. Existing explicitly
+configured authentication methods and scopes are preserved when saving.
+
+### GitHub and Generic OAuth2
+
+For GitHub, create an OAuth App on GitHub.com with the same exact callback URL,
+select **GitHub**, enter its Client ID and Secret, and follow the save, check,
+bind, enable sequence above. Endpoints are fixed to GitHub.com; the default
+scope is `read:user`, and PKCE S256 is required. The binding follows the stable
+GitHub numeric account ID, so changing a login name does not change the account.
+GitHub Enterprise is outside this release's scope.
+
+For Generic OAuth2, supply the authorization, Token, and UserInfo URLs in addition
+to the client credentials. Scopes, the top-level user ID field (default `id`),
+Token authentication and PKCE compatibility options are displayed when Generic
+OAuth2 is selected.
+UserInfo is requested with a Bearer access token. The ID must be a
+nonempty string or an integer; large integer IDs retain their exact value.
+The default Token authentication is `client_secret_post` and PKCE is S256.
+Disable PKCE only for a provider that lacks PKCE support.
+Generic OAuth2 does not perform OIDC ID Token verification.
+
+### Multiple browser entries for SSO
+
+One saved provider and account binding can serve the configured HTTPS public origin and explicit local/private IP entries over HTTP or HTTPS. Register each complete callback URL (`/api/auth/sso/callback`) with the identity provider. Authorization and token exchange use the same callback frozen at flow creation; callbacks on a different entry are rejected. HTTP is accepted only for localhost, loopback and literal private IP addresses, not arbitrary public HTTP hosts.
+
+IPv6 callback hosts use the browser's compressed spelling, including hexadecimal IPv4-mapped addresses. Register the callback shown in settings with the identity provider. Existing configurations using an expanded IPv6 spelling are recognized automatically, but the provider must accept the normalized callback URL.
+
+Direct TLS, the configured HTTPS public origin behind a proxy, and trusted `X-Forwarded-Proto` select Secure cookies automatically. Untrusted forwarded headers are ignored. Proxies must preserve Host. Password sessions use their request transport, the explicit override, and same-authority HTTPS Origin/Referer hints that can only upgrade Cookie protection. These browser hints do not authorize requests, change network access policy, or select callback destinations.
+
+A session persists its Secure-cookie requirement at sign-in and can only upgrade it on later HTTPS requests, including when a missing or stale CSRF cookie must be replaced without scheme hints. Existing sessions keep working after the additive database migration; their previous transport cannot be inferred, so HTTPS users with an existing session should sign in again or make a refresh with a recognized HTTPS signal.
+
+Saving or disabling SSO does not change password-client Cookie behavior. A proxy that removes all browser and transport scheme information must explicitly provide a trusted HTTPS signal. The configured-origin fallback is limited to SSO sign-in and SSO-session CSRF refreshes. Separate LAN HTTP entries remain usable without a process restart or configuration switch; remove a legacy force-Secure override when using both protocols. HTTP credentials travel without transport encryption.
+
+### Network, credentials and sessions
+
+VoCat's existing source-network policy also applies to SSO routes. Configuring
+SSO does not make an installation publicly accessible. The browser must reach
+VoCat and the authorization endpoint; the VoCat process must reach Discovery,
+Token and JWKS/UserInfo endpoints with trusted TLS certificates. Saving the exact
+Pocket ID HTTPS Issuer or Generic endpoint URLs approves
+those addresses for HTTPS connections, including RFC1918/IPv6 ULA private
+addresses. GitHub's fixed endpoints remain restricted to public addresses.
+
+For a Generic provider's internal HTTP service, explicitly enter its full HTTP URL
+in the Token/UserInfo field.
+Every DNS candidate and actual connection for these HTTP destinations must be a
+permitted private address. Pocket ID's Discovery cannot approve another origin;
+its endpoints must use the configured Issuer's origin. The Issuer, Discovery fetch
+URL and browser authorization endpoint always require HTTPS. Loopback, link-local,
+cloud metadata and other special-use destinations remain blocked for IdP
+connections. Install private CA certificates in the host/container trust store;
+there is no TLS verification bypass option. The browser's localhost or HTTPS
+origin for VoCat is independent of these IdP connection permissions.
+
+The supplied Compose deployment uses host networking. Verify DNS, routing and CA
+trust from the actual container; do not assume bridge-network service names are
+available. Reverse proxies must preserve the configured public origin. VoCat
+does not derive callback URLs from forwarded host headers. Root-path deployment
+is required. For local Vite development, use one consistent loopback origin,
+such as `http://127.0.0.1:5173`, for the public origin and callback registration;
+IdP transport exceptions belong only in test fixtures.
+
+Session and CSRF cookies retain `SameSite=Strict`; short-lived authorization
+cookies use `SameSite=Lax` for top-level GET callbacks. Saving any SSO
+configuration, including disabling it or rotating the secret, revokes all SSO
+sessions. Unbinding an account revokes that binding's SSO sessions.
+Password sessions and API tokens survive those actions. Changing the local
+administrator's password revokes all sessions and API tokens, cancels in-flight
+authorizations, and preserves the external binding. The UI requests sign-in
+again when a successful operation revokes the current SSO session.
+
+Leave the secret input empty to preserve an existing secret, or enter a new
+secret to replace it. The settings page does not offer a secret-clearing control.
+Changing the provider, client
+ID, Issuer, or Generic identity endpoints/ID field requires a new identity
+namespace, new credentials, and a new binding. Existing bindings require explicit
+reset confirmation. To change the bound account, unbind it and then create a new
+binding. Client secrets are held only on the server in the protected SQLite
+database; the sensitive-setting flag redacts responses and does not encrypt the
+database. Third-party tokens are not persisted or returned to the browser.
+
+Signing out ends only the current VoCat session. Disabling an IdP account or
+signing out of Pocket ID does not immediately revoke an existing VoCat session;
+it expires according to `VOCAT_SESSION_TTL`, or can be revoked by disabling SSO
+or unbinding in VoCat. The public capabilities endpoint is
+`GET /api/auth/providers`. SSO settings and binding APIs require a browser
+session and CSRF for writes; Bearer tokens cannot manage them. Configuration
+revision conflicts return `409 sso_config_changed`; changed identity sources
+return `409 sso_rebind_required`.
+
+### Upgrade and rollback
+
+SSO adds SQLite schema version 29. Upgrades preserve the existing administrator,
+sessions, API tokens and device data; SSO remains disabled until configured.
+Before upgrading, record the old binary or image digest and back up configuration,
+CA material and the complete persistent data directory while VoCat is stopped,
+or use SQLite's backup API/`.backup` to obtain a consistent live snapshot. Copying
+only a running WAL-mode database file is not a reliable backup.
+
+Disable SSO in the new version to recover from provider problems while keeping
+password login and current business data. Returning to a schema-28 binary
+requires stopping VoCat and restoring the matching pre-upgrade data and
+configuration snapshot. Merely reverting the container image or lowering
+`PRAGMA user_version` cannot downgrade the database. Restore into a separate
+directory/volume where possible and retain the newer database for investigation.
+Restoring a snapshot loses messages and task changes recorded after that backup.
+For Docker, update by pulling the image and recreating the container.
+
+Before a production release, complete the real Pocket ID Passkey/access-policy
+test and an upgrade/rollback rehearsal for that deployment.
+
+## API tokens and MCP
+
+Non-browser clients authenticate against the same `/api/...` endpoints with
+a bearer token instead of the browser's session cookie and CSRF flow:
+
+```bash
+vocat token create --read-only --ttl 720h ci-runner   # prints the token once
+curl -H "Authorization: Bearer vcat_..." http://127.0.0.1:7575/api/devices
+```
+
+`vocat token list` and `vocat token revoke <name>` manage the inventory.
+Tokens act with administrator privileges; a `--read-only` token may only
+issue `GET` requests (one documented exception: reading an SMS thread marks
+it read locally — the rule is "no hardware or network mutations"). Rotating
+the administrator password revokes every token. Create tokens after the
+first `bootstrap-admin`. Remote bearer clients also need a network access
+policy that admits their source address; the default `internal` mode only
+serves private networks.
+
+By default (`VOCAT_MCP_ENABLED=false` to disable), the same service
+exposes an MCP (Model Context Protocol) endpoint for AI agents at `http://<host>:7575/mcp` using
+the Streamable HTTP transport and bearer-token authentication. Tools cover
+device status, SMS threads and guarded sending, eSIM profile listing and
+switching, and WiFi Calling status/reconnect; sensitive operations (raw AT,
+eSIM download/delete, SIM PIN, network selection, system update) are not
+exposed, and tool output never includes IMSI, SIM PIN, or activation codes.
+A read-only token receives a tool list without the write tools. SMS sending
+follows the same blocked-destination policy and global hourly limit as the
+web UI and sends over the cellular AT path (the web UI's IMS-preferred
+routing when WiFi Calling is enabled stays web-side, and messages sent
+through MCP are not yet written to the web conversation history).
+
+Client configuration (Claude Code as the example):
+
+```json
+{
+  "mcpServers": {
+    "vocat": {
+      "type": "http",
+      "url": "http://192.168.1.10:7575/mcp",
+      "headers": { "Authorization": "Bearer vcat_..." }
+    }
+  }
+}
+```
+
+See [docs/API_MCP_DEVELOPMENT_PLAN.md](docs/API_MCP_DEVELOPMENT_PLAN.md) for
+the design record.
+
 ## Telegram bot
 
 When Telegram notifications are enabled and both Chat ID and Admin ID are configured, the bot supports:
@@ -285,9 +522,16 @@ When Telegram notifications are enabled and both Chat ID and Admin ID are config
 /switch <device> <iccid>
 /wfc <device> <status|on|off|reconnect>
 /sms <device> <number> <message>
+/ussd <device> <code>
+/ussd_reply <session> <input>
+/ussd_cancel <session>
 ```
 
 Profile switching and SMS submission use one-time confirmation buttons. The bot does not expose eSIM download, delete, or rename commands.
+
+The web terminal and Telegram share USSD routing. With WiFi Calling enabled, requests use IMS/USSI and return a readiness error until IMS registers, without falling back to cellular AT+CUSD. With WiFi Calling disabled, requests use cellular USSD. Menu replies and cancellation stay bound to the original device and dialog. Cancellation errors are reported and retain the session for retry; an uncertain submission is never automatically resubmitted over another channel.
+
+USSI dialog handling follows [3GPP TS 24.390](https://www.etsi.org/deliver/etsi_ts/124300_124399/124390/18.00.00_60/ts_124390v180000p.pdf). A failed BYE retains a cancellation record, but further menu input is blocked once cancellation has started ([RFC 3261, section 15.1.1](https://www.rfc-editor.org/rfc/rfc3261.html#section-15.1.1)).
 
 ## Updating
 

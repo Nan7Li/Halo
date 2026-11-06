@@ -28,9 +28,16 @@ export interface WebhookForm {
   headers: HeaderRow[];
 }
 
+// Limits one Bark URL to some devices. URLs without an entry follow the channel's device scope.
+export interface BarkUrlScope {
+  url: string;
+  deviceIds: string[];
+}
+
 export interface BarkForm {
   enabled: boolean;
   urls: string[];
+  urlScopes: BarkUrlScope[];
   group: string;
   icon: string;
   level: string;
@@ -82,7 +89,7 @@ export const DEFAULT_LARK_PAYLOAD_TEMPLATE = `{
   }
 }`;
 
-export interface NotifyForms {
+interface ChannelForms {
   meow: NotificationSettings["meow"];
   telegram: TelegramForm;
   webhook: WebhookForm;
@@ -92,6 +99,10 @@ export interface NotifyForms {
 	wecom: WecomForm;
 	lark: LarkForm;
 }
+
+export type NotifyForms = {
+  [K in keyof ChannelForms]: ChannelForms[K] & { deviceIds: string[] | null };
+};
 
 // 系统保留头，自定义同名头会被忽略（品牌 vocat）
 export const RESERVED_HEADERS = new Set(["content-type", "x-vocat-signature"]);
@@ -168,7 +179,7 @@ export function formsFromNotifications(data: Partial<NotificationSettings>): Not
 	const pushplus = asRecord(data.pushplus);
 	const wecom = asRecord(data.wecom);
 	const lark = asRecord(data.lark);
-  return {
+  const forms = {
     meow: { enabled: !!meow.enabled, nickname: str(meow.nickname), url: str(meow.url), imgUrl: str(meow.imgUrl) },
     telegram: {
       enabled: !!telegram.enabled,
@@ -187,13 +198,16 @@ export function formsFromNotifications(data: Partial<NotificationSettings>): Not
       retryMax: num(webhook.retryMax, 3),
       textTemplate:
         webhook.textTemplate === null || webhook.textTemplate === undefined
-          ? "收到新短信\n设备  {{device_label}}\n号码  {{number}}\n时间  {{time}}\n内容  {{text}}"
+          ? "收到新短信\n设备  {{device_label}}\n收信卡  {{recipient}}\n号码  {{number}}\n时间  {{time}}\n内容  {{text}}"
           : String(webhook.textTemplate),
       headers: recordToHeaderRows(webhook.headers),
     },
     bark: {
       enabled: !!bark.enabled,
       urls: strList(bark.urls),
+      urlScopes: Array.isArray(bark.urlScopes)
+        ? bark.urlScopes.map(asRecord).map((scope) => ({ url: str(scope.url), deviceIds: strList(scope.deviceIds) }))
+        : [],
       group: str(bark.group) || "vocat",
       icon: str(bark.icon),
       level: str(bark.level) || "active",
@@ -226,7 +240,12 @@ export function formsFromNotifications(data: Partial<NotificationSettings>): Not
 			secret: lark.signingEnabled ? str(lark.secret) : "",
 			payloadTemplate: str(lark.payloadTemplate ?? lark.payload_template) || DEFAULT_LARK_PAYLOAD_TEMPLATE,
 		},
-	};
+	} as NotifyForms;
+  for (const channel of Object.keys(forms) as (keyof NotifyForms)[]) {
+    const ids = data[channel]?.deviceIds;
+    forms[channel].deviceIds = Array.isArray(ids) ? ids.map(String) : null;
+  }
+  return forms;
 }
 
 function splitList(value: string): string[] {
@@ -253,9 +272,17 @@ export function buildWebhookPayload(form: WebhookForm, forTest = false) {
 
 export function buildBarkPayload(form: BarkForm, forTest = false) {
   const urls = Array.isArray(form.urls) ? form.urls : [];
+  const listed = new Set(urls.map((url) => String(url || "").trim()).filter(Boolean));
+  // Drop scopes whose URL was removed or edited away, and keep one per URL; the server rejects both.
+  const seen = new Set<string>();
+  const urlScopes = (form.urlScopes || [])
+    .map((scope) => ({ url: String(scope.url || "").trim(), deviceIds: scope.deviceIds || [] }))
+    .filter((scope) => listed.has(scope.url) && !seen.has(scope.url) && seen.add(scope.url));
   return {
     enabled: !!form.enabled,
     urls: forTest ? urls.map((url) => String(url || "").trim()).filter(Boolean) : urls,
+    // A test notification goes to every URL, so per-URL device scopes only matter when saving.
+    ...(forTest ? {} : { urlScopes }),
     group: String(form.group || "").trim(),
     icon: String(form.icon || "").trim(),
     level: String(form.level || "").trim(),
@@ -314,7 +341,7 @@ export function buildMeowPayload(form: NotifyForms["meow"]) {
 export type ClearableNotificationChannel = "telegram" | "email";
 
 export function buildNotificationsPayload(forms: NotifyForms, clearedChannels: readonly ClearableNotificationChannel[] = []) {
-  return {
+  const payload: NotificationSettings = {
     meow: buildMeowPayload(forms.meow),
     telegram: {
       enabled: !!forms.telegram.enabled,
@@ -342,4 +369,8 @@ export function buildNotificationsPayload(forms: NotifyForms, clearedChannels: r
 		wecom: buildWecomPayload(forms.wecom),
 		lark: buildLarkPayload(forms.lark),
 	};
+  for (const channel of Object.keys(forms) as (keyof NotifyForms)[]) {
+    payload[channel].deviceIds = forms[channel].deviceIds;
+  }
+  return payload;
 }

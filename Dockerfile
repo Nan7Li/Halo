@@ -36,8 +36,10 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build \
 
 # ---- Stage 3: minimal runtime ----
 FROM alpine:3.20
-# ALSA/ADB are used by the optional QDC507 cellular voice path.
-RUN apk add --no-cache alsa-utils android-tools ca-certificates ccid iproute2 pcsc-lite qmi-utils tzdata && \
+# ALSA/ADB are used by the optional QDC507 cellular voice path. nftables lets
+# the VoWiFi TUN accept network-originated SIP on OpenWrt fw4 hosts (see the
+# Docker section of the README).
+RUN apk add --no-cache alsa-utils android-tools ca-certificates ccid iproute2 nftables pcsc-lite qmi-utils tzdata && \
     addgroup -S -g 1000 vocat && \
     adduser -S -D -H -u 1000 -G vocat vocat
 

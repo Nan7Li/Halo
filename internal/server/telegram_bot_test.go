@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -68,6 +69,26 @@ func TestTelegramPollingAcceptsFakeIPWithoutWebAccessAllowlist(t *testing.T) {
 	if _, err := validateTelegramAPIURL(ctx, "https://169.254.169.254", "123456:test-token", "getUpdates"); err == nil {
 		t.Fatal("metadata address became reachable through Telegram allowlist")
 	}
+}
+
+func TestTelegramPollSkipsGetUpdatesWithoutAdminID(t *testing.T) {
+	server := newSettingsTestServer(t)
+	config, _ := json.Marshal(map[string]any{"bot_token": "123456:AAAAAAAAAAAAAAAAAAAA", "chat_id": "1000"})
+	if err := server.store.UpsertNotificationSetting(context.Background(),
+		store.NotificationSetting{Channel: "telegram", Enabled: true, Config: config}); err != nil {
+		t.Fatal(err)
+	}
+	bot := &telegramBot{server: server, client: &http.Client{Transport: pollingTransport{t}}}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	bot.poll(ctx)
+}
+
+type pollingTransport struct{ t *testing.T }
+
+func (transport pollingTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	transport.t.Fatal("Telegram request issued without an admin id")
+	return nil, errors.New("unexpected request")
 }
 
 func TestTelegramHTTPClientReusesKeepAliveTransportUntilProxyChanges(t *testing.T) {
@@ -428,7 +449,9 @@ func TestTelegramTimedCellularCallUsesATDCLCCAndATH(t *testing.T) {
 		}
 	}}
 	bot := &telegramBot{server: &Server{devices: devices}}
-	result, err := bot.executeTimedCellularCall(context.Background(), telegramRuntimeConfig{}, telegramPendingAction{
+	// Reject notification delivery locally so network latency cannot consume
+	// the short call duration this AT transcript exercises.
+	result, err := bot.executeTimedCellularCall(context.Background(), telegramRuntimeConfig{BaseURL: "://invalid"}, telegramPendingAction{
 		DeviceID: "EC20", Argument: "+447700900123", Duration: 20 * time.Millisecond,
 	}, "physical")
 	if err != nil || !strings.Contains(result, "正在拨号") {
@@ -439,6 +462,51 @@ func TestTelegramTimedCellularCallUsesATDCLCCAndATH(t *testing.T) {
 		if !strings.Contains(joined, expected) {
 			t.Fatalf("commands %q omit %q", joined, expected)
 		}
+	}
+}
+
+// Firmware without a call-list implementation cannot confirm a timed call or
+// an answer. The dial and answer commands must not reach the modem; the
+// hangup still goes out over the air and only skips the confirmation.
+func TestTelegramCellularActionsRespectMissingCLCC(t *testing.T) {
+	commands := make([]string, 0, 4)
+	devices := clccCapabilityController{
+		supportsCLCC: false,
+		fakeDeviceController: fakeDeviceController{atHandler: func(command string) (modem.Response, error) {
+			commands = append(commands, command)
+			return modem.Response{Final: "OK"}, nil
+		}},
+	}
+	bot := &telegramBot{server: &Server{devices: devices}}
+
+	if _, err := bot.executeTimedCellularCall(context.Background(), telegramRuntimeConfig{}, telegramPendingAction{
+		DeviceID: "ZXIC", Argument: "+447700900123", Duration: 20 * time.Millisecond,
+	}, "physical"); err == nil {
+		t.Fatal("timed cellular call returned no error for firmware without AT+CLCC")
+	}
+	if _, err := bot.executeSimpleCellularCallAction(context.Background(), "physical", "answer"); err == nil {
+		t.Fatal("answer returned no error for firmware without AT+CLCC")
+	}
+	for _, command := range commands {
+		if strings.HasPrefix(command, "ATD") || command == "ATA" {
+			t.Fatalf("issued %q for firmware without AT+CLCC", command)
+		}
+	}
+
+	// The hangup itself does not need the call list.
+	result, err := bot.executeSimpleCellularCallAction(context.Background(), "physical", "hangup")
+	if err != nil {
+		t.Fatalf("hangup for firmware without AT+CLCC: %v", err)
+	}
+	if !strings.Contains(result, "ATH") {
+		t.Fatalf("hangup result = %q, want the ATH confirmation", result)
+	}
+	joined := strings.Join(commands, ",")
+	if !strings.Contains(joined, "ATH") {
+		t.Fatalf("commands %q omit ATH", joined)
+	}
+	if strings.Contains(joined, "AT+CLCC") {
+		t.Fatalf("commands %q query the call list of firmware without AT+CLCC", joined)
 	}
 }
 

@@ -42,6 +42,7 @@ type telegramRuntimeConfig struct {
 	BaseURL      string
 	Proxy        string
 	ViaInterface string
+	DeviceIDs    []string
 }
 
 type telegramBot struct {
@@ -154,7 +155,7 @@ func (bot *telegramBot) poll(ctx context.Context) {
 			}
 			continue
 		}
-		if !enabled {
+		if !enabled || config.AdminID <= 0 {
 			activeToken = ""
 			offset = 0
 			if !waitTelegram(ctx, telegramPollInterval) {
@@ -450,7 +451,9 @@ func (bot *telegramBot) handleCallback(ctx context.Context, config telegramRunti
 		return
 	}
 	if prefix, token, operation, ok := parseTelegramMenuCallback(data); ok {
-		consume := prefix == "es" || prefix == "dur" || prefix == "uc"
+		// USSD cancellation remains retryable when the network rejects or times
+		// out the BYE. Its session token is invalidated only after success.
+		consume := prefix == "es" || prefix == "dur"
 		var action telegramPendingAction
 		var found bool
 		if consume {
@@ -503,7 +506,6 @@ func (bot *telegramBot) handleCallback(ctx context.Context, config telegramRunti
 				bot.sendExpiredMenu(ctx, config, chatID)
 				return
 			}
-			bot.clearInput(chatID, adminID)
 			bot.handleUSSDCancel(ctx, config, chatID, adminID, action.Argument)
 		}
 		return
@@ -1163,7 +1165,7 @@ func (bot *telegramBot) confirmSMS(ctx context.Context, config telegramRuntimeCo
 		bot.sendText(ctx, config, chatID, "无法发送："+err.Error(), nil)
 		return
 	}
-	if blocked, reason := blockedSMSDestination(phone); blocked {
+	if blocked, reason := device.BlockedSMSDestination(phone); blocked {
 		bot.sendText(ctx, config, chatID, "无法发送："+reason, nil)
 		return
 	}
@@ -1273,7 +1275,7 @@ func (bot *telegramBot) handleInputMessage(ctx context.Context, config telegramR
 	}
 	switch state.Kind {
 	case "sms_phone":
-		if blocked, reason := blockedSMSDestination(value); blocked {
+		if blocked, reason := device.BlockedSMSDestination(value); blocked {
 			bot.sendText(ctx, config, message.Chat.ID, "号码不可用："+reason+"\n请重新输入号码。", telegramKeyboard([]map[string]string{telegramButton("❌ 取消", "input:cancel")}))
 			return
 		}
@@ -1319,7 +1321,6 @@ func (bot *telegramBot) handleInputMessage(ctx context.Context, config telegramR
 		bot.clearInput(message.Chat.ID, message.From.ID)
 		bot.handleUSSDCommand(ctx, config, message.Chat.ID, message.From.ID, state.DeviceID, value)
 	case "ussd_reply":
-		bot.clearInput(message.Chat.ID, message.From.ID)
 		bot.handleUSSDReply(ctx, config, message.Chat.ID, message.From.ID, state.Argument, value)
 	default:
 		bot.clearInput(message.Chat.ID, message.From.ID)
@@ -1714,6 +1715,16 @@ func (bot *telegramBot) executeTimedCellularCall(
 	}
 	defer release()
 	dialContext, cancelDial := context.WithTimeout(ctx, 20*time.Second)
+	defer cancelDial()
+	// A timed call is confirmed through the call list, so a firmware without
+	// AT+CLCC cannot run one. The check happens before the dial command so
+	// the modem state is left untouched.
+	if !bot.server.supportsCLCC(dialContext, physicalID) {
+		return "", errors.New("该模块固件不支持 AT+CLCC 查询")
+	}
+	if err := dialContext.Err(); err != nil {
+		return "", err
+	}
 	response, err := bot.server.devices.ExecuteAT(dialContext, physicalID, "ATD"+action.Argument+";")
 	cancelDial()
 	if err != nil {
@@ -1725,7 +1736,9 @@ func (bot *telegramBot) executeTimedCellularCall(
 	bot.server.noteLegacyAccepted(bot.server.usbGeneration(action.DeviceID), action.DeviceID, physicalID)
 	release()
 	hangupAt := time.Now().Add(action.Duration)
-	_ = bot.sendText(ctx, config, action.ChatID, fmt.Sprintf(
+	callContext, cancelCall := context.WithDeadline(ctx, hangupAt)
+	defer cancelCall()
+	_ = bot.sendText(callContext, config, action.ChatID, fmt.Sprintf(
 		"📞 已通过基站提交 %s，将在 %d 秒后自动挂断，并持续检查 CLCC 状态。",
 		action.Argument, int(action.Duration/time.Second),
 	), nil)
@@ -1738,9 +1751,26 @@ func (bot *telegramBot) executeTimedCellularCall(
 	seenCall := false
 	confirmed := false
 	lastState := -1
+	finish := func() (string, error) {
+		if err := bot.hangupCellularCall(physicalID); err != nil {
+			return "", fmt.Errorf("基站拨号已执行，但自动挂断失败: %w", err)
+		}
+		if !seenCall {
+			return fmt.Sprintf("基站已接受拨号并在 %d 秒后自动挂断；持续时间过短，未取得 CLCC 状态。", int(action.Duration/time.Second)), nil
+		}
+		return fmt.Sprintf("基站拨号完成：%s；模块确认%s，%d 秒后自动挂断。", action.Argument, telegramCLCCStateLabel(lastState), int(action.Duration/time.Second)), nil
+	}
 	for {
-		calls, queryErr := bot.telegramCellularCalls(ctx, physicalID)
+		if !time.Now().Before(hangupAt) && ctx.Err() == nil {
+			return finish()
+		}
+		calls, queryErr := bot.telegramCellularCalls(callContext, physicalID)
 		if queryErr != nil {
+			// A status query must release the control channel by the requested
+			// hangup time. Its deadline means normal completion, not call failure.
+			if !time.Now().Before(hangupAt) && ctx.Err() == nil {
+				return finish()
+			}
 			if final, ok := telegramCallFinalError(queryErr); ok {
 				if confirmed && final == "NO CARRIER" {
 					return fmt.Sprintf("基站通话 %s 已由网络或对端提前结束。", action.Argument), nil
@@ -1772,13 +1802,7 @@ func (bot *telegramBot) executeTimedCellularCall(
 			bot.bestEffortCellularHangup(physicalID)
 			return "", ctx.Err()
 		case <-timer.C:
-			if err := bot.hangupCellularCall(physicalID); err != nil {
-				return "", fmt.Errorf("基站拨号已执行，但自动挂断失败: %w", err)
-			}
-			if !seenCall {
-				return fmt.Sprintf("基站已接受拨号并在 %d 秒后自动挂断；持续时间过短，未取得 CLCC 状态。", int(action.Duration/time.Second)), nil
-			}
-			return fmt.Sprintf("基站拨号完成：%s；模块确认%s，%d 秒后自动挂断。", action.Argument, telegramCLCCStateLabel(lastState), int(action.Duration/time.Second)), nil
+			return finish()
 		case <-ticker.C:
 		}
 	}
@@ -1787,6 +1811,12 @@ func (bot *telegramBot) executeTimedCellularCall(
 func (bot *telegramBot) telegramCellularCalls(ctx context.Context, physicalID string) ([]map[string]any, error) {
 	queryContext, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
+	if !bot.server.supportsCLCC(queryContext, physicalID) {
+		return nil, errors.New("该模块固件不支持 AT+CLCC 查询")
+	}
+	if err := queryContext.Err(); err != nil {
+		return nil, err
+	}
 	generation, present := bot.server.legacyPhysicalGeneration(physicalID)
 	revision := bot.server.captureLegacyRevision()
 	response, err := bot.server.devices.ExecuteAT(queryContext, physicalID, "AT+CLCC")
@@ -1975,6 +2005,16 @@ func (bot *telegramBot) executeSimpleCellularCallAction(ctx context.Context, phy
 		return formatTelegramCellularCalls(calls), nil
 	case "answer":
 		operationContext, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
+		// The answer is confirmed through the call list, so a firmware
+		// without AT+CLCC cannot confirm it. The check happens before the
+		// answer command so the modem state is left untouched.
+		if !bot.server.supportsCLCC(operationContext, physicalID) {
+			return "", errors.New("该模块固件不支持 AT+CLCC 查询")
+		}
+		if err := operationContext.Err(); err != nil {
+			return "", err
+		}
 		response, err := bot.server.devices.ExecuteAT(operationContext, physicalID, "ATA")
 		cancel()
 		if err != nil {
@@ -1985,8 +2025,10 @@ func (bot *telegramBot) executeSimpleCellularCallAction(ctx context.Context, phy
 		}
 		bot.server.noteLegacyAccepted("", physicalID)
 		deadline := time.Now().Add(8 * time.Second)
+		confirmContext, cancelConfirm := context.WithDeadline(ctx, deadline)
+		defer cancelConfirm()
 		for time.Now().Before(deadline) {
-			calls, queryErr := bot.telegramCellularCalls(ctx, physicalID)
+			calls, queryErr := bot.telegramCellularCalls(confirmContext, physicalID)
 			if queryErr != nil {
 				return "", queryErr
 			}
@@ -1995,8 +2037,8 @@ func (bot *telegramBot) executeSimpleCellularCallAction(ctx context.Context, phy
 					return "📞 基站来电已接通。", nil
 				}
 			}
-			if !waitTelegram(ctx, 500*time.Millisecond) {
-				return "", ctx.Err()
+			if !waitTelegram(confirmContext, 500*time.Millisecond) {
+				return "", confirmContext.Err()
 			}
 		}
 		return "", errors.New("模块接受了 ATA，但 8 秒内未确认来电已接通")
@@ -2004,9 +2046,20 @@ func (bot *telegramBot) executeSimpleCellularCallAction(ctx context.Context, phy
 		if err := bot.hangupCellularCall(physicalID); err != nil {
 			return "", err
 		}
+		// The hangup itself went through over the air. A firmware without a
+		// call list cannot confirm it, so the confirmation step is skipped
+		// instead of failing the operation that already succeeded.
 		deadline := time.Now().Add(4 * time.Second)
+		confirmContext, cancelConfirm := context.WithDeadline(ctx, deadline)
+		defer cancelConfirm()
+		if !bot.server.supportsCLCC(confirmContext, physicalID) {
+			return "已通过基站发送 ATH；该模块不支持 CLCC 确认。", nil
+		}
+		if err := confirmContext.Err(); err != nil {
+			return "", err
+		}
 		for time.Now().Before(deadline) {
-			calls, queryErr := bot.telegramCellularCalls(ctx, physicalID)
+			calls, queryErr := bot.telegramCellularCalls(confirmContext, physicalID)
 			if queryErr != nil {
 				if final, ok := telegramCallFinalError(queryErr); ok && final == "NO CARRIER" {
 					return "已通过基站发送 ATH，并确认通话结束。", nil
@@ -2016,8 +2069,8 @@ func (bot *telegramBot) executeSimpleCellularCallAction(ctx context.Context, phy
 			if len(calls) == 0 {
 				return "已通过基站发送 ATH，并确认没有活动通话。", nil
 			}
-			if !waitTelegram(ctx, 400*time.Millisecond) {
-				return "", ctx.Err()
+			if !waitTelegram(confirmContext, 400*time.Millisecond) {
+				return "", confirmContext.Err()
 			}
 		}
 		return "", errors.New("模块接受了 ATH，但 4 秒后仍报告活动通话")
@@ -2085,41 +2138,58 @@ func (bot *telegramBot) handleUSSDCommand(ctx context.Context, config telegramRu
 }
 
 func (bot *telegramBot) executeUSSDCommand(ctx context.Context, deviceID, code string) (device.USSDResult, error) {
-	_, _, physicalID, err := bot.device(deviceID)
+	stored, _, physicalID, err := bot.device(deviceID)
 	if err != nil {
 		return device.USSDResult{}, err
 	}
 	operationContext, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	return bot.server.devices.USSD(operationContext, physicalID, strings.TrimSpace(code))
+	return bot.server.startUSSD(operationContext, stored, physicalID, code)
 }
 
 func (bot *telegramBot) handleUSSDReply(ctx context.Context, config telegramRuntimeConfig, chatID, adminID int64, sessionID, input string) {
+	deviceID, _ := bot.server.ussdSessionDevice(sessionID)
+	if state, ok := bot.input(chatID, adminID); ok && state.Argument == strings.TrimSpace(sessionID) && deviceID == "" {
+		deviceID = state.DeviceID
+	}
 	operationContext, cancel := context.WithTimeout(ctx, 90*time.Second)
-	result, err := bot.server.devices.ContinueUSSD(operationContext, strings.TrimSpace(sessionID), strings.TrimSpace(input))
+	result, err := bot.server.continueUSSD(operationContext, strings.TrimSpace(sessionID), strings.TrimSpace(input))
 	cancel()
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
+		if errors.Is(err, device.ErrUSSDSessionNotFound) || errors.Is(err, vowifi.ErrUSSISessionNotFound) {
+			bot.clearUSSDInput(chatID, adminID, sessionID)
+		}
 		bot.sendText(ctx, config, chatID, "USSD 回复失败："+err.Error(), bot.homeKeyboard())
 	} else {
-		bot.sendUSSDResult(ctx, config, chatID, adminID, "", result)
+		bot.sendUSSDResult(ctx, config, chatID, adminID, deviceID, result)
 	}
 	bot.server.recordAudit(ctx, fmt.Sprintf("telegram:%d", adminID), "telegram.ussd.reply", "ussd_session", "interactive", outcome, "telegram")
 }
 
 func (bot *telegramBot) handleUSSDCancel(ctx context.Context, config telegramRuntimeConfig, chatID, adminID int64, sessionID string) {
 	operationContext, cancel := context.WithTimeout(ctx, 30*time.Second)
-	err := bot.server.devices.CancelUSSD(operationContext, strings.TrimSpace(sessionID))
+	err := bot.server.cancelUSSD(operationContext, strings.TrimSpace(sessionID))
 	cancel()
 	outcome := "success"
 	if err != nil {
 		outcome = "failure"
+		if errors.Is(err, device.ErrUSSDSessionNotFound) || errors.Is(err, vowifi.ErrUSSISessionNotFound) {
+			bot.clearUSSDInput(chatID, adminID, sessionID)
+		}
 		bot.sendText(ctx, config, chatID, "取消 USSD 会话失败："+err.Error(), bot.homeKeyboard())
 	} else {
+		bot.clearUSSDInput(chatID, adminID, sessionID)
 		bot.sendText(ctx, config, chatID, "USSD 会话已取消。", bot.homeKeyboard())
 	}
 	bot.server.recordAudit(ctx, fmt.Sprintf("telegram:%d", adminID), "telegram.ussd.cancel", "ussd_session", "interactive", outcome, "telegram")
+}
+
+func (bot *telegramBot) clearUSSDInput(chatID, adminID int64, sessionID string) {
+	if state, ok := bot.input(chatID, adminID); ok && state.Kind == "ussd_reply" && state.Argument == strings.TrimSpace(sessionID) {
+		bot.clearInput(chatID, adminID)
+	}
 }
 
 func (bot *telegramBot) sendUSSDResult(
@@ -2299,21 +2369,20 @@ func (bot *telegramBot) finishAction(ctx context.Context, config telegramRuntime
 	bot.server.recordAudit(ctx, fmt.Sprintf("telegram:%d", action.AdminID), auditAction, "device", action.DeviceID, outcome, "telegram")
 }
 
+func (bot *telegramBot) sendSMSNotification(ctx context.Context, config telegramRuntimeConfig, message store.SMSMessage) error {
+	notification := bot.server.newSMSNotification(ctx, message)
+	if !notificationMatchesDevice(config.DeviceIDs, notification.DeviceID) {
+		return nil
+	}
+	text := notification.TelegramText()
+	return bot.sendText(ctx, config, 0, text, nil)
+}
+
 func (bot *telegramBot) notifyInboundSMS(ctx context.Context) {
-	cursorInitialized := false
-	var cursor int64
+	// Reading MAX(id) on the first tick would skip an SMS stored since Open.
+	cursor := bot.server.store.StartupSMSMessageID()
 	for ctx.Err() == nil {
-		if !cursorInitialized {
-			latest, err := bot.server.store.LatestSMSMessageID(ctx)
-			if err != nil {
-				bot.warn("initialize Telegram SMS cursor", err)
-				if !waitTelegram(ctx, telegramNotificationPeriod) {
-					return
-				}
-				continue
-			}
-			cursor, cursorInitialized = latest, true
-		}
+		inserted := bot.server.store.SMSInserted() // before the pass, so none is missed
 		config, enabled, err := bot.loadConfig(ctx)
 		if err != nil {
 			bot.warn("load Telegram SMS notification configuration", err)
@@ -2334,16 +2403,19 @@ func (bot *telegramBot) notifyInboundSMS(ctx context.Context) {
 						cursor = message.ID
 						continue
 					}
-					text := fmt.Sprintf("📩 新短信\n设备：%s\n来自：%s\n时间：%s\n\n%s", message.DeviceID, message.Peer, message.Timestamp.Local().Format("2006-01-02 15:04:05"), message.Body)
-					if sendErr := bot.sendText(ctx, config, 0, text, nil); sendErr != nil {
+					if sendErr := bot.sendSMSNotification(ctx, config, message); sendErr != nil {
 						bot.warn("send Telegram SMS notification", sendErr)
 						break
+					}
+					if bot.server.logger != nil {
+						bot.server.logger.Debug("SMS notification sent",
+							"category", "sms", "channel", "telegram", "sms_id", message.ID)
 					}
 					cursor = message.ID
 				}
 			}
 		}
-		if !waitTelegram(ctx, telegramNotificationPeriod) {
+		if !waitSMSInserted(ctx, telegramNotificationPeriod, inserted) {
 			return
 		}
 	}
@@ -2390,6 +2462,7 @@ func (bot *telegramBot) loadConfig(ctx context.Context) (telegramRuntimeConfig, 
 		BaseURL:      configString(raw, "base_url"),
 		Proxy:        configString(raw, "proxy"),
 		ViaInterface: configString(raw, "via_interface"),
+		DeviceIDs:    configStrings(raw, "device_ids"),
 	}
 	if config.BaseURL == "" {
 		config.BaseURL = defaultTelegramBaseURL
@@ -2648,12 +2721,16 @@ func tailDigits(value string, count int) string {
 	return value[len(value)-count:]
 }
 
-func waitTelegram(ctx context.Context, duration time.Duration) bool {
+// waitSMSInserted waits for duration, returning early when inserted is closed
+// (a nil channel waits the full duration). It reports false if ctx ends first.
+func waitSMSInserted(ctx context.Context, duration time.Duration, inserted <-chan struct{}) bool {
 	timer := time.NewTimer(duration)
 	defer timer.Stop()
 	select {
 	case <-ctx.Done():
 		return false
+	case <-inserted:
+		return true
 	case <-timer.C:
 		return true
 	}
@@ -2673,6 +2750,11 @@ func (bot *telegramBot) notifyInboundCalls(ctx context.Context) {
 					bot.warn("list devices for Telegram call notifications", listErr)
 				} else {
 					for _, device := range devices {
+						// Honour the per-device notification filter like every
+						// other Telegram notification.
+						if !notificationMatchesDevice(config.DeviceIDs, device.ID) {
+							continue
+						}
 						calls, callErr := controller.Calls(device.ID)
 						if callErr != nil {
 							continue
@@ -2720,4 +2802,8 @@ func (bot *telegramBot) notifyInboundCalls(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func waitTelegram(ctx context.Context, duration time.Duration) bool {
+	return waitSMSInserted(ctx, duration, nil)
 }

@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { AddRegular, DeleteRegular, EyeOffRegular, EyeRegular } from "@fluentui/react-icons";
+import { AddRegular, CheckmarkRegular, DeleteRegular, EyeOffRegular, EyeRegular } from "@fluentui/react-icons";
 import { tl, useI18n } from "../../lib/i18n";
 import { cx } from "../../lib/utils";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Switch } from "../ui/Switch";
 import { message } from "../ui/message";
+import type { DeviceListItem } from "../../types";
 
 const LABEL_CLASS = "text-xs font-bold text-gray-500 uppercase tracking-wider";
 
@@ -218,6 +219,52 @@ export function SegmentedTabs({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+export function NotificationDeviceScope({ value, onChange, devices, failed, title, hint, className }: {
+  value: string[] | null;
+  onChange: (ids: string[] | null) => void;
+  devices: Pick<DeviceListItem, "id" | "name">[] | null;
+  failed: boolean;
+  title?: string;
+  hint?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  const label = title ?? t("仅推送指定设备");
+  const available = devices ?? [];
+  // Unknown/offline IDs remain selectable; loading never rewrites the draft.
+  const choices = [...available, ...(value ?? []).filter((id) => !available.some((device) => device.id === id))
+    .map((id) => ({ id, name: "" }))];
+  return (
+    <div className={className ?? "mt-6 space-y-3 border-t border-gray-200 pt-4 text-sm dark:border-white/10"}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="break-all font-medium text-gray-800 dark:text-gray-100">{label}</div>
+          <p className="mt-1 text-xs text-gray-500">{hint ?? t("关闭时推送全部设备的通知。")}</p>
+        </div>
+        <Switch checked={value !== null} onChange={enabled => onChange(enabled ? [] : null)} ariaLabel={label} />
+      </div>
+      {value !== null ? <>
+        {failed ? <p className="text-xs text-amber-600 dark:text-amber-400">{t("设备列表加载失败，已保留适用设备范围。")}</p> : devices === null ? (
+          <p className="text-xs text-gray-500">{t("正在加载设备…")}</p>
+        ) : null}
+        <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto p-1">
+          {choices.map((device) => {
+            const selected = value.includes(device.id);
+            return (
+              <Button key={device.id} size="small" plain variant={selected ? "primary" : "default"}
+                className={cx("!rounded-md !shadow-none !transition-colors", !selected && "!px-5")} title={device.id} aria-pressed={selected}
+                icon={selected ? <CheckmarkRegular className="h-3 w-3" /> : undefined}
+                onClick={() => onChange(selected ? value.filter(id => id !== device.id) : [...value, device.id])}>
+                {device.name || device.id}
+              </Button>
+            );
+          })}
+        </div>
+      </> : null}
     </div>
   );
 }

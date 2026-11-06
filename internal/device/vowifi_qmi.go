@@ -30,13 +30,50 @@ func (manager *Manager) withNativeQMIVoWiFiSession(ctx context.Context, id strin
 	return fn(qmiSession)
 }
 
-// ReadNativeQMIIdentity supplies the live subscription identity without using
-// an AT port. The primitive return values intentionally keep device independent
-// from the VoWiFi package while satisfying its narrow controller interface.
+// ReadNativeQMIIdentity reads the subscription through QMI UIM/DMS. When an AT
+// port exists, first wake the SIM interface in RF-off mode before taking the
+// QMI lease. Primitive return values keep device independent from VoWiFi.
 func (manager *Manager) ReadNativeQMIIdentity(ctx context.Context, id string) (iccid, imsi, imei, mcc, mnc string, err error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	state, lookupErr := manager.lookup(id)
+	if lookupErr != nil {
+		err = lookupErr
+		return
+	}
+	// Identity reads may recover SIM power as a side effect. Treat them like
+	// snapshot polling so an eSIM transaction is the only reset owner.
+	unlockProfileRead, gateErr := manager.lockProfileSwitchRead(ctx, id, state)
+	if gateErr != nil {
+		err = gateErr
+		return
+	}
+	defer unlockProfileRead()
+	// A missing/unpowered card may never answer READ TRANSPARENT. Do not hold
+	// the shared QMI lease for the lifecycle's two-minute SIM-ready timeout.
+	ctx, cancelIdentity := context.WithTimeout(ctx, 25*time.Second)
+	defer cancelIdentity()
+	if prepareErr := manager.prepareNativeQMISIMIdentity(ctx, id); prepareErr != nil && manager.logger != nil {
+		manager.logger.Debug("native QMI SIM AT preparation unavailable", "category", "hardware", "device_id", id, "error", prepareErr)
+	}
 	err = manager.withNativeQMIVoWiFiSession(ctx, id, func(session nativeQMIVoWiFiSession) error {
-		if iccid, err = session.GetICCID(ctx); err != nil {
-			return fmt.Errorf("read QMI ICCID: %w", err)
+		var recovered bool
+		if iccid, recovered, err = readVoWiFiNativeQMIICCID(ctx, session); err != nil {
+			control, _, _ := manager.nativeQMIControl(id)
+			hotSwapRecovered, recoveryErr := manager.recoverNativeQMIHotSwapSession(ctx, control, session)
+			if !hotSwapRecovered {
+				return fmt.Errorf("read QMI ICCID: %w", errors.Join(err, recoveryErr))
+			}
+			readContext, cancelRead := context.WithTimeout(ctx, 3*time.Second)
+			iccid, err = session.GetICCID(readContext)
+			cancelRead()
+			if err != nil {
+				return fmt.Errorf("read QMI ICCID after hot-swap recovery: %w", err)
+			}
+		}
+		if recovered && manager.logger != nil {
+			manager.logger.Info("native QMI SIM recovered from shutdown with cellular RF disabled", "category", "hardware", "device_id", id)
 		}
 		if imsi, err = session.GetIMSI(ctx); err != nil {
 			return fmt.Errorf("read QMI IMSI: %w", err)
@@ -50,6 +87,72 @@ func (manager *Manager) ReadNativeQMIIdentity(ctx context.Context, id string) (i
 		return nil
 	})
 	return
+}
+
+type nativeQMISIMStartupSession interface {
+	GetICCID(context.Context) (string, error)
+	GetOperatingMode(context.Context) (qmi.OperatingMode, error)
+	SetOperatingMode(context.Context, qmi.OperatingMode) error
+	PowerOnSIM(context.Context, uint8) error
+}
+
+// A cold-booted 410 can report DMS shutting-down and UIM no-ATR indefinitely.
+// Repeating EF_ICCID reads cannot initialize that SIM. Recover this precise
+// power state into low-power mode and power on slot 1, without ever requesting
+// DMS online, cycling a working SIM, changing a profile, or entering a PIN.
+// Other read failures retain their original error and do not trigger recovery.
+func readVoWiFiNativeQMIICCID(ctx context.Context, session nativeQMISIMStartupSession) (string, bool, error) {
+	readContext, cancelRead := context.WithTimeout(ctx, 3*time.Second)
+	iccid, identityErr := session.GetICCID(readContext)
+	cancelRead()
+	if identityErr == nil || ctx.Err() != nil {
+		return iccid, false, identityErr
+	}
+	mode, err := session.GetOperatingMode(ctx)
+	if err != nil || mode != qmi.ModeShutdown {
+		return "", false, identityErr
+	}
+	recoveryContext, cancel := context.WithTimeout(ctx, 12*time.Second)
+	defer cancel()
+	if err := session.SetOperatingMode(recoveryContext, qmi.ModeLowPower); err != nil {
+		return "", false, fmt.Errorf("leave QMI shutdown with RF disabled: %w", err)
+	}
+	// Verify the requested mode before addressing the SIM. Neither shutdown
+	// nor generic 'radio off' is sufficient evidence that UIM is available.
+	for {
+		mode, err = session.GetOperatingMode(recoveryContext)
+		if err != nil {
+			return "", false, fmt.Errorf("verify QMI low-power SIM recovery: %w", err)
+		}
+		if mode == qmi.ModeLowPower {
+			break
+		}
+		if mode != qmi.ModeShutdown {
+			return "", false, errors.New("QMI SIM recovery did not reach low-power mode")
+		}
+		if err := waitNativeQMIRecovery(recoveryContext, 250*time.Millisecond); err != nil {
+			return "", false, fmt.Errorf("wait for QMI low-power SIM recovery: %w", err)
+		}
+	}
+	if err := session.PowerOnSIM(recoveryContext, 1); err != nil {
+		return "", false, fmt.Errorf("power on QMI SIM after shutdown: %w", err)
+	}
+	for {
+		iccid, err = session.GetICCID(recoveryContext)
+		if err == nil && iccid != "" {
+			mode, err = session.GetOperatingMode(recoveryContext)
+			if err != nil {
+				return "", false, fmt.Errorf("verify RF state after QMI SIM recovery: %w", err)
+			}
+			if mode != qmi.ModeLowPower {
+				return "", false, errors.New("QMI low-power mode was not preserved after SIM recovery")
+			}
+			return iccid, true, nil
+		}
+		if waitErr := waitNativeQMIRecovery(recoveryContext, 250*time.Millisecond); waitErr != nil {
+			return "", false, fmt.Errorf("wait for QMI SIM identity after shutdown: %w", errors.Join(waitErr, err))
+		}
+	}
 }
 
 func (manager *Manager) ProbeNativeQMIApplication(ctx context.Context, id, preference string) (aid []byte, application string, err error) {
@@ -98,18 +201,10 @@ func (manager *Manager) AuthenticateNativeQMI(ctx context.Context, id string, ai
 				step = 4
 			}
 		}
-		// 鉴权超时或取消后仍须尝试释放本次打开的通道，清理最多等待两秒。
+		// 请求取消后仍释放本次打开的通道，清理最多等待两秒。
 		closeContext, cancelClose := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
 		closeErr := session.CloseLogicalChannel(closeContext, 1, channel)
 		cancelClose()
-		if closeErr != nil && manager.logger != nil {
-			manager.logger.Warn("close QMI UIM authentication channel failed",
-				"device_id", id,
-				"slot", 1,
-				"channel", channel,
-				"error", HardwareErrorDetail(closeErr),
-			)
-		}
 		return errors.Join(err, closeErr)
 	})
 	return
@@ -138,26 +233,8 @@ func openNativeQMIChannelWithRecovery(
 	if resetter, ok := session.(nativeQMIUIMResetSession); ok {
 		_ = resetter.ResetUIM(ctx)
 	}
-	if powerErr := session.PowerOffSIM(ctx, slot); powerErr != nil {
-		return 0, errors.Join(err, fmt.Errorf("power off QMI UIM slot %d: %w", slot, powerErr))
-	}
-	restorePower := func() error {
-		cleanupContext, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-		defer cancel()
-		return session.PowerOnSIM(cleanupContext, slot)
-	}
-	if waitErr := waitNativeQMIRecovery(ctx, 3*time.Second); waitErr != nil {
-		// Power-off succeeded, so cancellation of the caller must not strand the
-		// physical SIM in power-down. Restore power with a bounded cleanup context
-		// that survives an HTTP/UI request being canceled.
-		powerErr := restorePower()
-		if powerErr != nil {
-			return 0, errors.Join(err, waitErr, fmt.Errorf("restore power to QMI UIM slot %d: %w", slot, powerErr))
-		}
-		return 0, errors.Join(err, waitErr)
-	}
-	if powerErr := restorePower(); powerErr != nil {
-		return 0, errors.Join(err, fmt.Errorf("power on QMI UIM slot %d: %w", slot, powerErr))
+	if powerErr := cycleNativeQMISIMPower(ctx, session, slot, 3*time.Second); powerErr != nil {
+		return 0, errors.Join(err, powerErr)
 	}
 	if waitErr := waitNativeQMIRecovery(ctx, 5*time.Second); waitErr != nil {
 		return 0, errors.Join(err, waitErr)
@@ -253,15 +330,7 @@ func (manager *Manager) powerCycleNativeQMISIM(ctx context.Context, id string) (
 	if resetter, ok := session.(nativeQMIUIMResetSession); ok {
 		_ = resetter.ResetUIM(ctx)
 	}
-	if err := uim.PowerOffSIM(ctx, 1); err != nil {
-		return true, err
-	}
-	select {
-	case <-ctx.Done():
-		return true, ctx.Err()
-	case <-time.After(3 * time.Second):
-	}
-	if err := uim.PowerOnSIM(ctx, 1); err != nil {
+	if err := cycleNativeQMISIMPower(ctx, uim, 1, 3*time.Second); err != nil {
 		return true, err
 	}
 	select {
@@ -269,5 +338,43 @@ func (manager *Manager) powerCycleNativeQMISIM(ctx context.Context, id string) (
 		return true, ctx.Err()
 	case <-time.After(time.Second):
 	}
+	if provisioner, ok := session.(nativeQMIProvisioningSession); ok {
+		if err := rebindNativeQMIPrimaryGWProvisioning(ctx, provisioner); err != nil {
+			return true, err
+		}
+	}
 	return true, nil
+}
+
+// rebindNativeQMIPrimaryGWProvisioning binds the USIM selected by the newly
+// active eUICC profile to the primary GSM/LTE provisioning session.  This is
+// performed through VoCat's existing QMI lease, rather than a competing
+// qmicli/ModemManager client, so the VoCat process stays alive after a profile
+// switch.
+func rebindNativeQMIPrimaryGWProvisioning(ctx context.Context, session nativeQMIProvisioningSession) error {
+	if session == nil {
+		return errors.New("native QMI provisioning session is unavailable")
+	}
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		aid, err := session.GetUSIMAID(ctx)
+		if err == nil && len(aid) > 0 {
+			if err := session.RebindPrimaryGWProvisioning(ctx, 1, aid); err != nil {
+				return fmt.Errorf("rebind primary GSM/LTE provisioning session: %w", err)
+			}
+			return nil
+		}
+		if err != nil {
+			lastErr = err
+		} else {
+			lastErr = errors.New("USIM AID is empty")
+		}
+		if attempt == 4 {
+			break
+		}
+		if err := waitNativeQMIRecovery(ctx, time.Second); err != nil {
+			return err
+		}
+	}
+	return fmt.Errorf("read USIM AID after profile switch: %w", lastErr)
 }
