@@ -1,6 +1,5 @@
-import type { PointerEvent, RefObject, UIEvent, KeyboardEvent } from "react";
-import { DeleteRegular, SendRegular } from "@fluentui/react-icons";
-import { Button, EmptyState, Textarea } from "../ui";
+import { Fragment, type PointerEvent, type RefObject, type UIEvent, type KeyboardEvent } from "react";
+import { ArrowUpFilled, ChatRegular, ChevronLeftRegular, DeleteRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import type { SMSMessage } from "../../types";
 import {
@@ -12,6 +11,8 @@ import {
   type SmsThread,
 } from "./smsText";
 import { tf, useI18n } from "../../lib/i18n";
+import { ContentUnavailable } from "../ios";
+import { Spinner } from "../ui";
 
 export interface ThreadPanelProps {
   isMobile: boolean;
@@ -41,31 +42,11 @@ export interface ThreadPanelProps {
   onMsgPointerEnd: (e: PointerEvent) => void;
 }
 
-function DeleteMsgButton({
-  loading,
-  id,
-  canHover,
-  onDelete,
-}: {
-  loading: boolean;
-  id: number;
-  canHover: boolean;
-  onDelete: () => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <Button
-      variant="text"
-      size="small"
-      loading={loading}
-      aria-label={t("删除短信 ") + id}
-      title={t("删除短信")}
-      onClick={onDelete}
-      className={cx("sms-danger-ghost-btn sms-delete-trigger sms-message-delete-btn", !canHover && "sms-delete-visible")}
-      icon={<DeleteRegular />}
-    />
-  );
-}
+const DELIVERY_LABEL: Record<string, string> = {
+  delivered: "已送达",
+  accepted_unconfirmed: "已发送",
+  failed: "未能送达",
+};
 
 export function ThreadPanel(props: ThreadPanelProps) {
   const { t } = useI18n();
@@ -86,7 +67,6 @@ export function ThreadPanel(props: ThreadPanelProps) {
     detailRef,
     composerRef,
     onBack,
-    onScrollToBottom,
     onLoadMore,
     onDeleteMessage,
     onComposerChange,
@@ -98,147 +78,161 @@ export function ThreadPanel(props: ThreadPanelProps) {
   } = props;
 
   const subtitle =
-    selectedDevice === "all"
-      ? activeThread && (activeThread.localPhone || activeThread.lastDeviceName)
-        ? tf("本机：{phone}", { phone: activeThread.localPhone || activeThread.lastDeviceName })
-        : t("全部设备")
-      : tf("设备：{device}", { device: selectedDevice });
+    activeThread?.displayName && activeThread.displayName !== activeThread.peer
+      ? activeThread.peer
+      : selectedDevice === "all"
+        ? activeThread && (activeThread.localPhone || activeThread.lastDeviceName)
+          ? tf("本机：{phone}", { phone: activeThread.localPhone || activeThread.lastDeviceName })
+          : t("全部设备")
+        : tf("设备：{device}", { device: selectedDevice });
 
   function onComposerKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    // Enter sends on desktop; on phones Enter is a newline like iOS.
+    if (!isMobile && e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       onSend();
     }
   }
 
+  if (!activeThread) {
+    return (
+      <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center bg-bg">
+        <ContentUnavailable icon={<ChatRegular />} title={t("没有选中的对话")} description={t("从左侧选择一个对话查看短信")} />
+      </div>
+    );
+  }
+
+  // Index of the last outbound message, which shows its delivery status.
+  const flat = groups.flatMap((group) => group.items);
+  const lastOutboundId = [...flat].reverse().find((m) => messageType(m) !== 1)?.id;
+  const name = activeThread.displayName || activeThread.peer;
+
   return (
-    <div className="flex min-h-0 min-w-0 flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-gray-100 p-4 dark:border-white/10">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {isMobile && activeThread ? (
-              <Button variant="text" onClick={onBack}>
-                {t("返回")}
-              </Button>
-            ) : null}
-            <div className="truncate text-sm font-semibold text-gray-900 dark:text-label">
-              {activeThread?.displayName || activeThread?.peer || t("请选择会话")}
-            </div>
-          </div>
-          <div className="mt-1 text-xs text-gray-400 dark:text-label-2">{activeThread?.displayName && activeThread.displayName !== activeThread.peer ? activeThread.peer : subtitle}</div>
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-bg">
+      {/* Glass header floating over the conversation. */}
+      <header className="glass-chrome absolute inset-x-0 top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-center px-3 pb-2 pt-[max(8px,env(safe-area-inset-top))]">
+        <div className="flex">
+          {isMobile ? (
+            <button type="button" onClick={onBack} aria-label={t("返回")} className="glass glass-interactive inline-flex h-10 w-10 items-center justify-center rounded-full text-label">
+              <ChevronLeftRegular className="h-[22px] w-[22px]" />
+            </button>
+          ) : null}
         </div>
-        {activeThread ? (
-          <div className="flex items-center gap-2">
-            <Button variant="text" onClick={onScrollToBottom}>
-              {t("最新")}
-            </Button>
+        <div className="flex min-w-0 max-w-[60vw] flex-col items-center md:max-w-[420px]">
+          <span className="ios-avatar mb-1 h-10 w-10 text-[17px]">{Array.from(name)[0]?.toUpperCase()}</span>
+          <span className="glass inline-flex max-w-full items-center rounded-full px-3 py-0.5">
+            <span className="truncate ios-footnote font-semibold text-label">{name}</span>
+          </span>
+          <span className="mt-0.5 max-w-full truncate ios-caption-2 text-label-2">{subtitle}</span>
+        </div>
+        <div />
+      </header>
+
+      <div ref={detailRef} onScroll={onDetailScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-[124px]">
+        {canLoadMore ? (
+          <div className="mb-3 flex justify-center">
+            <button type="button" onClick={onLoadMore} disabled={loadingMore} className="inline-flex items-center gap-2 rounded-full bg-fill-3 px-3 py-1 ios-footnote font-medium text-label-2">
+              {loadingMore ? <Spinner className="h-3 w-3" /> : null}
+              {t("加载更早的信息")}
+            </button>
           </div>
         ) : null}
+        {groups.map((group) => (
+          <Fragment key={group.date}>
+            <div className="my-3 text-center ios-caption font-medium text-label-2">{group.date}</div>
+            <div className="flex flex-col gap-[3px]">
+              {group.items.map((message, index) => {
+                const outbound = messageType(message) !== 1;
+                const next = group.items[index + 1];
+                const nextOutbound = next ? messageType(next) !== 1 : null;
+                const tail = nextOutbound === null || nextOutbound !== outbound;
+                const delivery = outbound ? messageDeliveryIndicator(message) : null;
+                const failed = delivery === "failed";
+                const time = new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <Fragment key={message.id}>
+                    <div
+                      className={cx("group flex items-end gap-2", outbound ? "flex-row-reverse" : "flex-row", tail && "mb-2")}
+                      onPointerDown={(event) => onMsgPointerDown(message, event)}
+                      onPointerMove={onMsgPointerMove}
+                      onPointerUp={onMsgPointerEnd}
+                      onPointerCancel={onMsgPointerEnd}
+                    >
+                      <div
+                        className={cx("ios-bubble ios-bubble-in", outbound ? "is-out" : "is-in", tail && "has-tail", failed && "is-failed")}
+                        title={`${new Date(message.timestamp).toLocaleString()}${message.deviceName ? ` · ${message.deviceName}` : ""}`}
+                      >
+                        {!outbound && message.sender && message.sender !== activeThread.peer && message.sender !== activeThread.displayName ? (
+                          <div className="mb-0.5 ios-caption font-semibold text-label-2">{message.sender}</div>
+                        ) : null}
+                        {message.decodeError ? (
+                          <div className="mb-1 ios-footnote text-sys-orange" role="status">
+                            {t("短信解析失败")}：{message.decodeError}
+                          </div>
+                        ) : null}
+                        {messageBody(message) || <span className="opacity-60">{t("短信正文为空")}</span>}
+                      </div>
+                      {isDesktop ? (
+                        <span className={cx("mb-1 flex shrink-0 items-center gap-1 transition-opacity", canHover ? "opacity-0 group-hover:opacity-100" : "opacity-100")}>
+                          <span className="ios-caption-2 text-label-3">{time}</span>
+                          <button
+                            type="button"
+                            aria-label={t("删除短信 ") + message.id}
+                            title={t("删除短信")}
+                            disabled={deletingMessageId === message.id}
+                            onClick={() => onDeleteMessage(message)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-label-3 hover:bg-sys-red/10 hover:text-sys-red"
+                          >
+                            {deletingMessageId === message.id ? <Spinner className="h-3 w-3" /> : <DeleteRegular className="h-4 w-4" />}
+                          </button>
+                        </span>
+                      ) : null}
+                    </div>
+                    {message.id === lastOutboundId && delivery ? (
+                      <div className={cx("-mt-1 mb-2 pr-1 text-right ios-caption-2 font-medium", failed ? "text-sys-red" : "text-label-2")}>
+                        {t(DELIVERY_LABEL[delivery] ?? "发送状态未知")}
+                        {message.deviceName ? ` · ${message.deviceName}` : ""}
+                      </div>
+                    ) : null}
+                  </Fragment>
+                );
+              })}
+            </div>
+          </Fragment>
+        ))}
       </div>
-      {activeThread ? (
-        <div ref={detailRef} onScroll={onDetailScroll} className="sms-detail-scroll min-h-0 flex-1 overflow-y-auto">
-          <div className="space-y-5 p-5">
-            {canLoadMore ? (
-              <div className="flex justify-center">
-                <Button variant="text" loading={loadingMore} onClick={onLoadMore}>
-                  {t("加载更多")}
-                </Button>
-              </div>
-            ) : null}
-{groups.map((g) => (
-  <div key={g.date} className="space-y-4">
-    <div className="flex justify-center">
-      <div className="rounded-full border border-gray-200/60 bg-gray-100/80 px-3 py-1 text-[11px] font-bold text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
-        {g.date}
-      </div>
-    </div>
-    {g.items.map((m) => {
-      const outbound = messageType(m) !== 1;
-      const delivery = messageDeliveryIndicator(m);
-      const hasDevice = !!m.deviceName;
-      return (
-        <div key={m.id} className={cx("flex", outbound ? "justify-end" : "justify-start")}>
-<div
-  className="sms-msg-wrapper group"
-  onPointerDown={(e) => onMsgPointerDown(m, e)}
-  onPointerMove={onMsgPointerMove}
-  onPointerUp={onMsgPointerEnd}
-  onPointerCancel={onMsgPointerEnd}
->
-<div className={cx("mb-1 flex items-center gap-2", outbound && "justify-end")}>
-  {!outbound ? <span className="text-xs font-bold text-gray-700 dark:text-gray-200">{m.sender}</span> : null}
-  {isDesktop && outbound && hasDevice ? (
-    <DeleteMsgButton loading={deletingMessageId === m.id} id={m.id} canHover={canHover} onDelete={() => onDeleteMessage(m)} />
-  ) : null}
-  {hasDevice ? (
-    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-400 dark:bg-white/5">{m.deviceName}</span>
-  ) : null}
-  <span className="font-mono text-[11px] text-gray-400">{new Date(m.timestamp).toLocaleString()}</span>
-  {outbound && delivery === "delivered" ? (
-    <span className="text-xs font-bold text-green-500" title="已确认送达">✓✓</span>
-  ) : outbound && delivery === "accepted_unconfirmed" ? (
-    <span className="text-xs font-bold text-amber-500" title="已提交，尚未确认送达">✓</span>
-  ) : outbound && delivery === "failed" ? (
-    <span className="text-xs font-bold text-red-500" title="发送失败">✗</span>
-  ) : outbound ? (
-    <span className="text-xs font-bold text-gray-400" title="发送状态未知">?</span>
-  ) : null}
-  {isDesktop && (!outbound || !hasDevice) ? (
-    <DeleteMsgButton loading={deletingMessageId === m.id} id={m.id} canHover={canHover} onDelete={() => onDeleteMessage(m)} />
-  ) : null}
-</div>
-<div
-  className={cx(
-    "rounded-2xl border px-5 py-4 text-sm leading-[1.75] shadow-sm",
-    outbound
-      ? "border-transparent bg-[var(--color-primary-soft)] text-gray-800 dark:text-label"
-      : "border-gray-100 bg-white/90 text-gray-700 dark:border-separator dark:bg-grouped-3 dark:text-label/85",
-  )}
->
-  {m.decodeError ? (
-    <div className="mb-1 text-xs text-amber-700 dark:text-amber-400" role="status">
-      {t("短信解析失败")}：{m.decodeError}
-    </div>
-  ) : null}
-  {messageBody(m) || (
-    <span className="text-gray-400">{t("短信正文为空")}</span>
-  )}
-</div>
-</div>
-        </div>
-      );
-    })}
-  </div>
-))}
-            <div className="h-2" />
+
+      {/* Composer: a glass capsule with the send arrow inside. */}
+      <div className="shrink-0 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2">
+        {composerLength > 0 ? (
+          <div className="mb-1 px-3 text-right ios-caption-2 text-label-3">
+            {tf("{encoding} · 预计 {parts} 段 · {length} 字", { encoding: composerInfo.encoding, parts: composerInfo.parts, length: composerLength })}
           </div>
+        ) : null}
+        <div className="glass flex items-end gap-2 rounded-[22px] py-1 pl-4 pr-1">
+          <textarea
+            ref={composerRef}
+            value={composer}
+            onChange={(e) => onComposerChange(e.target.value)}
+            onKeyDown={onComposerKeyDown}
+            placeholder={t("短信")}
+            rows={1}
+            className="max-h-40 min-h-[34px] flex-1 resize-none border-0 bg-transparent py-[7px] text-[17px] leading-[20px] text-label outline-none [field-sizing:content] placeholder:text-label-3 lg:text-[15px]"
+          />
+          <button
+            type="button"
+            aria-label={t("发送")}
+            onClick={onSend}
+            disabled={sending || !composer.trim()}
+            className={cx(
+              "mb-[1px] inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-[transform,opacity] duration-200 ios-press",
+              !composer.trim() && "scale-75 opacity-0",
+            )}
+          >
+            {sending ? <Spinner className="h-4 w-4 text-white" /> : <ArrowUpFilled className="h-[18px] w-[18px]" />}
+          </button>
         </div>
-      ) : (
-        <div className="flex flex-1 items-center justify-center p-6">
-          <EmptyState title={t("请选择一个会话")} subtitle={t("从左侧联系人列表进入短信明细")} />
-        </div>
-      )}
-{activeThread ? (
-  <div className="border-t border-gray-100 p-4 dark:border-white/10">
-    <div className="mb-2 text-left text-[11px] text-gray-400">
-      {tf("{encoding} · 预计 {parts} 段 · {length} 字", { encoding: composerInfo.encoding, parts: composerInfo.parts, length: composerLength })}
-    </div>
-    <div className="flex items-end gap-3">
-      <Textarea
-        ref={composerRef}
-        value={composer}
-        onChange={(e) => onComposerChange(e.target.value)}
-        onKeyDown={onComposerKeyDown}
-        placeholder={t("回复（Enter 发送）")}
-        rows={1}
-        className="max-h-40 resize-none [field-sizing:content]"
-      />
-      <Button variant="primary" loading={sending} onClick={onSend} className="!border-0 self-end" icon={<SendRegular />}>
-        {t("发送")}
-      </Button>
-    </div>
-  </div>
-) : null}
+      </div>
     </div>
   );
 }

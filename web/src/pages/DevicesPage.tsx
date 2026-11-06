@@ -5,7 +5,7 @@ import { api, apiMessage, camelize } from "../api";
 import type { CardPolicy, DeviceConfig, DeviceListItem, DiscoveredDevice } from "../types";
 import { usePolling } from "../lib/usePolling";
 import { useMediaQuery } from "../lib/useMediaQuery";
-import { Button, PageHeader, RefreshButton, ErrorState, ListSkeleton, Tabs, confirmDialog, message } from "../components/ui";
+import { Button, PageFrame, PageHeader, RefreshButton, ErrorState, ListSkeleton, Tabs, confirmDialog, message } from "../components/ui";
 import { DeviceListPanel, type StatusFilter, type SortDir, type SortKey } from "../components/devices/DeviceListPanel";
 import { DeviceDetailHeader } from "../components/devices/DeviceDetailHeader";
 import { DeviceOverviewTab } from "../components/devices/DeviceOverviewTab";
@@ -716,7 +716,7 @@ export default function DevicesPage() {
   ) : null;
 
   return (
-    <div className="devices-page mx-auto w-full max-w-[1500px]">
+    <PageFrame className="devices-page" wide>
       <PageHeader
         title={t("设备管理")}
         subtitle={t("接管 EC20 模组并执行射频、网络、SIM 与终端功能检测")}
@@ -853,6 +853,6 @@ export default function DevicesPage() {
         onClose={() => setWebsheetOpen(false)}
         onDone={handleWebsheetDone}
       />
-    </div>
+    </PageFrame>
   );
 }

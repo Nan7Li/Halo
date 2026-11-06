@@ -21,13 +21,12 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import DevicesPage from "./pages/DevicesPage";
 import PhonePage from "./pages/PhonePage";
-import ProxyPage from "./pages/ProxyPage";
-import ExportProxyPage from "./pages/ExportProxyPage";
 import SmsPage from "./pages/SmsPage";
 import AutomaticTasksPage from "./pages/AutomaticTasksPage";
 import LogsPage from "./pages/LogsPage";
 import SettingsPage from "./pages/SettingsPage";
-import WireGuardPage from "./pages/WireGuardPage";
+import NetworkPage from "./pages/NetworkPage";
+import MorePage from "./pages/MorePage";
 import ExtensionPage from "./pages/ExtensionPage";
 import { safeRedirect } from "./lib/safeRedirect";
 
@@ -66,7 +65,7 @@ function useTheme() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
-    document.documentElement.style.background = isDark ? "#1A1610" : "#F7F4EF";
+    document.documentElement.style.background = isDark ? "#000000" : "#F2F2F7";
     applyAccent(readStoredAccent(), false);
   }, [isDark]);
   return { isDark, toggle: () => writeThemePreference(isDark ? "light" : "dark") };
@@ -129,7 +128,7 @@ function AppRoot() {
   if (!ready) return <LoadingScreen />;
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-grouped font-sans text-label transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] dark:bg-grouped dark:text-label">
+    <div className="h-[100dvh] w-screen overflow-hidden bg-grouped font-sans text-label">
       <Routes>
         <Route path="/login" element={<LoginLayout isDark={isDark} onToggleTheme={toggle} />}>
           <Route index element={<LoginPage />} />
@@ -144,15 +143,20 @@ function AppRoot() {
         >
           <Route index element={<DashboardPage />} />
           <Route path="phone" element={<PhonePage />} />
+          <Route path="phone/:section" element={<PhonePage />} />
           <Route path="devices/*" element={<DevicesPage />} />
-          <Route path="proxy" element={<ProxyPage />} />
-          <Route path="wireguard" element={<WireGuardPage />} />
-          <Route path="export-proxy" element={<ExportProxyPage />} />
+          <Route path="network" element={<Navigate to="/network/proxy" replace />} />
+          <Route path="network/:section" element={<NetworkPage />} />
+          <Route path="proxy" element={<Navigate to="/network/proxy" replace />} />
+          <Route path="wireguard" element={<Navigate to="/network/wireguard" replace />} />
+          <Route path="export-proxy" element={<Navigate to="/network/export" replace />} />
           <Route path="sms" element={<SmsPage />} />
           <Route path="automatic-tasks" element={<AutomaticTasksPage />} />
           <Route path="extensions/:pluginId/:contributionId" element={<ExtensionPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/:section" element={<SettingsPage />} />
+          <Route path="more" element={<MorePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

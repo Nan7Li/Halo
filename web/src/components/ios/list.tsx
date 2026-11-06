@@ -137,7 +137,7 @@ export function ListRow({
 }
 
 /** Trailing swipe actions, revealed by dragging left (touch or mouse). */
-function SwipeRow({ actions, children }: { actions: SwipeAction[]; children: ReactNode }) {
+export function SwipeRow({ actions, children, background = "rgb(var(--ios-grouped-2))" }: { actions: SwipeAction[]; children: ReactNode; background?: string }) {
   const width = actions.length * 80;
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -211,7 +211,7 @@ function SwipeRow({ actions, children }: { actions: SwipeAction[]; children: Rea
           transition: dragging ? "none" : "transform var(--dur-spring-snappy) var(--spring-snappy)",
           touchAction: "pan-y",
           position: "relative",
-          background: "rgb(var(--ios-grouped-2))",
+          background,
         }}
       >
         {children}

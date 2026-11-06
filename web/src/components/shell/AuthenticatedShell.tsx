@@ -1,105 +1,89 @@
-import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import {
-  BoardRegular,
-  CallRegular,
-  DocumentTextRegular,
-  GlobeRegular,
-  MailRegular,
-  SendClockRegular,
-  PanelLeftContractRegular,
-  PanelLeftExpandRegular,
-  RouterRegular,
-  SettingsRegular,
-  ShieldLockRegular,
-  SignOutRegular,
-} from "@fluentui/react-icons";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth";
 import { useI18n } from "../../lib/i18n";
+import { useMediaQuery } from "../../lib/useMediaQuery";
 import { confirmDialog } from "../ui/MessageBox";
-import { LanguageSwitch } from "../ui/LanguageSwitch";
-import { SwitchDark } from "../ui/SwitchDark";
-import { Drawer } from "../ui/Drawer";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
-import { cx } from "../../lib/utils";
-import { BrandLogo } from "./BrandLogo";
-import { VersionBadge } from "./VersionBadge";
+import { ScrollContainerContext } from "../ios/core";
 import { listPlugins, type InstalledPlugin } from "../../extensions";
 import { api } from "../../api";
 import type { SystemInfo } from "../../types";
+import { Sidebar } from "./Sidebar";
+import { TabBar } from "./TabBar";
+import { pluginNav } from "./nav";
+import { ShellContext } from "./ShellContext";
+import { CallProvider } from "../phone/CallProvider";
 
-const NAV = [
-  { to: "/", label: "仪表盘", icon: BoardRegular, end: true },
-  { to: "/phone", label: "电话", icon: CallRegular },
-  { to: "/devices", label: "设备管理", icon: RouterRegular },
-  { to: "/proxy", label: "代理管理", icon: GlobeRegular },
-  { to: "/wireguard", label: "WG 隧道", icon: ShieldLockRegular },
-  { to: "/sms", label: "短信检测", icon: MailRegular },
-  { to: "/automatic-tasks", label: "自动任务", icon: SendClockRegular },
-  { to: "/logs", label: "实时日志", icon: DocumentTextRegular },
-  { to: "/settings", label: "系统设置", icon: SettingsRegular },
-];
+const SIDEBAR_KEY = "halo.sidebar.collapsed";
 
-export function AuthenticatedShell({
-  isDark,
-  onToggleTheme,
-}: {
-  isDark: boolean;
-  onToggleTheme: () => void;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [compact, setCompact] = useState(false);
+function readCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Signed-in frame. Phones get the floating glass tab bar; iPad-width and
+ * larger screens get the floating glass sidebar. Content scrolls inside
+ * one container that pages, navigation bars and the tab bar observe.
+ */
+export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean; onToggleTheme: () => void }) {
+  const wide = useMediaQuery("(min-width: 768px)");
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [developer, setDeveloper] = useState(false);
-  const { logout, user } = useAuth();
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  const [tabBarHidden, setTabBarHidden] = useState(false);
+  const { logout } = useAuth();
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
+  const scrollRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let active = true;
-    const load = () => api<SystemInfo>("/system/info").then((info) => {
-      if (active) setDeveloper(!!info.developer);
-    }).catch(() => {
-      if (active) setDeveloper(false);
-    });
+    const load = () =>
+      api<SystemInfo>("/system/info")
+        .then((info) => active && setDeveloper(!!info.developer))
+        .catch(() => active && setDeveloper(false));
     void load();
-    const timer = window.setInterval(load, 10_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => {
-      setIsMobile(mq.matches);
-      if (!mq.matches) setMobileOpen(false);
+    const timer = window.setInterval(load, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
     };
-    update();
-    window.addEventListener("resize", update, { passive: true });
-    return () => window.removeEventListener("resize", update);
   }, []);
 
   useEffect(() => {
     let active = true;
-    const load = () => listPlugins().then((items) => {
-      if (active) setPlugins(items || []);
-    }).catch(() => undefined);
+    const load = () =>
+      listPlugins()
+        .then((items) => active && setPlugins(items || []))
+        .catch(() => undefined);
     void load();
     window.addEventListener("vocat:plugins-changed", load);
-    return () => { active = false; window.removeEventListener("vocat:plugins-changed", load); };
+    return () => {
+      active = false;
+      window.removeEventListener("vocat:plugins-changed", load);
+    };
   }, []);
 
-  useEffect(() => {
-    setMobileOpen(false);
+  // New screens start at the top, like a pushed view controller.
+  const section = location.pathname.split("/")[1] || "home";
+  useLayoutEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
   }, [location.pathname]);
 
+  const extensions = useMemo(() => pluginNav(plugins, lang), [plugins, lang]);
+
   async function onLogout() {
-    const ok = await confirmDialog(t("确认退出登录？"), t("提示"), {
+    const ok = await confirmDialog(t("确认退出登录？"), t("退出登录"), {
       confirmText: t("退出"),
       cancelText: t("取消"),
-      type: "warning",
+      type: "danger",
     });
     if (ok) {
       await logout();
@@ -107,157 +91,41 @@ export function AuthenticatedShell({
     }
   }
 
-  function toggle() {
-    if (isMobile) setMobileOpen(true);
-    else setCollapsed((value) => !value);
-  }
-
-  function menuList(collapse: boolean) {
-    const sidebarPlugins = plugins
-      .filter((plugin) => plugin.enabled)
-      .flatMap((plugin) => plugin.contributions
-        .filter((contribution) => contribution.location === "sidebar")
-        .map((contribution) => ({ plugin, contribution })));
-    const navItems: Array<(typeof NAV)[number] | { to: string; label: string; icon: typeof GlobeRegular; pluginLabelZH?: string }> = [];
-    for (const item of NAV) {
-      navItems.push(item);
-	  if (developer && item.to === "/proxy") {
-		navItems.push({ to: "/export-proxy", label: "导出代理", icon: GlobeRegular });
-	  }
-	  const itemKey = item.to.replace(/^\//, "") || "dashboard";
-      for (const extension of sidebarPlugins.filter((entry) => (entry.contribution.after || "sms") === itemKey)) {
-        navItems.push({
-          to: `/extensions/${encodeURIComponent(extension.plugin.id)}/${encodeURIComponent(extension.contribution.id)}`,
-          label: extension.contribution.label,
-          pluginLabelZH: extension.contribution.labelZh,
-          icon: GlobeRegular,
-        });
+  function toggleSidebar() {
+    setCollapsed((value) => {
+      try {
+        localStorage.setItem(SIDEBAR_KEY, value ? "0" : "1");
+      } catch {
+        /* ignore */
       }
-    }
-    return (
-      <nav className={cx("sidebar-menu mt-2", collapse && "is-collapsed")} aria-label={t("主导航")}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const label = "pluginLabelZH" in item && item.pluginLabelZH
-            ? (lang === "zh" ? item.pluginLabelZH : item.label)
-            : t(item.label);
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={"end" in item ? item.end : undefined}
-              title={collapse ? label : undefined}
-              className={({ isActive }) => cx("vocat-menu-item", isActive && "is-active")}
-            >
-              <span className="vocat-menu-icon">
-                <Icon />
-              </span>
-              <span className="sidebar-menu-label">{label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
-    );
+      return !value;
+    });
   }
 
-  function userCard() {
-    return (
-      <div className="ui-panel-muted flex items-center gap-3 p-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-accent">
-          <SettingsRegular className="h-[18px] w-[18px]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-semibold tracking-tight">{user?.username || "Admin"}</div>
-          <div className="truncate text-[11px] text-black/35 dark:text-white/40">{user?.role || "Administrator"}</div>
-        </div>
-        <button
-          type="button"
-          onClick={onLogout}
-          aria-label={t("退出登录")}
-          className="rounded-full p-1.5 text-black/35 transition-colors hover:bg-[#FF3B30]/10 hover:text-[#FF3B30] dark:text-white/40"
-        >
-          <SignOutRegular className="h-[18px] w-[18px]" />
-        </button>
-      </div>
-    );
-  }
+  const shell = useMemo(
+    () => ({ developer, extensions, isDark, onToggleTheme, onLogout, setBadge: (path: string, count: number) => setBadges((current) => (current[path] === count ? current : { ...current, [path]: count })), setTabBarHidden }),
+    // onLogout only closes over stable values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [developer, extensions, isDark, onToggleTheme],
+  );
 
   return (
-    <div className="vocat-app-shell">
-      {!isMobile && (
-        <aside
-          className={cx("vocat-sidebar sidebar-shell relative h-full", collapsed && "is-collapsed")}
-        >
-          <div className="relative z-[1] flex h-16 items-center px-4">
-            <BrandLogo className="sidebar-brand-logo" />
-            <div className={cx("sidebar-fade ml-3", collapsed && "is-hidden")}>
-              <div className="sidebar-brand-title">Halo</div>
-              <div className="text-[11px] font-medium leading-tight tracking-tight text-black/35 dark:text-white/40">{t("基于 VoCat")}</div>
-            </div>
+    <ShellContext.Provider value={shell}>
+      <ScrollContainerContext.Provider value={scrollRef}>
+        <CallProvider>
+          <div className="ios-app">
+            {wide ? <Sidebar collapsed={collapsed} onToggle={toggleSidebar} extensions={extensions} badges={badges} onLogout={onLogout} /> : null}
+            <main ref={scrollRef} className="ios-scroll">
+              <ErrorBoundary title={t("页面渲染失败")}>
+                <div key={section} className="min-h-full">
+                  <Outlet />
+                </div>
+              </ErrorBoundary>
+            </main>
+            {!wide && !tabBarHidden ? <TabBar badges={badges} /> : null}
           </div>
-          {menuList(collapsed)}
-          <div className={cx("absolute bottom-4 z-[1] w-full px-3 sidebar-user", collapsed && "is-hidden")}>{userCard()}</div>
-        </aside>
-      )}
-
-      <Drawer open={isMobile && mobileOpen} onClose={() => setMobileOpen(false)} className="mobile-drawer">
-        <div className="sidebar-shell relative h-full bg-bg-2 dark:bg-grouped-2">
-          <div className="flex h-16 items-center px-4">
-            <BrandLogo className="sidebar-brand-logo" />
-            <div className="ml-3">
-              <div className="sidebar-brand-title">Halo</div>
-              <div className="text-[11px] font-medium leading-tight tracking-tight text-black/35 dark:text-white/40">{t("基于 VoCat")}</div>
-            </div>
-          </div>
-          {menuList(false)}
-          <div className="absolute bottom-4 w-full px-3">{userCard()}</div>
-        </div>
-      </Drawer>
-
-      <div className="vocat-stage">
-        <header className={cx("vocat-toolbar", compact && "is-compact")}>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={toggle}
-              aria-label={collapsed ? t("展开侧栏") : t("收起侧栏")}
-              className="vocat-glass-btn"
-            >
-              {!isMobile && !collapsed ? (
-                <PanelLeftContractRegular className="h-5 w-5" />
-              ) : (
-                <PanelLeftExpandRegular className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <VersionBadge />
-            <button
-              type="button"
-              onClick={() => window.open("/api/system/diagnostics", "_blank", "noopener,noreferrer")}
-              title={t("下载脱敏诊断包")}
-              className="vocat-glass-btn flex h-[34px] items-center gap-1.5 px-3 text-[12px] font-medium"
-            >
-              <DocumentTextRegular className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("诊断包")}</span>
-            </button>
-            <LanguageSwitch />
-            <SwitchDark isDark={isDark} onToggle={onToggleTheme} />
-          </div>
-        </header>
-        <main
-          className="vocat-main"
-          onScroll={(event) => setCompact(event.currentTarget.scrollTop > 24)}
-        >
-          <div className="main-inner mx-auto w-full">
-            <ErrorBoundary title={t("页面渲染失败")}>
-              <div key={location.pathname} className="vocat-page">
-                <Outlet />
-              </div>
-            </ErrorBoundary>
-          </div>
-        </main>
-      </div>
-    </div>
+        </CallProvider>
+      </ScrollContainerContext.Provider>
+    </ShellContext.Provider>
   );
 }

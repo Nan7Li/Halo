@@ -10,7 +10,7 @@ import { api, eventStreamURL } from "../api";
 import type { LogEntry } from "../types";
 import { cx } from "../lib/utils";
 import { useI18n } from "../lib/i18n";
-import { PageHeader } from "../components/ui/PageHeader";
+import { PageFrame, PageHeader } from "../components/ui/PageHeader";
 import { Button } from "../components/ui/Button";
 import { Switch } from "../components/ui/Switch";
 import { Select } from "../components/ui/Select";
@@ -276,7 +276,7 @@ export default function LogsPage() {
   }, [filtered]);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <PageFrame wide>
       <PageHeader
         title={t("设备与业务日志")}
         subtitle={t("记录硬件、驻网、WiFi Calling、短信、通话和用户操作；敏感信息已自动打码")}
@@ -398,6 +398,6 @@ export default function LogsPage() {
           })}
         </div>
       </div>
-    </div>
+    </PageFrame>
   );
 }

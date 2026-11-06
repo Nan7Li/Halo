@@ -919,8 +919,8 @@ html.dark .halo-login-field input:-webkit-autofill:focus {
 }
 
 /* ---- Dark mode form controls, buttons, text hierarchy ---- */
-html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
-html.dark textarea,
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="search"]):not(.bg-transparent):not([class*="bg-fill"]),
+html.dark textarea:not(.bg-transparent):not([class*="bg-fill"]),
 html.dark select {
   background-color: var(--color-input) !important;
   color: var(--color-text) !important;
@@ -937,8 +937,8 @@ html.dark textarea:hover:not(:disabled):not(:focus),
 html.dark select:hover:not(:disabled):not(:focus) {
   border-color: var(--color-border-hover);
 }
-html.dark input:focus,
-html.dark textarea:focus,
+html.dark input:not(.bg-transparent):not([type="search"]):focus,
+html.dark textarea:not(.bg-transparent):focus,
 html.dark select:focus {
   border-color: var(--color-primary) !important;
   box-shadow: 0 0 0 3px rgb(var(--color-primary-rgb) / 0.16);

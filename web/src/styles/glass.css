@@ -67,10 +67,12 @@ html[data-contrast="high"] {
     linear-gradient(180deg, rgb(var(--glass-specular) / calc(var(--glass-rim-alpha) * 0.32)), transparent 42%);
   transition: opacity 240ms var(--spring-smooth);
 }
-html[data-highlight="dynamic"] .glass,
-html[data-highlight="dynamic"] .glass-thick,
-html[data-highlight="dynamic"] .glass-tinted {
-  --glass-spot: 1;
+@media (hover: hover) and (pointer: fine) {
+  html[data-highlight="dynamic"] .glass:hover,
+  html[data-highlight="dynamic"] .glass-thick:hover,
+  html[data-highlight="dynamic"] .glass-tinted:hover {
+    --glass-spot: 1;
+  }
 }
 
 /* Thick: sheets, popovers, the sidebar. Never fully clear. */

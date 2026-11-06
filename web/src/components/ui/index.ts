@@ -17,7 +17,7 @@ export { Tooltip } from "./Tooltip";
 export { Drawer } from "./Drawer";
 export { StatusDot } from "./StatusDot";
 export type { StatusTone } from "./StatusDot";
-export { PageHeader } from "./PageHeader";
+export { PageHeader, PageFrame, EmbeddedPageContext } from "./PageHeader";
 export { EmptyState } from "./EmptyState";
 export { ErrorState } from "./ErrorState";
 export { ListSkeleton } from "./ListSkeleton";

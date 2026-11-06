@@ -15,6 +15,9 @@ const session: SessionState = {
 
 const CSRF = "preview-csrf-token";
 
+type PreviewCall = Record<string, string | boolean>;
+let previewCalls: PreviewCall[] = [];
+
 function send(res: ServerResponse, data: unknown, status = 200) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -277,6 +280,36 @@ export function previewApiPlugin(): Plugin {
                 }],
               }],
             });
+            return;
+          }
+
+          // Simulated calls for UI work: POST .../calls/dial|answer|hangup, and
+          // GET /api/__preview/incoming rings the first line.
+          const callMatch = path.match(/^\/api\/devices\/([^/]+)\/calls(?:\/(dial|answer|hangup))?$/);
+          if (callMatch) {
+            const [, deviceId, action] = callMatch;
+            if (!action && method === "GET") {
+              send(res, { device_id: deviceId, transport: "vowifi", calls: previewCalls.filter((call) => call.device_id === deviceId) });
+              return;
+            }
+            if (method === "POST") {
+              const body = JSON.parse((await readBody(req)) || "{}");
+              const now = new Date().toISOString();
+              if (action === "dial") {
+                previewCalls = [{ id: `c${Date.now()}`, device_id: deviceId, number: body.number, direction: "outgoing", state: "dialing", started_at: now, media_ready: false }];
+                setTimeout(() => { previewCalls = previewCalls.map((call) => ({ ...call, state: "active", answered_at: new Date().toISOString(), media_ready: false })); }, 2500);
+              } else if (action === "answer") {
+                previewCalls = previewCalls.map((call) => ({ ...call, state: "active", answered_at: now }));
+              } else {
+                previewCalls = [];
+              }
+              send(res, { ok: true });
+              return;
+            }
+          }
+          if (path === "/api/__preview/incoming") {
+            previewCalls = [{ id: `c${Date.now()}`, device_id: "ec25-uk", number: "+447700900999", direction: "incoming", state: "ringing", started_at: new Date().toISOString(), media_ready: false }];
+            send(res, { ok: true });
             return;
           }
 

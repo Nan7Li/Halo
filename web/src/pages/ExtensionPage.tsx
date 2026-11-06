@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiMessage } from "../api";
 import { listPlugins, pluginAssetURL, type InstalledPlugin } from "../extensions";
-import { ErrorState, ListSkeleton, PageHeader } from "../components/ui";
+import { ErrorState, ListSkeleton, PageFrame, PageHeader } from "../components/ui";
 import { useI18n } from "../lib/i18n";
 
 export default function ExtensionPage() {
@@ -33,7 +33,7 @@ export default function ExtensionPage() {
     ? selected.contribution.labelZh
     : selected.contribution.label;
   return (
-    <div className="mx-auto max-w-7xl">
+    <PageFrame>
       <PageHeader title={label} subtitle={`${selected.plugin.name} · ${selected.plugin.version}`} />
       <iframe
         title={label}
@@ -42,6 +42,6 @@ export default function ExtensionPage() {
         sandbox="allow-scripts allow-forms allow-same-origin"
 		allow="microphone; autoplay"
       />
-    </div>
+    </PageFrame>
   );
 }

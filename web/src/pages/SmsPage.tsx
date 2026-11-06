@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type UIEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AddRegular, ArrowDownloadRegular, DeleteRegular } from "@fluentui/react-icons";
+import { ArrowDownloadRegular, ComposeRegular, DeleteRegular } from "@fluentui/react-icons";
+import { BarButton, ContextMenu } from "../components/ios";
+import { useShell } from "../components/shell/ShellContext";
 import { SmsExportModal } from "../components/sms/SmsExportModal";
 import { ApiError, apiMessage } from "../api";
-import { Button, ErrorState, PageHeader, RefreshButton, Spinner, confirmDialog, message } from "../components/ui";
+import { ErrorState, confirmDialog, message } from "../components/ui";
 import { usePolling } from "../lib/usePolling";
 import { cx } from "../lib/utils";
 import type { DeviceListItem, SMSMessage } from "../types";
@@ -34,7 +36,7 @@ import { NewSmsModal, type NewSmsPayload } from "../components/sms/NewSmsModal";
 import { tf, tl, useI18n } from "../lib/i18n";
 
 const THREAD_PAGE = 80;
-const MOBILE_BREAKPOINT = 980;
+const MOBILE_BREAKPOINT = 720;
 
 interface LoadError {
   message: string;
@@ -127,8 +129,11 @@ export default function SmsPage() {
 
   const isMobile = width > 0 && width < MOBILE_BREAKPOINT;
   const isDesktop = !isMobile;
-  const showContactColumn = isDesktop || !selectedKey;
-  const showDetailColumn = isDesktop || !!selectedKey;
+  // On phones the conversation is a pushed screen; it only replaces the list
+  // once the thread exists, so a stale ?contact= never strands the user.
+  const hasActiveThread = !!selectedKey && contacts.some((thread) => thread.key === selectedKey);
+  const showContactColumn = isDesktop || !hasActiveThread;
+  const showDetailColumn = isDesktop || hasActiveThread;
 
   // Setter helpers keep state and its mirror ref in sync immediately.
   const setDevice = (d: string) => { deviceRef.current = d; setSelectedDevice(d); };
@@ -618,83 +623,55 @@ export default function SmsPage() {
 
   useEffect(() => () => clearLongPress(), [clearLongPress]);
 
+  const { setTabBarHidden } = useShell();
+  // A conversation on a phone is a pushed screen without the tab bar.
+  const inConversation = isMobile && hasActiveThread;
+  useEffect(() => {
+    setTabBarHidden(inConversation);
+    return () => setTabBarHidden(false);
+  }, [inConversation, setTabBarHidden]);
+
+  const listHeader = (
+    <div className="mb-3 flex items-end justify-between gap-3 pt-[max(8px,env(safe-area-inset-top))]">
+      <h1 className="ios-large-title text-label">{t("信息")}</h1>
+      <div className="flex items-center gap-2 pb-1">
+        <BarButton icon={<ArrowDownloadRegular />} aria-label={t("导出短信")} title={t("导出短信")} onClick={() => setExportOpen(true)} />
+        <BarButton icon={<ComposeRegular />} accent aria-label={t("新信息")} title={t("新信息")} onClick={openNewSms} />
+      </div>
+    </div>
+  );
+
   return (
-    <div ref={pageRef} className="sms-page flex h-[calc(100vh-140px)] flex-col">
-      <PageHeader
-        title={t("短信功能检测")}
-        subtitle={t("通过收发测试验证模组 SMS 收发功能是否正常")}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <RefreshButton loading={contactsLoading} onClick={refreshAll} />
-            <Button onClick={() => setExportOpen(true)} icon={<ArrowDownloadRegular />}>
-              {t("导出短信")}
-            </Button>
-            <Button variant="primary" onClick={openNewSms} className="font-bold !border-0" icon={<AddRegular />}>
-              {t("发送测试短信")}
-            </Button>
-          </div>
-        }
-      />
-      {devicesError ? (
-        <ErrorState
-          className="mb-4"
-          title={t("设备列表加载失败")}
-          message={devicesError.message}
-          statusCode={devicesError.status}
-          lastSuccessAt={devicesOkAt}
-          retryText={t("重试")}
-          onRetry={loadDevices}
-        />
-      ) : null}
-      {contactsError ? (
-        <ErrorState
-          className="mb-6"
-          title={t("短信加载失败")}
-          message={contactsError.message}
-          statusCode={contactsError.status}
-          lastSuccessAt={contactsOkAt}
-          retryText={t("重试")}
-          onRetry={refreshAll}
-        />
-      ) : null}
-      <div className="relative flex-1 overflow-hidden ui-card">
-        {contactsLoading && contacts.length === 0 ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-sm dark:bg-black/20">
-            <Spinner className="h-7 w-7 text-accent" />
-          </div>
-        ) : null}
-        <div className="sms-main-layout">
-          {isDesktop ? (
-            <div className="flex flex-col border-r border-gray-100 dark:border-white/10">
-              <div className="border-b border-gray-100 p-4 dark:border-white/10">
-                <div className="text-xs font-bold uppercase tracking-wider text-gray-500">{t("设备")}</div>
-              </div>
-              <div className="space-y-1 overflow-auto p-3">
-                {deviceFilters.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => void selectDevice(d.id)}
-                    className={cx(
-                      "flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition-all",
-                      selectedDevice === d.id
-                        ? "border-indigo-200 bg-indigo-50/70 dark:border-indigo-500/30 dark:bg-indigo-500/10"
-                        : "border-transparent hover:bg-gray-50/60 dark:hover:bg-white/5",
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-bold text-gray-800 dark:text-gray-100">{d.label}</div>
-                      <div className="truncate text-xs text-gray-400">{d.id === "all" ? t("汇总全部设备检测记录") : d.id}</div>
-                    </div>
-                    {d.id !== "all" ? (
-                      <span className={cx("h-2 w-2 rounded-full", d.healthy ? "bg-green-500" : "bg-red-500")} />
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            </div>
+    <div ref={pageRef} className="sms-page flex h-[100dvh] min-h-0 flex-col bg-bg md:bg-grouped">
+      {devicesError || contactsError ? (
+        <div className="shrink-0 px-4 pt-3">
+          {devicesError ? (
+            <ErrorState
+              className="mb-3"
+              title={t("设备列表加载失败")}
+              message={devicesError.message}
+              statusCode={devicesError.status}
+              lastSuccessAt={devicesOkAt}
+              retryText={t("重试")}
+              onRetry={loadDevices}
+            />
           ) : null}
-          {showContactColumn ? (
+          {contactsError ? (
+            <ErrorState
+              className="mb-3"
+              title={t("短信加载失败")}
+              message={contactsError.message}
+              statusCode={contactsError.status}
+              lastSuccessAt={contactsOkAt}
+              retryText={t("重试")}
+              onRetry={refreshAll}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      <div className={cx("flex min-h-0 flex-1", isDesktop && "gap-0 md:p-2.5 md:pl-0")}>
+        {showContactColumn ? (
+          <div className={cx("flex min-h-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[24px] md:border-r-[0.5px] md:border-separator" : "flex-1 ios-push")}>
             <ContactList
               isMobile={isMobile}
               isDesktop={isDesktop}
@@ -714,9 +691,12 @@ export default function SmsPage() {
               onRowPointerDown={onThreadPointerDown}
               onRowPointerMove={moveLongPress}
               onRowPointerEnd={clearLongPress}
+              header={listHeader}
             />
-          ) : null}
-          {showDetailColumn ? (
+          </div>
+        ) : null}
+        {showDetailColumn ? (
+          <div className={cx("flex min-h-0 min-w-0 flex-1 overflow-hidden", isDesktop ? "md:rounded-r-[24px]" : "ios-push")}>
             <ThreadPanel
               isMobile={isMobile}
               isDesktop={isDesktop}
@@ -744,26 +724,22 @@ export default function SmsPage() {
               onMsgPointerMove={moveLongPress}
               onMsgPointerEnd={clearLongPress}
             />
-          ) : null}
-        </div>
-      </div>
-      {actionSheetOpen && isMobile && actionTarget ? (
-        <div className="sms-action-sheet-mask animate-[fade-slide-in_0.18s_ease]" onClick={closeActionSheet}>
-          <div className="sms-action-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sms-action-sheet-title">{t("操作")}</div>
-            <Button
-              className="sms-danger-ghost-btn !w-full !justify-center"
-              icon={<DeleteRegular />}
-              onClick={() => void confirmSheetAction()}
-            >
-              {actionTarget.type === "thread" ? t("删除对话") : t("删除短信")}
-            </Button>
-            <Button className="!w-full !justify-center" onClick={closeActionSheet}>
-              {t("取消")}
-            </Button>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
+      <ContextMenu
+        open={actionSheetOpen && isMobile && !!actionTarget}
+        anchor={actionTarget ? { x: window.innerWidth - 16, y: window.innerHeight / 2 } : null}
+        onClose={closeActionSheet}
+        items={[
+          {
+            label: actionTarget?.type === "thread" ? t("删除对话") : t("删除短信"),
+            icon: <DeleteRegular />,
+            destructive: true,
+            onSelect: () => void confirmSheetAction(),
+          },
+        ]}
+      />
       {exportOpen && (
         <SmsExportModal devices={devices} defaultDeviceId={selectedDevice} onClose={() => setExportOpen(false)} />
       )}

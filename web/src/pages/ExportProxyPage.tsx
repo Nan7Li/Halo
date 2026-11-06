@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AddRegular, DeleteRegular, EditRegular, GlobeRegular } from "@fluentui/react-icons";
 import { api, apiMessage } from "../api";
 import type { DeviceListItem, DevicesResponse } from "../types";
-import { Button, Input, Modal, PageHeader, Select, Switch, Tag, confirmDialog, message } from "../components/ui";
+import { Button, Input, Modal, PageFrame, PageHeader, Select, Switch, Tag, confirmDialog, message } from "../components/ui";
 import { useI18n } from "../lib/i18n";
 
 interface ExportProxyConfig {
@@ -147,7 +147,7 @@ export default function ExportProxyPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <PageFrame>
       <PageHeader
         title={t("导出代理")}
         subtitle={t("将模块漫游数据导出为主机 HTTP 或 SOCKS5 代理")}
@@ -234,6 +234,6 @@ export default function ExportProxyPage() {
           </> : null}
         </div>
       </Modal>
-    </div>
+    </PageFrame>
   );
 }

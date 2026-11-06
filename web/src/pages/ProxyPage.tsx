@@ -3,7 +3,7 @@ import { AddRegular, GlobeRegular } from "@fluentui/react-icons";
 import { api, ApiError, apiMessage } from "../api";
 import type { Country, CountryRule, DeviceListItem, DeviceProxyBinding, DevicesResponse, ProfileProxyCandidate, UpstreamProxy } from "../types";
 import { usePolling } from "../lib/usePolling";
-import { Button, PageHeader, confirmDialog, message } from "../components/ui";
+import { Button, PageFrame, PageHeader, confirmDialog, message } from "../components/ui";
 import {
   emptyUpstreamForm,
   ipv6AddrError,
@@ -309,7 +309,7 @@ export default function ProxyPage() {
   }, [bindingsProxy, loadUpstream, showRouteChangeResult, t]);
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <PageFrame>
       <PageHeader
         title={t("代理管理")}
         subtitle={t("管理 VoWiFi 上游代理、MCC 国家规则以及实体 SIM / eSIM Profile 绑定")}
@@ -380,6 +380,6 @@ export default function ProxyPage() {
         onSave={(assignments) => void saveCountryRules(assignments)}
         onClose={() => setCountryDialogOpen(false)}
       />
-    </div>
+    </PageFrame>
   );
 }

@@ -7,7 +7,7 @@ import {
   EmptyState,
   Input,
   Modal,
-  PageHeader,
+  PageFrame, PageHeader,
   StatusDot,
   Switch,
   Textarea,
@@ -142,7 +142,7 @@ export default function WireGuardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageFrame>
       <PageHeader
         title={t("WG 隧道")}
         subtitle={t("在本机用 wg-quick 管理 WireGuard 配置，可开机自动拉起")}
@@ -289,6 +289,6 @@ export default function WireGuardPage() {
           </div>
         </div>
       </Modal>
-    </div>
+    </PageFrame>
   );
 }

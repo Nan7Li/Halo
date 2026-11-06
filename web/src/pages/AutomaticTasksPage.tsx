@@ -13,7 +13,7 @@ import {
   Button,
   Input,
   Modal,
-  PageHeader,
+  PageFrame, PageHeader,
   Pagination,
   Select,
   Switch,
@@ -443,7 +443,7 @@ export default function AutomaticTasksPage() {
 	  : [{ value: "vowifi", label: "VoWiFi" }, { value: "cellular", label: t("基站直连（自动选网）") }];
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <PageFrame>
       <PageHeader
         title={t("自动任务")}
 		subtitle={advancedTasksAvailable
@@ -570,6 +570,6 @@ export default function AutomaticTasksPage() {
           <div className="md:col-span-2 flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-white/10"><div><div className="text-sm font-semibold">{t("任务完成后切回原卡")}</div><div className="text-xs text-gray-400">{t("若执行前活跃卡与任务卡不同，任务完成后自动切回执行前的 SIM / Profile 并恢复其网络策略")}</div></div><Switch checked={form.revertProfile} onChange={(revertProfile) => setForm({ ...form, revertProfile })} /></div>
         </div>
       </Modal>
-    </div>
+    </PageFrame>
   );
 }
