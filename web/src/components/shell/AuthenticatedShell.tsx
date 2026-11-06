@@ -15,6 +15,7 @@ import { PRIMARY_NAV, SECONDARY_NAV, pluginNav } from "./nav";
 import { cx } from "../../lib/utils";
 import { ShellContext } from "./ShellContext";
 import { CallProvider } from "../phone/CallProvider";
+import { GlassFilters } from "../ios/GlassFilters";
 
 const SIDEBAR_KEY = "halo.navigation";
 
@@ -114,6 +115,7 @@ export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean;
     <ShellContext.Provider value={shell}>
       <ScrollContainerContext.Provider value={scrollRef}>
         <CallProvider>
+          <GlassFilters />
           <div className="ios-app">
             {wide && wideNav === "sidebar" ? (
               <Sidebar onHide={() => setNavigation("tabbar")} extensions={extensions} badges={badges} onLogout={onLogout} />

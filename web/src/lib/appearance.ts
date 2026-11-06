@@ -34,6 +34,8 @@ export function applyAppearance(appearance: Appearance) {
   root.dataset.highlight = attrs.highlight;
   root.dataset.contrast = attrs.contrast;
   root.dataset.bold = attrs.bold;
+  root.dataset.wallpaper = attrs.wallpaper;
+  root.dataset.refraction = attrs.refraction;
 }
 
 export function writeAppearance(appearance: Appearance) {
@@ -76,6 +78,13 @@ const GLASS_SELECTOR = ".glass, .glass-thick, .glass-tinted";
  */
 export function installAppearanceRuntime() {
   applyAppearance(readAppearance());
+  // Only Chromium runs SVG filters inside backdrop-filter (refraction).
+  const nav = navigator as Navigator & { userAgentData?: { brands?: Array<{ brand: string }> } };
+  // userAgentData needs a secure context; plain-HTTP NAS access falls back to the UA string.
+  const chromium = nav.userAgentData?.brands
+    ? nav.userAgentData.brands.some((entry) => /Chromium/i.test(entry.brand))
+    : /\bChrome\/\d+/.test(navigator.userAgent) && !/\b(CriOS|FxiOS|EdgiOS)\b/.test(navigator.userAgent);
+  document.documentElement.dataset.engine = chromium ? "chromium" : "other";
   const idiom = window.matchMedia?.(MAC_IDIOM_QUERY);
   const onIdiom = () => {
     document.documentElement.dataset.idiom = idiom?.matches ? "mac" : "ios";

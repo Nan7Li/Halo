@@ -5,6 +5,8 @@ export const APPEARANCE_KEY = "halo.appearance";
 
 export type MotionPreference = "system" | "full" | "reduced" | "off";
 export type ResolvedMotion = "full" | "reduced" | "off";
+/** Ambient wallpaper behind the app so glass has something to refract. */
+export type WallpaperPreference = "off" | "soft" | "vivid";
 
 export interface Appearance {
   /** Liquid Glass look: 0 = ultra clear, 1 = fully tinted. */
@@ -16,6 +18,9 @@ export interface Appearance {
   increaseContrast: boolean;
   /** Bold Text: every text style uses its emphasized weight (HIG Typography). */
   boldText: boolean;
+  wallpaper: WallpaperPreference;
+  /** Lens refraction at glass edges (Chromium; others keep blur only). */
+  refraction: boolean;
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -24,6 +29,8 @@ export const DEFAULT_APPEARANCE: Appearance = {
   dynamicHighlight: true,
   increaseContrast: false,
   boldText: false,
+  wallpaper: "soft",
+  refraction: true,
 };
 
 /** Named stops shown under the clarity slider. */
@@ -35,6 +42,7 @@ export const CLARITY_STOPS = [
 ] as const;
 
 const MOTIONS: readonly MotionPreference[] = ["system", "full", "reduced", "off"];
+const WALLPAPERS: readonly WallpaperPreference[] = ["off", "soft", "vivid"];
 
 export function clampClarity(value: unknown): number {
   const number = typeof value === "number" ? value : Number(value);
@@ -52,6 +60,8 @@ export function normalizeAppearance(raw: unknown): Appearance {
     dynamicHighlight: typeof value.dynamicHighlight === "boolean" ? value.dynamicHighlight : DEFAULT_APPEARANCE.dynamicHighlight,
     increaseContrast: typeof value.increaseContrast === "boolean" ? value.increaseContrast : DEFAULT_APPEARANCE.increaseContrast,
     boldText: typeof value.boldText === "boolean" ? value.boldText : DEFAULT_APPEARANCE.boldText,
+    wallpaper: WALLPAPERS.includes(value.wallpaper as WallpaperPreference) ? (value.wallpaper as WallpaperPreference) : DEFAULT_APPEARANCE.wallpaper,
+    refraction: typeof value.refraction === "boolean" ? value.refraction : DEFAULT_APPEARANCE.refraction,
   };
 }
 
@@ -77,6 +87,8 @@ export function appearanceAttributes(appearance: Appearance, systemReduced: bool
     highlight: appearance.dynamicHighlight ? "dynamic" : "static",
     contrast: appearance.increaseContrast ? "high" : "normal",
     bold: appearance.boldText ? "on" : "off",
+    wallpaper: WALLPAPERS.includes(appearance.wallpaper) ? appearance.wallpaper : DEFAULT_APPEARANCE.wallpaper,
+    refraction: appearance.refraction === false ? "off" : "on",
   };
 }
 

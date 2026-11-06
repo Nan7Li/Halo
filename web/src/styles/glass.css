@@ -17,8 +17,10 @@
   --glass-edge-alpha: calc(0.07 + 0.05 * var(--glass-clarity));
   --glass-rim-alpha: calc(0.85 - 0.3 * var(--glass-clarity));
   --glass-shadow: 0 6px 20px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.04);
-  --glass-alpha: calc(0.16 + 0.68 * var(--glass-clarity));
-  --glass-blur: calc(10px + 20px * var(--glass-clarity));
+  /* iOS 26 regular glass is mostly clear: a light blur, a thin tint, and
+     the lens edge doing the work. Tinted end of the slider is frosted. */
+  --glass-alpha: calc(0.1 + 0.74 * var(--glass-clarity));
+  --glass-blur: calc(2px + 26px * var(--glass-clarity));
   --glass-saturate: calc(1.9 - 0.45 * var(--glass-clarity));
   --glass-brightness: calc(1.06 - 0.04 * var(--glass-clarity));
   --glass-specular: 255 255 255;
@@ -28,7 +30,7 @@ html.dark {
   --glass-edge-alpha: calc(0.5 + 0.2 * var(--glass-clarity));
   --glass-rim-alpha: calc(0.32 - 0.12 * var(--glass-clarity));
   --glass-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
-  --glass-alpha: calc(0.22 + 0.66 * var(--glass-clarity));
+  --glass-alpha: calc(0.18 + 0.7 * var(--glass-clarity));
   --glass-brightness: calc(0.92 + 0.04 * var(--glass-clarity));
 }
 html[data-contrast="high"] {
@@ -129,3 +131,139 @@ html[data-motion="reduced"] .glass-interactive:active { transform: none; }
 html.dark .glass-scrim {
   background: rgb(0 0 0 / calc(0.42 + 0.14 * var(--glass-clarity)));
 }
+
+/* ---------------------------------------------------------------------
+ * Liquid Glass, part 2: what makes it read as glass rather than a pale
+ * panel. (1) a lit rim: a 1px gradient edge brightest at the top-leading
+ * and bottom-trailing corners, where light enters and exits a thick lens;
+ * (2) thickness: soft inner light at the top and a faint inner shade at
+ * the bottom; (3) refraction: on Chromium the backdrop is displaced
+ * through an SVG lens (GlassFilters.tsx), so content bends as it passes
+ * under the glass. Safari keeps blur, rim and thickness.
+ * ------------------------------------------------------------------- */
+:root {
+  --glass-rim-hi: 0.95;
+  --glass-rim-lo: 0.12;
+  --glass-inner-light: 0.55;
+  --glass-inner-shade: 0.07;
+}
+html.dark {
+  --glass-rim-hi: 0.42;
+  --glass-rim-lo: 0.06;
+  --glass-inner-light: 0.16;
+  --glass-inner-shade: 0.3;
+}
+.glass::after,
+.glass-thick::after,
+.glass-tinted::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / var(--glass-rim-hi)) 0%,
+    rgb(255 255 255 / calc(var(--glass-rim-hi) * 0.35)) 18%,
+    rgb(255 255 255 / var(--glass-rim-lo)) 40%,
+    rgb(255 255 255 / var(--glass-rim-lo)) 62%,
+    rgb(255 255 255 / calc(var(--glass-rim-hi) * 0.55)) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.glass,
+.glass-thick,
+.glass-tinted {
+  box-shadow:
+    inset 0 10px 18px -14px rgb(255 255 255 / var(--glass-inner-light)),
+    inset 0 -10px 16px -14px rgb(0 0 0 / var(--glass-inner-shade)),
+    0 0 0 0.5px rgb(var(--glass-edge) / var(--glass-edge-alpha)),
+    var(--glass-shadow);
+}
+/* The sidebar lets the wallpaper through like the macOS 26 sidebar. */
+.ios-sidebar.glass-thick { --glass-alpha: calc(0.38 + 0.5 * var(--glass-clarity)); }
+html.dark .ios-sidebar.glass-thick { --glass-alpha: calc(0.46 + 0.44 * var(--glass-clarity)); }
+
+/* Refraction (Chromium only: backdrop-filter with an SVG filter). */
+html[data-engine="chromium"][data-refraction="on"] .glass,
+html[data-engine="chromium"][data-refraction="on"] .glass-tinted {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) url(#halo-lens) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+  backdrop-filter: blur(var(--glass-blur)) url(#halo-lens) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+}
+html[data-engine="chromium"][data-refraction="on"] .glass-thick {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) url(#halo-lens-soft) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+  backdrop-filter: blur(var(--glass-blur)) url(#halo-lens-soft) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+}
+
+/* ---- Ambient wallpaper ----
+   Glass needs something behind it. A soft field of the accent and system
+   colors sits under the grouped background; content cards stay opaque, so
+   reading is unaffected. Off = flat iOS grouped gray. */
+:root { --wp: 1; }
+html[data-wallpaper="vivid"] { --wp: 2.1; }
+html[data-wallpaper="off"] { --wp: 0; }
+html.dark { --wp-dark: 1.25; }
+.ios-app {
+  background:
+    radial-gradient(55% 45% at 0% 0%, rgb(var(--color-primary-rgb) / calc(0.16 * var(--wp) * var(--wp-dark, 1))), transparent 72%),
+    radial-gradient(45% 40% at 100% 6%, rgb(var(--ios-pink) / calc(0.11 * var(--wp) * var(--wp-dark, 1))), transparent 72%),
+    radial-gradient(55% 45% at 85% 100%, rgb(var(--ios-teal) / calc(0.13 * var(--wp) * var(--wp-dark, 1))), transparent 72%),
+    radial-gradient(45% 45% at 8% 95%, rgb(var(--ios-purple) / calc(0.1 * var(--wp) * var(--wp-dark, 1))), transparent 72%),
+    rgb(var(--ios-grouped));
+}
+
+/* ---- Interactive glass droplets (iOS 26) ----
+   Pressing lifts the control into a clear, larger droplet of glass that
+   magnifies what is under it, then it settles back with a spring. */
+.ios-tab-lens { transition: transform var(--dur-spring-bouncy) var(--spring-bouncy), width var(--dur-spring-bouncy) var(--spring-bouncy), scale 360ms var(--spring-bouncy), background-color 200ms ease, box-shadow 200ms ease; }
+@media (pointer: coarse) {
+  .ios-tabbar:has(.ios-tab:active) .ios-tab-lens {
+    scale: 1.14 1.22;
+    background: rgb(255 255 255 / 0.18);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.7),
+      inset 0 10px 14px -10px rgb(255 255 255 / 0.8),
+      0 8px 22px rgb(0 0 0 / 0.16);
+    -webkit-backdrop-filter: blur(1px) saturate(1.8) brightness(1.08);
+    backdrop-filter: blur(1px) saturate(1.8) brightness(1.08);
+  }
+}
+html[data-engine="chromium"][data-refraction="on"] .ios-tabbar:has(.ios-tab:active) .ios-tab-lens {
+  backdrop-filter: url(#halo-lens) saturate(1.8) brightness(1.08);
+}
+
+.ios-switch-knob { transition: transform var(--dur-spring-snappy) var(--spring-snappy), width 200ms var(--spring-smooth), scale 320ms var(--spring-bouncy), background-color 160ms ease, box-shadow 160ms ease; }
+.ios-switch:active .ios-switch-knob {
+  scale: 1.3 1.25;
+  background: rgb(255 255 255 / 0.32);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.85),
+    inset 0 6px 8px -6px rgb(255 255 255 / 0.9),
+    0 4px 12px rgb(0 0 0 / 0.18);
+  -webkit-backdrop-filter: blur(0.5px) saturate(1.8) brightness(1.1);
+  backdrop-filter: blur(0.5px) saturate(1.8) brightness(1.1);
+}
+.ios-slider:active::-webkit-slider-thumb {
+  transform: scale(1.35, 1.25);
+  background: rgb(255 255 255 / 0.4);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), inset 0 6px 8px -6px rgb(255 255 255 / 0.9), 0 4px 12px rgb(0 0 0 / 0.2);
+}
+.ios-segment-thumb { transition: transform var(--dur-spring-snappy) var(--spring-snappy), width var(--dur-spring-snappy) var(--spring-snappy), scale 320ms var(--spring-bouncy), background-color 160ms ease; }
+.ios-segmented:has(.ios-segment:active) .ios-segment-thumb {
+  scale: 1.05 1.14;
+  background: rgb(255 255 255 / 0.55);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), 0 6px 14px rgb(0 0 0 / 0.14);
+}
+html.dark .ios-segmented:has(.ios-segment:active) .ios-segment-thumb { background: rgb(120 120 128 / 0.55); }
+/* Glass buttons swell slightly under the finger and glow on hover. */
+@media (hover: hover) and (pointer: fine) {
+  .glass-interactive:hover::before { --glass-spot: 1; }
+}
+html[data-motion="reduced"] .ios-tab-lens,
+html[data-motion="reduced"] .ios-switch-knob,
+html[data-motion="reduced"] .ios-segment-thumb { scale: none !important; }
+html[data-motion="reduced"] .ios-slider:active::-webkit-slider-thumb { transform: none; }

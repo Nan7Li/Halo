@@ -61,4 +61,7 @@ try {
   root.setAttribute("data-highlight", appearance.dynamicHighlight === false ? "static" : "dynamic");
   root.setAttribute("data-contrast", appearance.increaseContrast === true ? "high" : "normal");
   root.setAttribute("data-bold", appearance.boldText === true ? "on" : "off");
+  var wallpaper = appearance.wallpaper;
+  root.setAttribute("data-wallpaper", wallpaper === "off" || wallpaper === "vivid" ? wallpaper : "soft");
+  root.setAttribute("data-refraction", appearance.refraction === false ? "off" : "on");
 } catch (e) {}

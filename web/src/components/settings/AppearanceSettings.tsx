@@ -10,7 +10,7 @@ import { ACCENT_PRESETS, normalizeHex, useAccent } from "../../lib/accent";
 import { withViewTransition } from "../../lib/motion";
 import { useI18n } from "../../lib/i18n";
 import { THEME_CHANGE_EVENT, readThemePreference, writeThemePreference, type ThemePreference } from "../../lib/theme";
-import { CLARITY_STOPS, clarityLabel, useAppearance, type MotionPreference } from "../../lib/appearance";
+import { CLARITY_STOPS, clarityLabel, useAppearance, type MotionPreference, type WallpaperPreference } from "../../lib/appearance";
 import { cx } from "../../lib/utils";
 import { IOSSwitch, ListRow, ListSection, SegmentedControl, Slider } from "../ios";
 
@@ -75,6 +75,11 @@ export function AppearanceSettings() {
           </div>
         </div>
         <ListRow
+          title={t("折射")}
+          subtitle={t("玻璃下的内容像透过镜片一样弯曲（Chrome、Edge）")}
+          accessory={<IOSSwitch checked={appearance.refraction} onChange={(refraction) => update({ refraction })} ariaLabel={t("折射")} />}
+        />
+        <ListRow
           title={t("动态高光")}
           subtitle={t("指针移过玻璃时，高光跟着移动")}
           accessory={<IOSSwitch checked={appearance.dynamicHighlight} onChange={(dynamicHighlight) => update({ dynamicHighlight })} ariaLabel={t("动态高光")} />}
@@ -84,6 +89,21 @@ export function AppearanceSettings() {
           subtitle={t("玻璃更不透明，次要文字更深")}
           accessory={<IOSSwitch checked={appearance.increaseContrast} onChange={(increaseContrast) => update({ increaseContrast })} ariaLabel={t("增强对比度")} />}
         />
+      </ListSection>
+
+      <ListSection header={t("壁纸")} footer={t("玻璃需要背后有内容才看得出来。壁纸只铺在背景上，卡片和文字仍是实色，不影响阅读。")}>
+        <div className="p-3">
+          <SegmentedControl<WallpaperPreference>
+            block
+            value={appearance.wallpaper}
+            onChange={(wallpaper) => update({ wallpaper })}
+            options={[
+              { value: "off", label: t("无") },
+              { value: "soft", label: t("柔和") },
+              { value: "vivid", label: t("鲜艳") },
+            ]}
+          />
+        </div>
       </ListSection>
 
       <ListSection header={t("显示与文字")} footer={t("开启后，所有文字都使用更粗的字重，和 iOS「辅助功能 › 显示与文字大小 › 粗体文本」一致。")}>

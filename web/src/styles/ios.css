@@ -89,7 +89,6 @@ html[data-bold="on"] svg[fill="currentColor"] path { stroke: currentColor; strok
   display: flex;
   height: 100%;
   overflow: hidden;
-  background: rgb(var(--ios-grouped));
 }
 .ios-scroll {
   flex: 1;

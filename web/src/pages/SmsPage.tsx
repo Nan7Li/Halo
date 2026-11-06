@@ -645,7 +645,7 @@ export default function SmsPage() {
   );
 
   return (
-    <div ref={pageRef} className="sms-page flex h-[100dvh] min-h-0 flex-col bg-bg md:bg-grouped">
+    <div ref={pageRef} className="sms-page flex h-[100dvh] min-h-0 flex-col bg-bg md:bg-transparent">
       {devicesError || contactsError ? (
         <div className="shrink-0 px-4 pt-3">
           {devicesError ? (

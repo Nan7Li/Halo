@@ -35,13 +35,17 @@ test("motion preference resolves against the OS setting", () => {
 });
 
 test("attributes match what the pre-paint script writes", () => {
-  assert.deepEqual(model.appearanceAttributes({ clarity: 1.4, motion: "reduced", dynamicHighlight: false, increaseContrast: true, boldText: true }, false), {
+  assert.deepEqual(model.appearanceAttributes({ clarity: 1.4, motion: "reduced", dynamicHighlight: false, increaseContrast: true, boldText: true, wallpaper: "vivid", refraction: false }, false), {
     clarity: "1",
     motion: "reduced",
     highlight: "static",
     contrast: "high",
     bold: "on",
+    wallpaper: "vivid",
+    refraction: "off",
   });
+  assert.equal(model.appearanceAttributes(model.DEFAULT_APPEARANCE, false).wallpaper, "soft");
+  assert.equal(model.normalizeAppearance({ wallpaper: "neon" }).wallpaper, "soft");
   assert.equal(model.appearanceAttributes(model.DEFAULT_APPEARANCE, false).bold, "off");
 });
 
