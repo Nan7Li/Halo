@@ -4,6 +4,7 @@ import { api, apiMessage } from "../../api";
 import type { DeviceListItem, DevicesResponse } from "../../types";
 import { tf, useI18n } from "../../lib/i18n";
 import { Button, Input, Modal, Select, message } from "../ui";
+import { ListSection } from "../ios";
 import { buildSMSExportQuery, readSMSExportDownload, type SMSExportFormat } from "./smsExport";
 
 interface SmsExportModalProps {
@@ -105,36 +106,24 @@ export function SmsExportModal({ devices, defaultDeviceId, onClose }: SmsExportM
         </Button>
       </>}
     >
-      <div className="mt-2 space-y-4">
-        <div>
-          <div className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{t("导出设备")}</div>
-          <Select value={deviceId} disabled={busy} options={deviceOptions} onChange={(value) => { setDeviceId(value); }} />
-        </div>
-        <div>
-          <div className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{t("时间范围")}</div>
-          <Select value={timeRange} disabled={busy} options={[{ value: "all", label: t("全部时间") }, { value: "range", label: t("指定日期范围") }]} onChange={(value) => { setTimeRange(value as "all" | "range"); }} />
-        </div>
-        {timeRange === "range" && (
-          <div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="block space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <span>{t("开始日期")}</span>
-                <Input type="date" value={startDate} disabled={busy} max={endDate || undefined} onChange={(e) => { setStartDate(e.target.value); }} />
-              </label>
-              <label className="block space-y-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <span>{t("结束日期")}</span>
-                <Input type="date" value={endDate} disabled={busy} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); }} />
-              </label>
-            </div>
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t("按浏览器本地时区筛选，包含开始和结束当天。")}</p>
-          </div>
-        )}
-        <div>
-          <div className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{t("文件格式")}</div>
-          <Select value={format} disabled={busy} options={[{ value: "json", label: t("JSON（完整记录）") }, { value: "html", label: t("HTML（离线阅读）") }]} onChange={(value) => { setFormat(value as SMSExportFormat); }} />
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t("JSON 时间使用 UTC；HTML 按导出时的浏览器时区显示，并标注时区。")}</p>
-        </div>
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">{t("文件包含短信正文、号码、设备和 SIM 标识，可能含验证码。不会脱敏或加密，请妥善保管。")}</p>
+      <div className="pt-1">
+        <ListSection
+          footer={timeRange === "range" ? t("按浏览器本地时区筛选，包含开始和结束当天。") : undefined}
+          bodyClassName="px-4"
+        >
+          <div className="ios-form-row"><label className="ios-form-label">{t("导出设备")}</label><div className="ios-form-control"><Select value={deviceId} disabled={busy} options={deviceOptions} onChange={(value) => { setDeviceId(value); }} /></div></div>
+          <div className="ios-form-row"><label className="ios-form-label">{t("时间范围")}</label><div className="ios-form-control"><Select value={timeRange} disabled={busy} options={[{ value: "all", label: t("全部时间") }, { value: "range", label: t("指定日期范围") }]} onChange={(value) => { setTimeRange(value as "all" | "range"); }} /></div></div>
+          {timeRange === "range" ? (
+            <>
+              <div className="ios-form-row"><label className="ios-form-label">{t("开始日期")}</label><div className="ios-form-control"><Input type="date" value={startDate} disabled={busy} max={endDate || undefined} onChange={(e) => { setStartDate(e.target.value); }} /></div></div>
+              <div className="ios-form-row"><label className="ios-form-label">{t("结束日期")}</label><div className="ios-form-control"><Input type="date" value={endDate} disabled={busy} min={startDate || undefined} onChange={(e) => { setEndDate(e.target.value); }} /></div></div>
+            </>
+          ) : null}
+        </ListSection>
+        <ListSection footer={t("JSON 时间使用 UTC；HTML 按导出时的浏览器时区显示，并标注时区。")} bodyClassName="px-4">
+          <div className="ios-form-row"><label className="ios-form-label">{t("文件格式")}</label><div className="ios-form-control"><Select value={format} disabled={busy} options={[{ value: "json", label: t("JSON（完整记录）") }, { value: "html", label: t("HTML（离线阅读）") }]} onChange={(value) => { setFormat(value as SMSExportFormat); }} /></div></div>
+        </ListSection>
+        <p className="rounded-[var(--radius-md)] bg-sys-orange/15 px-4 py-3 ios-subhead text-sys-orange">{t("文件包含短信正文、号码、设备和 SIM 标识，可能含验证码。不会脱敏或加密，请妥善保管。")}</p>
       </div>
     </Modal>
   );

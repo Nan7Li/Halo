@@ -1716,6 +1716,7 @@ export const EN_DICT: Record<string, string> = {
   "解除锁定": "Unlock",
   "锁定此小区": "Lock target",
   // iOS 27 redesign
+  "重发中…": "Resending…",
   "正在读取…": "Reading…",
   "EARFCN 为 0 到 262143，PCI 为 0 到 503；实际是否支持由模组固件决定。": "EARFCN is 0 to 262143 and PCI is 0 to 503. Whether a target works depends on the module firmware.",
   "发现的设备": "Discovered Devices",

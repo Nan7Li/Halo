@@ -1,4 +1,4 @@
-import { Button, Modal, Tag } from "../ui";
+import { Modal } from "../ui";
 import type { EsimNotification } from "./types";
 import { tl, useI18n } from "../../lib/i18n";
 
@@ -22,10 +22,10 @@ function eventLabel(event?: string): string {
 function MetaLine({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
   return (
-    <div className="w-full min-w-0 rounded-lg bg-gray-100 px-2 py-0.5 text-xs leading-[18px] text-gray-600 dark:bg-white/5 dark:text-gray-300">
-      <span className="mr-1 text-gray-400 dark:text-gray-500">{label}</span>
-      <span className="break-all">{value}</span>
-    </div>
+    <span className="block min-w-0 ios-footnote text-label-2">
+      <span className="mr-1">{label}</span>
+      <span className="break-all font-mono">{value}</span>
+    </span>
   );
 }
 
@@ -43,37 +43,37 @@ export function EsimNotificationsModal({ open, loading, items, retryingSeq, onCl
   return (
     <Modal open={open} onClose={onClose} title={t("当前通知列表")} width="max-w-[min(500px,calc(100vw-24px))]" className="glass-modal">
       {loading ? (
-        <div className="py-10 text-center text-sm text-gray-400">{t("正在加载通知...")}</div>
+        <div className="py-10 text-center ios-subhead text-label-2">{t("正在加载通知...")}</div>
       ) : items.length === 0 ? (
-        <div className="py-10 text-center text-sm text-gray-400">{t("当前没有可展示的通知")}</div>
+        <div className="py-10 text-center ios-subhead text-label-2">{t("当前没有可展示的通知")}</div>
       ) : (
-        <div className="max-h-[420px] space-y-2 overflow-auto pr-1">
+        <div className="ios-list max-h-[420px] overflow-auto">
           {items.map((item) => (
             <div
               key={`${item.aidHex || "default"}:${item.sequenceNumber}`}
-              className="flex flex-col gap-3 rounded-xl border border-gray-200 p-3 dark:border-white/10 sm:flex-row sm:items-start sm:justify-between"
+              className="ios-select-row flex items-center gap-3 px-4"
             >
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white">
-                  <span>#{item.sequenceNumber}</span>
-                  <Tag type="info">{eventLabel(item.event)}</Tag>
+              <div className="ios-select-row-body flex min-w-0 flex-1 items-center gap-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 ios-body text-label">
+                  <span className="font-semibold">#{item.sequenceNumber}</span>
+                  <span className="ios-footnote text-label-2">{eventLabel(item.event)}</span>
                 </div>
-                <div className="flex flex-col gap-1 pt-1">
+                <div className="mt-0.5">
                   <MetaLine label="ICCID" value={item.iccid} />
                   <MetaLine label={t("地址")} value={item.address} />
                   <MetaLine label="AID" value={item.aidHex} />
                 </div>
               </div>
-              <Button
-                variant="primary"
-                size="small"
-                className="self-start sm:self-auto"
-                disabled={!item.canRetry}
-                loading={retryingSeq === item.sequenceNumber}
+              <button
+                type="button"
+                className="shrink-0 ios-body text-accent disabled:opacity-40"
+                disabled={!item.canRetry || retryingSeq === item.sequenceNumber}
                 onClick={() => onRetry(item)}
               >
-                {t("重发")}
-              </Button>
+                {retryingSeq === item.sequenceNumber ? t("重发中…") : t("重发")}
+              </button>
+              </div>
             </div>
           ))}
         </div>
