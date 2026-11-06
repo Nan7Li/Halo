@@ -4,6 +4,13 @@ import { ChevronLeftRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
 import { useScrolledPast } from "./core";
+import { useMediaQuery } from "../../lib/useMediaQuery";
+import { MAC_IDIOM_QUERY } from "../../lib/appearance";
+
+/** macOS idiom: fine pointer on a wide window (see styles/mac.css). */
+export function useIsMac() {
+  return useMediaQuery(MAC_IDIOM_QUERY);
+}
 
 /**
  * A screen: floating glass navigation bar, large title that collapses into
@@ -32,6 +39,9 @@ export function Page({
   className?: string;
   contentClassName?: string;
 }) {
+  // macOS has no large titles: the window title sits in the toolbar.
+  const mac = useIsMac();
+  if (mac) largeTitle = false;
   const scrolled = useScrolledPast(largeTitle ? 40 : 4);
   return (
     <div className={cx("ios-content ios-page", wide && "is-wide", className)}>

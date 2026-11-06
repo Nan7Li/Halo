@@ -1,6 +1,6 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownRegular, ArrowUpRegular, ClockRegular, RouterRegular, ServerRegular, SendClockRegular } from "@fluentui/react-icons";
+import { ArrowDownRegular, ArrowUpRegular, ClockRegular, GlobeRegular, RouterRegular, ServerRegular, SendClockRegular } from "@fluentui/react-icons";
 import { api } from "../api";
 import type { DashboardDevice, DashboardHost, DashboardUpcomingTask } from "../types";
 import { usePolling } from "../lib/usePolling";
@@ -94,7 +94,7 @@ export default function DashboardPage() {
       <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Widget title={t("线路")} icon={<RouterRegular />} tint="green">
           <div className="flex items-end gap-1">
-            <span className="text-[44px] font-semibold leading-none tracking-tight text-label">{online}</span>
+            <span className="ios-widget-value text-label">{online}</span>
             <span className="mb-1 ios-title-3 font-medium text-label-3">/ {total}</span>
           </div>
           <div className="mt-2 ios-footnote text-label-2">{t("在线")} · {vowifi} {t("条 IMS 就绪")}</div>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
           </div>
         </Widget>
 
-        <Widget title={t("网络")} icon={<ArrowDownRegular />} tint="teal" wide>
+        <Widget title={t("网络")} icon={<GlobeRegular />} tint="teal" wide>
           <div className="space-y-2">
             <RateLine icon={<ArrowDownRegular />} label={t("下载")} value={perf ? formatRate(perf.netRxBps) : "—"} tint="teal" />
             <RateLine icon={<ArrowUpRegular />} label={t("上传")} value={perf ? formatRate(perf.netTxBps) : "—"} tint="blue" />
@@ -191,13 +191,13 @@ function Widget({ title, icon, tint, children, onClick, wide }: { title: string;
     <Tag
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={cx("ios-widget flex min-h-[156px] min-w-0 flex-col text-left", wide && "col-span-2 md:col-span-1", onClick && "ios-press")}
+      className={cx("ios-widget flex min-w-0 flex-col text-left", wide ? "col-span-2 md:col-span-1" : "min-h-[150px]", onClick && "ios-press")}
     >
       <div className="mb-3 flex items-center gap-1.5 ios-footnote font-semibold" style={{ color: `rgb(var(--ios-${tint}))` }}>
         <span className="inline-flex [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
         {title}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col justify-end">{children}</div>
+      <div className={cx("flex min-h-0 flex-1 flex-col", wide ? "justify-center" : "justify-end")}>{children}</div>
     </Tag>
   );
 }

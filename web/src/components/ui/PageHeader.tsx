@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { cx } from "../../lib/utils";
 import { useScrolledPast } from "../ios/core";
+import { useIsMac } from "../ios/page";
 
 /** True when a page is rendered inside another page (Network's segments). */
 export const EmbeddedPageContext = createContext(false);
@@ -19,7 +20,8 @@ export function PageFrame({ children, className, wide = false }: { children: Rea
  */
 export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   const embedded = useContext(EmbeddedPageContext);
-  const scrolled = useScrolledPast(40);
+  const mac = useIsMac();
+  const scrolled = useScrolledPast(mac ? 4 : 40);
   if (embedded) {
     if (!subtitle && !actions) return null;
     return (
@@ -31,19 +33,21 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
   }
   return (
     <>
-      <header className={cx("ios-navbar", scrolled && "is-scrolled")}>
+      <header className={cx("ios-navbar", scrolled && "is-scrolled", mac && "is-inline")}>
         <div className="ios-navbar-bg glass-chrome" aria-hidden />
         <span />
-        <div className="ios-navbar-title" aria-hidden={!scrolled}>{title}</div>
+        <div className="ios-navbar-title" aria-hidden={!mac && !scrolled}>{title}</div>
         <span />
       </header>
-      <div className="mb-5 flex flex-col gap-3 px-1 pt-1 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="ios-large-title text-label">{title}</h1>
-          {subtitle ? <p className="mt-1 ios-subhead text-label-2">{subtitle}</p> : null}
+      {mac && !subtitle && !actions ? null : (
+        <div className="mb-5 flex flex-col gap-3 px-1 pt-1 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            {mac ? null : <h1 className="ios-large-title text-label">{title}</h1>}
+            {subtitle ? <p className={cx("ios-subhead text-label-2", !mac && "mt-1")}>{subtitle}</p> : null}
+          </div>
+          {actions ? <div className="min-w-0 shrink-0">{actions}</div> : null}
         </div>
-        {actions ? <div className="min-w-0 shrink-0">{actions}</div> : null}
-      </div>
+      )}
     </>
   );
 }

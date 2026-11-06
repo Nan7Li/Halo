@@ -42,7 +42,7 @@ export function Glass({ as: Tag = "div", variant = "regular", interactive = fals
 export function IconTile({ color = "blue", children, size = 30, className }: { color?: string; children: ReactNode; size?: number; className?: string }) {
   const background = /^(#|rgb|var|hsl)/.test(color) ? color : `rgb(var(--ios-${color}))`;
   return (
-    <span className={cx("ios-row-icon", className)} style={{ background, width: size, height: size, borderRadius: size * 0.27 }}>
+    <span className={cx("ios-row-icon", className)} style={size === 30 ? { background } : { background, width: size, height: size, borderRadius: size * 0.24 }}>
       {children}
     </span>
   );

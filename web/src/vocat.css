@@ -88,8 +88,18 @@
 }
 /* ---- Base ---- */
 html {
-  font-family: "-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "Inter Variable", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
+  /* -apple-system must stay unquoted: quoted, it is looked up as a family
+     name and never resolves, so iPhone and Mac fell back to Inter. On Apple
+     platforms it resolves to SF Pro (Text/Display by optical size) with
+     PingFang for Chinese; Inter only stands in on other systems. */
+  font-family: -apple-system, BlinkMacSystemFont, "Inter Variable", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
   font-optical-sizing: auto;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 html, body {
   height: 100%;

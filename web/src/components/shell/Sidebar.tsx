@@ -26,7 +26,6 @@ export function Sidebar({
   const { t } = useI18n();
   const { user } = useAuth();
   const { pathname } = useLocation();
-  const collapsed = false;
 
   const renderItem = (item: NavItem) => {
     const label = item.literal ? item.label : t(item.label);
@@ -37,7 +36,6 @@ export function Sidebar({
         key={item.to}
         to={item.to}
         end={item.end}
-        title={collapsed ? label : undefined}
         className={cx("ios-sidebar-item", selected && "is-active")}
       >
         <span className="ios-sidebar-icon">
@@ -50,17 +48,13 @@ export function Sidebar({
   };
 
   return (
-    <aside className={cx("ios-sidebar", glassClass("thick"), collapsed && "is-collapsed")} aria-label={t("主导航")}>
-      <div className={cx("flex h-[60px] shrink-0 items-center gap-2.5", collapsed ? "justify-center px-0" : "px-4")}>
-        {!collapsed ? (
-          <>
-            <BrandLogo className="h-7 w-7 shrink-0 text-accent" />
-            <div className="min-w-0 flex-1">
-              <div className="ios-headline leading-none text-label">Halo</div>
-              <div className="mt-1 ios-caption-2 text-label-2">{t("基于 VoCat")}</div>
-            </div>
-          </>
-        ) : null}
+    <aside className={cx("ios-sidebar", glassClass("thick"))} aria-label={t("主导航")}>
+      <div className="ios-sidebar-top flex h-[60px] shrink-0 items-center gap-2.5 px-4">
+        <BrandLogo className="h-7 w-7 shrink-0 text-accent" />
+        <div className="min-w-0 flex-1">
+          <div className="ios-headline leading-none text-label">Halo</div>
+          <div className="mt-1 ios-caption-2 text-label-2">{t("基于 VoCat")}</div>
+        </div>
         <button
           type="button"
           onClick={onHide}
@@ -82,13 +76,8 @@ export function Sidebar({
         {SECONDARY_NAV.slice(2).map(renderItem)}
       </nav>
 
-      <div className={cx("shrink-0 border-t border-separator/50 p-3", collapsed && "flex justify-center")}>
-        {collapsed ? (
-          <button type="button" onClick={onLogout} aria-label={t("退出登录")} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-label-2 hover:bg-fill-3 hover:text-sys-red">
-            <SignOutRegular className="h-5 w-5" />
-          </button>
-        ) : (
-          <div className="flex items-center gap-3">
+      <div className="shrink-0 border-t border-separator/50 p-3">
+        <div className="flex items-center gap-3">
             <span className="ios-avatar h-9 w-9 text-[15px]">{(user?.username || "A").slice(0, 1).toUpperCase()}</span>
             <div className="min-w-0 flex-1">
               <div className="truncate ios-subhead font-semibold text-label">{user?.username || "Admin"}</div>
@@ -97,8 +86,7 @@ export function Sidebar({
             <button type="button" onClick={onLogout} aria-label={t("退出登录")} className="inline-flex h-9 w-9 items-center justify-center rounded-full text-label-2 transition-colors hover:bg-sys-red/10 hover:text-sys-red">
               <SignOutRegular className="h-5 w-5" />
             </button>
-          </div>
-        )}
+        </div>
       </div>
     </aside>
   );

@@ -53,13 +53,41 @@
   --dur-spring-bouncy: 740ms;
   --motion-scale: 1;
 
-  /* Corner radii follow concentric iOS shapes. */
-  --radius-xs: 8px;
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
-  --radius-xl: 28px;
+  /* Corner radii, iPhone 17 Pro (iOS 26/27). Shapes are concentric: a
+     shape's radius is its container's radius minus the inset between them,
+     anchored on the 62pt display corner. Inset grouped sections and cards
+     sit 16pt in from the edge, sheets 8pt. */
+  --radius-xs: 7px;     /* icon tiles (30pt) */
+  --radius-sm: 12px;    /* small thumbnails, inner chips */
+  --radius-md: 18px;    /* message bubbles, menus' inner items */
+  --radius-lg: 26px;    /* inset grouped sections, cards, widgets */
+  --radius-xl: 38px;    /* sheets, the floating sidebar on iPad */
+  --radius-menu: 22px;  /* context menus and popovers */
   --radius-pill: 999px;
+}
+
+/* macOS 26/27: 26pt window corners, the sidebar and sheets inset 8pt,
+   System Settings-style form groups. Driven by html[data-idiom], which
+   theme-init.js sets before first paint (fine pointer, >= 1024px). */
+html[data-idiom="mac"] {
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --radius-menu: 12px;
+}
+
+/* Continuous ("squircle") corners like UIKit's .continuous curve. Browsers
+   with corner-shape get the smooth curvature transition; others keep the
+   same radius as a circular arc. Capsules stay capsules. */
+@supports (corner-shape: superellipse(1.5)) {
+  .ios-list, .ios-card, .ios-widget, .ios-sheet, .ios-menu, .ios-row-icon,
+  .ios-sidebar, .ios-sidebar-item,
+  .ios-bubble, .squircle, .ui-card, .ui-panel,
+  [class*="rounded-["]:not([class*="rounded-full"]), .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-lg {
+    corner-shape: superellipse(1.5);
+  }
 }
 
 @supports (transition-timing-function: linear(0, 1)) {

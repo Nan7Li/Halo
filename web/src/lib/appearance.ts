@@ -10,6 +10,9 @@ export * from "./appearanceModel";
 
 const CHANGE_EVENT = "halo:appearance";
 
+/** Fine pointer on a wide window: lay out with macOS metrics. Mirrors theme-init.js. */
+export const MAC_IDIOM_QUERY = "(hover: hover) and (pointer: fine) and (min-width: 1024px)";
+
 function systemReducedMotion() {
   return typeof window !== "undefined" && typeof window.matchMedia === "function"
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -73,6 +76,12 @@ const GLASS_SELECTOR = ".glass, .glass-thick, .glass-tinted";
  */
 export function installAppearanceRuntime() {
   applyAppearance(readAppearance());
+  const idiom = window.matchMedia?.(MAC_IDIOM_QUERY);
+  const onIdiom = () => {
+    document.documentElement.dataset.idiom = idiom?.matches ? "mac" : "ios";
+  };
+  onIdiom();
+  idiom?.addEventListener?.("change", onIdiom);
   const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
   const onMotion = () => applyAppearance(readAppearance());
   media?.addEventListener?.("change", onMotion);
@@ -104,6 +113,7 @@ export function installAppearanceRuntime() {
   document.addEventListener("pointermove", onPointer, { passive: true });
   return () => {
     media?.removeEventListener?.("change", onMotion);
+    idiom?.removeEventListener?.("change", onIdiom);
     document.removeEventListener("pointermove", onPointer);
     if (frame) cancelAnimationFrame(frame);
   };

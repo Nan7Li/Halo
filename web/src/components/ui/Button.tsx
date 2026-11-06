@@ -14,10 +14,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   plain?: boolean;
 }
 
+// Sizes are iOS defaults; styles/mac.css swaps in macOS control sizes
+// through the ui-btn-* hooks.
 const SIZE: Record<ButtonSize, string> = {
-  small: "h-8 px-3.5 text-[13px]",
-  default: "h-10 px-[18px] text-[15px]",
-  large: "h-[50px] px-6 text-[17px]",
+  small: "ui-btn-small h-8 px-3.5 text-[13px]",
+  default: "ui-btn-default h-10 px-[18px] text-[15px]",
+  large: "ui-btn-large h-[50px] px-6 text-[17px]",
 };
 
 // iOS 27 button styles: filled (prominent), tinted (plain), gray (default)

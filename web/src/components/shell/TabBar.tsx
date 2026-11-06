@@ -26,7 +26,7 @@ export function TabBar({ badges = {} }: { badges?: Record<string, number> }) {
         {tabs.map((tab, index) => {
           const selected = index === active;
           // HIG: prefer filled symbols in tab bars.
-          const Icon = tab.activeIcon ?? tab.icon;
+          const Icon = tab.tabIcon ?? tab.activeIcon ?? tab.icon;
           return (
             <NavLink
               key={tab.to}

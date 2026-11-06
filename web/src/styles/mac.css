@@ -1,0 +1,185 @@
+/*
+ * macOS 26/27 metrics for the desktop layout.
+ *
+ * html[data-idiom="mac"] is set before first paint when the window has a
+ * fine pointer and is at least 1024px wide (public/theme-init.js). Phones
+ * and touch iPads keep the iOS metrics in ios.css. Values follow the HIG:
+ * macOS text styles (Body 13pt), the toolbar in the window frame with the
+ * title at its leading edge, a medium-size sidebar (28pt rows, symbols in
+ * the accent color), System Settings-style form groups and the regular
+ * control size.
+ */
+
+/* ---- Typography: HIG "macOS built-in text styles" ----
+   size / line height / weight; tracking from the macOS SF Pro table.
+   CJK lines get 2px more leading so Han glyphs do not touch. */
+html[data-idiom="mac"] .ios-large-title { font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: 0.008em; }
+html[data-idiom="mac"] .ios-title-1 { font-size: 22px; line-height: 26px; font-weight: 400; letter-spacing: -0.012em; }
+html[data-idiom="mac"] .ios-title-2 { font-size: 17px; line-height: 22px; font-weight: 700; letter-spacing: -0.026em; }
+html[data-idiom="mac"] .ios-title-3 { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -0.016em; }
+html[data-idiom="mac"] .ios-headline { font-size: 13px; line-height: 16px; font-weight: 700; letter-spacing: -0.006em; }
+html[data-idiom="mac"] .ios-body { font-size: 13px; line-height: 16px; font-weight: 400; letter-spacing: -0.006em; }
+html[data-idiom="mac"] .ios-callout { font-size: 12px; line-height: 15px; letter-spacing: 0; }
+html[data-idiom="mac"] .ios-subhead { font-size: 11px; line-height: 14px; letter-spacing: 0.006em; }
+html[data-idiom="mac"] .ios-footnote,
+html[data-idiom="mac"] .ios-caption { font-size: 10px; line-height: 13px; letter-spacing: 0.012em; }
+html[data-idiom="mac"] .ios-caption-2 { font-size: 10px; line-height: 13px; font-weight: 500; letter-spacing: 0.012em; }
+html[data-idiom="mac"]:lang(zh) .ios-body,
+html[data-idiom="mac"]:lang(zh) .ios-headline { line-height: 18px; letter-spacing: 0; }
+html[data-idiom="mac"]:lang(zh) .ios-callout { line-height: 17px; letter-spacing: 0; }
+html[data-idiom="mac"]:lang(zh) .ios-subhead { font-size: 12px; line-height: 16px; letter-spacing: 0; }
+/* Ten-point Han characters are hard to read; Chinese secondary text uses
+   11pt, which is what macOS itself does in Chinese System Settings. */
+html[data-idiom="mac"]:lang(zh) .ios-footnote,
+html[data-idiom="mac"]:lang(zh) .ios-caption,
+html[data-idiom="mac"]:lang(zh) .ios-caption-2 { font-size: 11px; line-height: 15px; letter-spacing: 0; }
+html[data-idiom="mac"] body { font-size: 13px; }
+
+/* ---- Window content ---- */
+/* The toolbar spans the whole content area (title at its leading edge);
+   the content column below it stays centered at a readable width. */
+html[data-idiom="mac"] .ios-content { padding: 0 28px 40px; max-width: none; }
+html[data-idiom="mac"] .ios-content:not(.is-wide) > :not(.ios-navbar) { max-width: 980px; margin-left: auto; margin-right: auto; }
+html[data-idiom="mac"] .ios-widget-value { font-size: 26px; line-height: 32px; }
+html[data-idiom="mac"] .ios-scroll { scroll-padding-top: 52px; }
+
+/* ---- Toolbar (unified title bar): 52pt, title at the leading edge ---- */
+html[data-idiom="mac"] .ios-navbar {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  height: 52px;
+  margin: 0 -28px 8px;
+  padding: 0 14px 0 20px;
+}
+html[data-idiom="mac"] .ios-navbar-title {
+  justify-self: start;
+  max-width: 100%;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 700;
+  letter-spacing: -0.016em;
+  transform: none;
+}
+html[data-idiom="mac"] .ios-navbar-bg { inset: 0 0 -20px 0; }
+
+/* Toolbar items: glass capsules, monochrome symbols at the toolbar size. */
+html[data-idiom="mac"] .ios-bar-btn {
+  height: 32px;
+  min-width: 32px;
+  padding: 0 12px;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+}
+html[data-idiom="mac"] .ios-bar-btn svg { width: 18px; height: 18px; }
+html[data-idiom="mac"] .ios-bar-btn.is-icon { width: 36px; padding: 0; }
+html[data-idiom="mac"] .ios-bar-group { padding: 0 3px; }
+html[data-idiom="mac"] .ios-bar-group > .ios-bar-btn { width: 32px; min-width: 32px; }
+
+/* ---- Sidebar: inset 8pt into the window, concentric 18pt corners,
+   medium size (28pt rows, 13pt labels, accent-colored symbols) ---- */
+html[data-idiom="mac"] .ios-sidebar { width: 220px; margin: 8px 0 8px 8px; }
+html[data-idiom="mac"] .ios-sidebar-top { height: 52px; padding: 0 10px 0 14px; }
+html[data-idiom="mac"] .ios-sidebar-item {
+  gap: 7px;
+  height: 28px;
+  margin: 0 8px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.006em;
+}
+html[data-idiom="mac"] .ios-sidebar-item:active { transform: none; }
+/* 20pt symbols render on their native 20px grid, so strokes stay sharp. */
+html[data-idiom="mac"] .ios-sidebar-item .ios-sidebar-icon { width: 20px; height: 20px; font-size: 20px; }
+html[data-idiom="mac"] .ios-sidebar-item .ios-sidebar-icon svg { width: 20px; height: 20px; }
+/* Selection: a neutral highlight; the symbol keeps the accent color. */
+html[data-idiom="mac"] .ios-sidebar-item.is-active {
+  background: rgb(0 0 0 / 0.08);
+  color: rgb(var(--ios-label));
+  font-weight: 400;
+}
+html.dark[data-idiom="mac"] .ios-sidebar-item.is-active { background: rgb(255 255 255 / 0.12); }
+html[data-idiom="mac"] .ios-sidebar-heading {
+  padding: 14px 18px 4px;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  color: rgb(var(--ios-label-3));
+}
+html[data-idiom="mac"] .ios-sidebar .ios-badge { height: 16px; min-width: 16px; padding: 0 5px; font-size: 10px; background: rgb(var(--ios-label) / 0.12); color: rgb(var(--ios-label-2)); }
+
+/* ---- Grouped forms (System Settings) ---- */
+html[data-idiom="mac"] .ios-list { border-radius: var(--radius-lg); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.06); }
+html.dark[data-idiom="mac"] .ios-list { box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.08); }
+html[data-idiom="mac"] .ios-list-header { padding: 0 2px 7px; font-size: 13px; line-height: 16px; font-weight: 700; color: rgb(var(--ios-label)); }
+html[data-idiom="mac"] .ios-list-header.is-prominent { font-size: 15px; line-height: 20px; }
+html[data-idiom="mac"] .ios-list-footer { padding: 6px 2px 0; font-size: 11px; line-height: 15px; }
+html[data-idiom="mac"] section.mb-7 { margin-bottom: 20px; }
+html[data-idiom="mac"] .ios-row { min-height: 38px; gap: 10px; padding: 0 12px; }
+html[data-idiom="mac"] .ios-row-body { gap: 8px; padding: 9px 0; }
+html[data-idiom="mac"] .ios-list > * + * .ios-row-body::before { right: -12px; }
+html[data-idiom="mac"] .ios-row-icon { width: 22px; height: 22px; font-size: 14px; }
+html[data-idiom="mac"] .ios-row-icon svg { width: 14px; height: 14px; }
+html[data-idiom="mac"] .ios-chevron { width: 12px; height: 12px; }
+html[data-idiom="mac"] .ios-row.is-button:active { background: var(--ios-fill-3); }
+
+/* ---- Controls, regular size ---- */
+html[data-idiom="mac"] .ui-btn-small { height: 22px; padding: 0 10px; font-size: 11px; font-weight: 500; }
+html[data-idiom="mac"] .ui-btn-default { height: 28px; padding: 0 14px; font-size: 13px; font-weight: 500; }
+html[data-idiom="mac"] .ui-btn-large { height: 34px; padding: 0 20px; font-size: 15px; }
+html[data-idiom="mac"] .ios-press:active { transform: none; filter: brightness(0.94); }
+
+html[data-idiom="mac"] .ios-segmented { padding: 2px; }
+html[data-idiom="mac"] .ios-segment { height: 24px; padding: 0 12px; font-size: 13px; font-weight: 400; }
+html[data-idiom="mac"] .ios-segment.is-active { font-weight: 500; }
+html[data-idiom="mac"] .ios-segment-thumb { top: 2px; bottom: 2px; }
+html[data-idiom="mac"] .ios-segmented.is-pill { padding: 2px; }
+html[data-idiom="mac"] .ios-segmented.is-pill .ios-segment { height: 26px; font-size: 13px; }
+html[data-idiom="mac"] .ios-segmented.is-pill .ios-segment-thumb { top: 2px; bottom: 2px; }
+html[data-idiom="mac"] .ios-segment:active { transform: none; }
+
+/* NSSwitch, regular: 38 x 22 */
+html[data-idiom="mac"] .ios-switch { width: 38px; height: 22px; }
+html[data-idiom="mac"] .ios-switch.is-on { background: var(--color-primary); }
+html[data-idiom="mac"] .ios-switch-knob { top: 1px; left: 1px; width: 20px; height: 20px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 0 0 0.5px rgb(0 0 0 / 0.06); }
+html[data-idiom="mac"] .ios-switch:active .ios-switch-knob { width: 24px; }
+html[data-idiom="mac"] .ios-switch.is-on .ios-switch-knob { transform: translateX(16px); }
+html[data-idiom="mac"] .ios-switch.is-on:active .ios-switch-knob { transform: translateX(12px); }
+html[data-idiom="mac"] .ios-switch.is-small { width: 32px; height: 18px; }
+html[data-idiom="mac"] .ios-switch.is-small .ios-switch-knob { width: 16px; height: 16px; }
+html[data-idiom="mac"] .ios-switch.is-small.is-on .ios-switch-knob { transform: translateX(14px); }
+
+html[data-idiom="mac"] .ios-slider { height: 20px; }
+html[data-idiom="mac"] .ios-slider::-webkit-slider-runnable-track { height: 4px; }
+html[data-idiom="mac"] .ios-slider::-webkit-slider-thumb { width: 20px; height: 20px; margin-top: -8px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
+html[data-idiom="mac"] .ios-slider::-moz-range-thumb { width: 20px; height: 20px; }
+
+html[data-idiom="mac"] .ios-search { height: 28px; padding: 0 9px; gap: 5px; }
+html[data-idiom="mac"] .ios-search.is-pill { height: 30px; padding: 0 11px; }
+html[data-idiom="mac"] .ios-search svg { width: 15px; height: 15px; }
+html[data-idiom="mac"] .ios-search input { font-size: 13px; }
+
+/* ---- Menus: 13pt items, accent selection like NSMenu ---- */
+html[data-idiom="mac"] .ios-menu { min-width: 200px; padding: 5px; }
+html[data-idiom="mac"] .ios-menu-item { padding: 0 10px; height: 24px; gap: 12px; border-radius: 6px; font-size: 13px; }
+html[data-idiom="mac"] .ios-menu-item + .ios-menu-item { border-top: 0; }
+html[data-idiom="mac"] .ios-menu-item:hover,
+html[data-idiom="mac"] .ios-menu-item:focus-visible { background: var(--color-primary); color: var(--color-on-primary); }
+html[data-idiom="mac"] .ios-menu-item.is-destructive:hover { background: rgb(var(--ios-red)); color: #fff; }
+
+/* ---- Sheets: attached to the window, 18pt concentric corners ---- */
+html[data-idiom="mac"] .ios-sheet { border-radius: var(--radius-xl); }
+
+/* ---- Messages (13pt bubbles) ---- */
+html[data-idiom="mac"] .ios-bubble { padding: 5px 11px 6px; font-size: 13px; line-height: 17px; letter-spacing: 0; border-radius: 14px; }
+
+/* ---- Cards and widgets ---- */
+html[data-idiom="mac"] .ios-widget { padding: 14px; }
+html[data-idiom="mac"] .ios-badge { min-width: 18px; height: 18px; font-size: 11px; }
+
+/* Pointer devices: hover feedback instead of press scaling. */
+html[data-idiom="mac"] .ios-tab:active,
+html[data-idiom="mac"] .ios-key:active { transform: none; }
+html[data-idiom="mac"] .ios-search-chip { height: 28px; padding: 0 10px; font-size: 13px; }

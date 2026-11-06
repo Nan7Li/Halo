@@ -8,9 +8,6 @@ export default {
         sans: [
           "-apple-system",
           "BlinkMacSystemFont",
-          "SF Pro Text",
-          "SF Pro Display",
-          "SF Pro",
           "Inter Variable",
           "PingFang SC",
           "Hiragino Sans GB",
@@ -35,9 +32,9 @@ export default {
           "sans-serif",
         ],
         mono: [
-          "SF Mono",
           "ui-monospace",
           "SFMono-Regular",
+          "SF Mono",
           "Menlo",
           "Consolas",
           "monospace",

@@ -41,6 +41,11 @@ try {
   root.style.setProperty("--el-color-primary", hex);
   root.style.setProperty("--el-color-primary-dark-2", mix(0.16));
 
+  // Platform idiom: a fine pointer on a wide window gets macOS metrics
+  // (13pt text, smaller controls); touch screens and narrow windows get iOS.
+  var mac = !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine) and (min-width: 1024px)").matches);
+  root.setAttribute("data-idiom", mac ? "mac" : "ios");
+
   var appearance = {};
   try { appearance = JSON.parse(localStorage.getItem("halo.appearance") || "{}") || {}; } catch (e) { appearance = {}; }
   var clarity = Number(appearance.clarity);

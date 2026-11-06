@@ -19,11 +19,6 @@
 /* CJK has no SF tracking; negative tracking crowds Han characters. */
 :lang(zh) .ios-body, :lang(zh) .ios-headline, :lang(zh) .ios-subhead, :lang(zh) .ios-callout,
 :lang(zh) .ios-title-2, :lang(zh) .ios-title-3, :lang(zh) .ios-footnote { letter-spacing: 0; }
-@media (min-width: 1024px) and (pointer: fine) {
-  /* Mac Catalyst scales iOS text to 77%; keep it readable but denser. */
-  .ios-body { font-size: 15px; line-height: 20px; }
-  .ios-large-title { font-size: 30px; line-height: 36px; }
-}
 
 /* Bold Text (Accessibility > Display & Text Size): every style uses its
    emphasized weight from the HIG table (Regular -> Semibold, Semibold ->
@@ -174,7 +169,9 @@ html.dark .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb)
   display: flex;
   justify-content: center;
   gap: 10px;
-  padding: 0 14px calc(10px + env(safe-area-inset-bottom));
+  /* iPhone 17 Pro: the bar sits 16pt in from each edge and floats above
+     the home indicator. */
+  padding: 0 16px max(12px, env(safe-area-inset-bottom));
   pointer-events: none;
   transition: transform var(--dur-spring-snappy) var(--spring-snappy);
 }
@@ -182,6 +179,8 @@ html.dark .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb)
   pointer-events: auto;
   position: relative;
   display: flex;
+  flex: 1 1 auto;
+  max-width: 440px;
   align-items: stretch;
   height: 62px;
   padding: 4px;
@@ -206,7 +205,7 @@ html.dark .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb)
   transition: color 200ms var(--spring-smooth), transform 300ms var(--spring-bouncy);
 }
 .ios-tab:active { transform: scale(0.9); }
-.ios-tab svg { width: 26px; height: 26px; }
+.ios-tab svg { width: 24px; height: 24px; }
 .ios-tab.is-active { color: var(--color-primary); }
 .ios-tab-badge {
   position: absolute;
@@ -379,11 +378,11 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   color: #fff;
-  font-size: 19px;
+  font-size: 20px;
 }
-.ios-row-icon svg { width: 19px; height: 19px; }
+.ios-row-icon svg { width: 20px; height: 20px; }
 .ios-chevron { color: rgb(var(--ios-label-4)); width: 14px; height: 14px; flex-shrink: 0; }
 html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
 
@@ -408,8 +407,8 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
   display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
-  padding: 2px;
-  border-radius: 9px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
   background: var(--ios-fill-3);
 }
 .ios-segmented.is-pill { border-radius: var(--radius-pill); padding: 3px; }
@@ -417,9 +416,9 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
   position: relative;
   z-index: 1;
   min-width: 0;
-  height: 28px;
+  height: 30px;
   padding: 0 14px;
-  border-radius: 7px;
+  border-radius: var(--radius-pill);
   color: rgb(var(--ios-label));
   font-size: 13px;
   font-weight: 500;
@@ -434,10 +433,10 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
 .ios-segment-thumb {
   position: absolute;
   z-index: 0;
-  top: 2px;
-  bottom: 2px;
+  top: 3px;
+  bottom: 3px;
   left: 0;
-  border-radius: 7px;
+  border-radius: var(--radius-pill);
   background: #fff;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.12), 0 3px 1px rgb(0 0 0 / 0.04), 0 0 0 0.5px rgb(0 0 0 / 0.04);
   transition: transform var(--dur-spring-snappy) var(--spring-snappy), width var(--dur-spring-snappy) var(--spring-snappy);
@@ -541,7 +540,7 @@ html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
   max-height: calc(100dvh - max(44px, env(safe-area-inset-top)));
   flex-direction: column;
   overflow: hidden;
-  border-radius: 34px 34px 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding-bottom: env(safe-area-inset-bottom);
   animation: ios-sheet-up var(--dur-spring-snappy) var(--spring-snappy) backwards;
   touch-action: pan-x;
@@ -560,7 +559,7 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
 @media (min-width: 768px) {
   .ios-sheet-root { align-items: center; padding: 24px; }
   .ios-sheet {
-    border-radius: 30px;
+    border-radius: var(--radius-xl);
     max-height: min(88dvh, 920px);
     animation-name: ios-scale-in;
     animation-duration: var(--dur-spring-snappy);
@@ -571,9 +570,9 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
 
 /* ---- Popover menu (context menu) ---- */
 .ios-menu {
-  min-width: 230px;
+  min-width: 250px;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--radius-menu);
   animation: ios-scale-in 320ms var(--spring-bouncy) backwards;
   transform-origin: top right;
 }
@@ -588,7 +587,6 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   color: rgb(var(--ios-label));
   text-align: left;
 }
-@media (min-width: 1024px) { .ios-menu-item { font-size: 14px; padding: 8px 14px; } }
 .ios-menu-item + .ios-menu-item { border-top: 0.5px solid rgb(var(--ios-separator) / 0.7); }
 .ios-menu-item:hover, .ios-menu-item:focus-visible { background: var(--ios-fill-3); outline: none; }
 .ios-menu-item.is-destructive { color: rgb(var(--ios-red)); }
@@ -596,11 +594,11 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
 /* ---- Search field ---- */
 .ios-search {
   display: flex;
-  height: 38px;
+  height: 40px;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
-  border-radius: 12px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
   background: var(--ios-fill-3);
   color: rgb(var(--ios-label-2));
 }
@@ -614,7 +612,6 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   color: rgb(var(--ios-label)) !important;
   font-size: 17px;
 }
-@media (min-width: 1024px) { .ios-search input { font-size: 15px; } }
 .ios-search input::placeholder { color: rgb(var(--ios-label-2)) !important; }
 
 /* ---- Banner (incoming call / toast) ---- */
@@ -661,7 +658,7 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   position: relative;
   max-width: min(75%, 520px);
   padding: 7px 13px 8px;
-  border-radius: 19px;
+  border-radius: var(--radius-md);
   font-size: 17px;
   line-height: 22px;
   letter-spacing: -0.02em;
@@ -669,7 +666,6 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   word-break: break-word;
   overflow-wrap: anywhere;
 }
-@media (min-width: 1024px) { .ios-bubble { font-size: 15px; line-height: 20px; } }
 .ios-bubble.is-in { background: rgb(233 233 235); color: rgb(var(--ios-label)); align-self: flex-start; }
 html.dark .ios-bubble.is-in { background: rgb(38 38 41); }
 .ios-bubble.is-out { background: var(--color-primary); color: var(--color-on-primary); align-self: flex-end; }
@@ -719,8 +715,10 @@ html.dark .ios-avatar { background: linear-gradient(180deg, #6E7280, #555864); }
   border-radius: var(--radius-lg);
   background: rgb(var(--ios-grouped-2));
 }
+/* Widget hero number: Large Title size with rounded-number feel. */
+.ios-widget-value { font-size: 34px; line-height: 38px; font-weight: 700; letter-spacing: 0.012em; font-variant-numeric: tabular-nums; }
 .ios-widget {
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   background: rgb(var(--ios-grouped-2));
   padding: 16px;
 }

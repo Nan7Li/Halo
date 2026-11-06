@@ -1,4 +1,9 @@
 import {
+  Board24Filled,
+  Call24Filled,
+  Chat24Filled,
+  Router24Filled,
+  MoreHorizontal24Filled,
   BoardRegular,
   BoardFilled,
   CallRegular,
@@ -25,6 +30,8 @@ export interface NavItem {
   literal?: boolean;
   icon: FluentIcon;
   activeIcon?: FluentIcon;
+  /** Tab bar symbol drawn on its native 24px grid (filled, per HIG). */
+  tabIcon?: FluentIcon;
   /** iOS system color for the Settings-style icon tile. */
   tint: string;
   end?: boolean;
@@ -33,10 +40,10 @@ export interface NavItem {
 }
 
 export const PRIMARY_NAV: NavItem[] = [
-  { to: "/", label: "概览", icon: BoardRegular, activeIcon: BoardFilled, tint: "blue", end: true },
-  { to: "/phone", label: "电话", icon: CallRegular, activeIcon: CallFilled, tint: "green" },
-  { to: "/sms", label: "信息", icon: ChatRegular, activeIcon: ChatFilled, tint: "green" },
-  { to: "/devices", label: "设备", icon: RouterRegular, activeIcon: RouterFilled, tint: "gray" },
+  { to: "/", label: "概览", icon: BoardRegular, activeIcon: BoardFilled, tabIcon: Board24Filled, tint: "blue", end: true },
+  { to: "/phone", label: "电话", icon: CallRegular, activeIcon: CallFilled, tabIcon: Call24Filled, tint: "green" },
+  { to: "/sms", label: "信息", icon: ChatRegular, activeIcon: ChatFilled, tabIcon: Chat24Filled, tint: "green" },
+  { to: "/devices", label: "设备", icon: RouterRegular, activeIcon: RouterFilled, tabIcon: Router24Filled, tint: "gray" },
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
@@ -51,6 +58,7 @@ export const MORE_TAB: NavItem = {
   label: "更多",
   icon: MoreHorizontalRegular,
   activeIcon: MoreHorizontalFilled,
+  tabIcon: MoreHorizontal24Filled,
   tint: "gray",
   match: ["/more", "/network", "/automatic-tasks", "/logs", "/settings", "/extensions"],
 };
