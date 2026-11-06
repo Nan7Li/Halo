@@ -34,10 +34,14 @@ export function SSOCard() {
   const [callbackNotice, setCallbackNotice] = useState<{ error: boolean; text: string } | null>(null);
 
   /** Apply authoritative settings and clear transient secret and readiness state. */
-  const applySaved = useCallback((data: SSOSettings) => {
+  const applySaved = useCallback((raw: SSOSettings) => {
+    // An older backend or proxy can answer without `config`; treat that as
+    // "not configured" instead of crashing the whole Security page.
+    const config = { ...defaultSSOConfig(), ...(raw?.config ?? {}) } as SSOSettings["config"];
+    const data = { ...raw, config } as SSOSettings;
     setSaved(data);
-    const input = ssoConfigInput({ ...defaultSSOConfig(), ...data.config });
-    setDraft(data.config.revision === 0 ? { ...input, publicOrigin: window.location.origin } : input);
+    const input = ssoConfigInput(config);
+    setDraft((config.revision ?? 0) === 0 ? { ...input, publicOrigin: window.location.origin } : input);
     setScopeText(input.scopes.join(" "));
     setSecret("");
     setCheckedRevision(null);

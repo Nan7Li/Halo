@@ -4,17 +4,15 @@ import {
   PauseRegular,
   DeleteRegular,
   ArrowDownloadRegular,
-  DismissRegular,
+  CheckmarkRegular,
+  FilterRegular,
 } from "@fluentui/react-icons";
 import { api, eventStreamURL } from "../api";
 import type { LogEntry } from "../types";
 import { cx } from "../lib/utils";
 import { useI18n } from "../lib/i18n";
-import { PageFrame, PageHeader } from "../components/ui/PageHeader";
-import { Button } from "../components/ui/Button";
-import { Switch } from "../components/ui/Switch";
-import { Select } from "../components/ui/Select";
-import { Input } from "../components/ui/Input";
+import { BackButton, BarGroup, ContextMenu, GroupButton, IOSSwitch, Page, SearchField } from "../components/ios";
+import { useMediaQuery } from "../lib/useMediaQuery";
 import { message } from "../components/ui/message";
 import { confirmDialog } from "../components/ui/MessageBox";
 import { LogRetentionCard } from "../components/logs/LogRetentionCard";
@@ -115,6 +113,8 @@ function displayTime(time: string): string {
 export default function LogsPage() {
   const { t } = useI18n();
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [filterMenu, setFilterMenu] = useState<{ x: number; y: number } | null>(null);
+  const phone = !useMediaQuery("(min-width: 768px)");
   const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -276,96 +276,73 @@ export default function LogsPage() {
   }, [filtered]);
 
   return (
-    <PageFrame wide>
-      <PageHeader
-        title={t("设备与业务日志")}
-        subtitle={t("记录硬件、驻网、WiFi Calling、短信、通话和用户操作；敏感信息已自动打码")}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={togglePause}
-              variant={paused ? "success" : "warning"}
-              className="!border-0 flex-1 justify-center sm:flex-none"
-              icon={paused ? <PlayRegular /> : <PauseRegular />}
-            >
-              {paused ? t("继续") : t("暂停")}
-            </Button>
-            <Button loading={clearing} onClick={clearLogs} className="!border-0 flex-1 justify-center sm:flex-none" icon={<DeleteRegular />}>
-              {t("清空")}
-            </Button>
-            <Button onClick={exportLogs} variant="primary" className="!border-0 flex-1 justify-center sm:flex-none" icon={<ArrowDownloadRegular />}>
-              {t("导出")}
-            </Button>
-          </div>
-        }
+    <Page
+      wide
+      title={t("实时日志")}
+      leading={phone ? <BackButton to="/more" label={t("更多")} /> : null}
+      trailing={
+        <BarGroup>
+          <GroupButton icon={paused ? <PlayRegular /> : <PauseRegular />} aria-label={paused ? t("继续") : t("暂停")} title={paused ? t("继续") : t("暂停")} onClick={togglePause} className={paused ? "text-sys-green" : undefined} />
+          <GroupButton icon={<DeleteRegular />} aria-label={t("清空")} title={t("清空")} onClick={clearLogs} disabled={clearing} />
+          <GroupButton icon={<ArrowDownloadRegular />} aria-label={t("导出")} title={t("导出")} onClick={exportLogs} />
+        </BarGroup>
+      }
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <SearchField value={search} onChange={setSearch} placeholder={t("搜索日志内容...")} className="min-w-0 flex-1" />
+        <button
+          type="button"
+          aria-label={t("筛选")}
+          title={t("筛选")}
+          onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setFilterMenu({ x: rect.right, y: rect.bottom });
+          }}
+          className={cx(
+            "ios-search-chip inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full [&_svg]:h-5 [&_svg]:w-5",
+            level !== LEVEL_OPTIONS[0].value || category !== CATEGORY_OPTIONS[0].value ? "bg-accent text-[var(--color-on-primary)]" : "bg-fill-3 text-label",
+          )}
+        >
+          <FilterRegular />
+        </button>
+      </div>
+      <ContextMenu
+        open={Boolean(filterMenu)}
+        anchor={filterMenu}
+        onClose={() => setFilterMenu(null)}
+        title={t("级别与分类")}
+        items={[
+          ...LEVEL_OPTIONS.map((option) => ({
+            label: t(option.label),
+            icon: level === option.value ? <CheckmarkRegular /> : <span className="inline-block w-[18px]" />,
+            onSelect: () => setLevel(option.value as Level),
+          })),
+          ...CATEGORY_OPTIONS.map((option) => ({
+            label: t(option.label),
+            icon: category === option.value ? <CheckmarkRegular /> : <span className="inline-block w-[18px]" />,
+            onSelect: () => setCategory(option.value as Category),
+          })),
+        ]}
       />
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-        <div className="flex items-center gap-2">
-          <span
-            className={cx("w-2 h-2 rounded-full", connected ? "bg-green-500 animate-pulse" : "bg-red-500")}
-          />
-          <span className="text-sm text-gray-500">{connected ? t("已连接") : t("未连接")}</span>
-        </div>
-        <span className="text-sm text-gray-400">{logs.length} {t("条日志")}</span>
-        {!connected && connError ? (
-          <span className="text-sm text-red-500 truncate" title={connError}>
-            {connError}
-          </span>
-        ) : null}
-        <div className="hidden sm:block flex-1" />
-        <label className="flex items-center gap-2">
-          <Switch checked={autoTail} onChange={setAutoTail} ariaLabel={t("自动追尾")} />
-          <span className="text-sm text-gray-500 dark:text-gray-400">{t("自动追尾")}</span>
+      <div className="mb-3 flex items-center gap-2 px-1 ios-footnote text-label-2">
+        <span className={cx("h-2 w-2 shrink-0 rounded-full", connected ? "bg-sys-green" : "bg-sys-red")} />
+        <span className="min-w-0 truncate" title={!connected && connError ? connError : undefined}>
+          {connected ? t("已连接") : !connError ? t("未连接") : connError}
+          {" · "}
+          {t("显示")} {filtered.length} / {logs.length} {t("条")}
+        </span>
+        <span className="flex-1" />
+        <label className="flex shrink-0 items-center gap-2">
+          <span>{t("自动追尾")}</span>
+          <IOSSwitch small checked={autoTail} onChange={setAutoTail} ariaLabel={t("自动追尾")} />
         </label>
       </div>
 
-      <div className="ui-card p-4 mb-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <Select
-            value={level}
-            onChange={(v) => setLevel(v as Level)}
-            placeholder={t("日志级别")}
-            className="w-full sm:w-40"
-            options={LEVEL_OPTIONS.map((o) => ({ ...o, label: t(o.label) }))}
-          />
-          <Select
-            value={category}
-            onChange={(v) => setCategory(v as Category)}
-            placeholder={t("业务分类")}
-            className="w-full sm:w-44"
-            options={CATEGORY_OPTIONS.map((o) => ({ ...o, label: t(o.label) }))}
-          />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("搜索日志内容...")}
-            className="w-full sm:w-64"
-            suffix={
-              search ? (
-                <button
-                  type="button"
-                  aria-label={t("清除搜索")}
-                  onClick={() => setSearch("")}
-                  className="flex items-center text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <DismissRegular />
-                </button>
-              ) : undefined
-            }
-          />
-          <span className="text-sm text-gray-400 sm:ml-auto">
-            {t("显示")} {filtered.length} / {logs.length} {t("条")}
-          </span>
-        </div>
-      </div>
-
-      <LogRetentionCard refreshKey={retentionRefreshKey} />
-
-      <div className="ui-card overflow-hidden">
+      <div className="ios-card overflow-hidden">
         <div
           ref={logContainerRef}
-          className="h-[60vh] min-h-[280px] overflow-auto font-mono text-sm bg-gray-900 dark:bg-black text-gray-100 p-4"
+          className="h-[62vh] min-h-[320px] overflow-auto bg-[#1c1c1e] p-4 font-mono text-[12.5px] leading-[18px] text-gray-100 dark:bg-black"
         >
           {filtered.length === 0 ? (
             <div className="text-gray-500 text-center py-8">
@@ -398,6 +375,9 @@ export default function LogsPage() {
           })}
         </div>
       </div>
-    </PageFrame>
+      <div className="mt-6">
+        <LogRetentionCard refreshKey={retentionRefreshKey} />
+      </div>
+    </Page>
   );
 }

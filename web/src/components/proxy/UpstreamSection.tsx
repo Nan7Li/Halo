@@ -1,8 +1,10 @@
-import { DeleteRegular, DesktopRegular, EditRegular, GlobeRegular, PauseRegular, PlayRegular } from "@fluentui/react-icons";
+import { useState } from "react";
+import { DeleteRegular, DesktopRegular, EditRegular, GlobeRegular, MoreHorizontalRegular } from "@fluentui/react-icons";
 import type { UpstreamProxy } from "../../types";
-import { Button, Tag } from "../ui";
 import type { LoadError, UpstreamRow } from "./shared";
 import { useI18n } from "../../lib/i18n";
+import { ContentUnavailable, ContextMenu, IOSSwitch, ListRow, ListSection } from "../ios";
+import { ListSkeleton } from "../ui";
 
 export interface UpstreamSectionProps {
   rows: UpstreamRow[];
@@ -16,77 +18,96 @@ export interface UpstreamSectionProps {
   toggleBusyId?: string;
 }
 
+/**
+ * Upstream proxies as an iOS list: name and address, bindings and country
+ * rules as the second line, an on/off switch, and the remaining actions in
+ * a menu (tap "…", right-click, or swipe on touch screens).
+ */
 export function UpstreamSection({ rows, loading, error, onRetry, onEdit, onDelete, onOpenBindings, onToggle, toggleBusyId }: UpstreamSectionProps) {
   const { t } = useI18n();
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const menuRow = rows.find((row) => row.id === menu?.id);
+
+  if (loading && !rows.length) return <ListSkeleton rows={3} />;
+
   return (
-    <div className="ui-card overflow-hidden">
+    <>
       {error ? (
-        <div className="flex items-center justify-between gap-3 border-b border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-[var(--radius-lg)] bg-sys-red/10 px-4 py-3 ios-subhead text-sys-red">
           <span className="min-w-0 truncate">
             {t("加载上游代理失败")}：{error.message}
             {error.status ? `（${error.status}）` : ""}
           </span>
-          <button type="button" className="shrink-0 font-medium underline underline-offset-2" onClick={onRetry}>
+          <button type="button" className="shrink-0 font-semibold" onClick={onRetry}>
             {t("重试")}
           </button>
         </div>
       ) : null}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="border-b border-gray-100 bg-gray-50/70 text-xs uppercase tracking-wide text-gray-500 dark:border-white/10 dark:bg-white/[0.025]">
-            <tr>
-              <th className="px-4 py-3">{t("名称")}</th>
-              <th className="px-4 py-3">{t("地址")}</th>
-              <th className="px-4 py-3">{t("状态")}</th>
-              <th className="px-4 py-3">{t("SIM / Profile 绑定")}</th>
-              <th className="px-4 py-3">{t("国家规则")}</th>
-              <th className="px-4 py-3 text-right">{t("操作")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-            {rows.map((row) => (
-              <tr key={row.id} className="hover:bg-sky-50/40 dark:hover:bg-sky-500/[0.04]">
-                <td className="px-4 py-3 font-semibold">{row.name || row.id}</td>
-                <td className="px-4 py-3 font-mono text-xs">{row.addr}</td>
-                <td className="px-4 py-3"><Tag type={row.enabled ? "success" : "info"}>{row.enabled ? t("已启用") : t("已禁用")}</Tag></td>
-                <td className="px-4 py-3">
-                  {row.bindingCount}
-                </td>
-                <td className="px-4 py-3">
-                  {row.countryNames.length ? (
-                    <div className="flex max-w-sm flex-wrap gap-1">
-                      {row.countryNames.map((countryName) => <Tag key={countryName} type="primary">{countryName}</Tag>)}
-                    </div>
-                  ) : <span className="text-gray-400">—</span>}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      size="small"
-                      variant={row.enabled ? "warning" : "success"}
-                      plain
-                      icon={row.enabled ? <PauseRegular /> : <PlayRegular />}
-                      loading={toggleBusyId === row.id}
-                      onClick={() => onToggle(row)}
-                    >{row.enabled ? t("禁用") : t("启用")}</Button>
-                    <Button size="small" icon={<DesktopRegular />} onClick={() => onOpenBindings(row)}>{t("SIM / Profile 绑定")}</Button>
-                    <Button size="small" icon={<EditRegular />} onClick={() => onEdit(row)}>{t("编辑")}</Button>
-                    <Button size="small" variant="danger" plain icon={<DeleteRegular />} onClick={() => onDelete(row)}>{t("删除")}</Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {!loading && !rows.length ? (
-        <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-gray-400">
-          <GlobeRegular className="mb-3 text-4xl" />
-          <div className="text-sm">{t("暂无上游代理")}</div>
-          <div className="mt-1 text-xs">{t("点击“新增代理”创建 SOCKS5 上游代理，再配置国家规则或 ICCID 绑定；未匹配的卡默认直连。")}</div>
-        </div>
-      ) : null}
-      {loading ? <div className="px-6 py-16 text-center text-sm text-gray-400">{t("加载中...")}</div> : null}
-    </div>
+      {!rows.length ? (
+        <ContentUnavailable
+          icon={<GlobeRegular />}
+          title={t("暂无上游代理")}
+          description={t("点击“新增代理”创建 SOCKS5 上游代理，再配置国家规则或 ICCID 绑定；未匹配的卡默认直连。")}
+        />
+      ) : (
+        <ListSection header={t("上游代理")}>
+          {rows.map((row) => (
+            <ListRow
+              key={row.id}
+              icon={<GlobeRegular />}
+              iconColor={row.enabled ? "blue" : "gray"}
+              onClick={() => onEdit(row)}
+              chevron={false}
+              multiline
+              swipeActions={[
+                { label: t("绑定"), color: "rgb(var(--ios-gray))", onAction: () => onOpenBindings(row) },
+                { label: t("删除"), color: "rgb(var(--ios-red))", onAction: () => onDelete(row) },
+              ]}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setMenu({ id: row.id, x: event.clientX, y: event.clientY });
+              }}
+              title={<span className="font-semibold">{row.name || row.id}</span>}
+              subtitle={
+                <>
+                  <span className="font-mono">{row.addr}</span>
+                  <br />
+                  {t("SIM / Profile 绑定")} {row.bindingCount}
+                  {row.countryNames.length ? ` · ${row.countryNames.join("、")}` : ""}
+                </>
+              }
+              accessory={
+                <span className="flex shrink-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                  <button
+                    type="button"
+                    aria-label={t("更多操作")}
+                    title={t("更多操作")}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-accent hover:bg-fill-4 [&_svg]:h-5 [&_svg]:w-5"
+                    onClick={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setMenu({ id: row.id, x: rect.right, y: rect.bottom });
+                    }}
+                  >
+                    <MoreHorizontalRegular />
+                  </button>
+                  <IOSSwitch checked={row.enabled} disabled={toggleBusyId === row.id} onChange={() => onToggle(row)} ariaLabel={row.enabled ? t("禁用") : t("启用")} />
+                </span>
+              }
+            />
+          ))}
+        </ListSection>
+      )}
+      <ContextMenu
+        open={Boolean(menuRow)}
+        anchor={menu}
+        onClose={() => setMenu(null)}
+        title={menuRow?.name || menuRow?.id}
+        items={menuRow ? [
+          { label: t("编辑"), icon: <EditRegular />, onSelect: () => onEdit(menuRow) },
+          { label: t("SIM / Profile 绑定"), icon: <DesktopRegular />, onSelect: () => onOpenBindings(menuRow) },
+          { label: t("删除"), icon: <DeleteRegular />, destructive: true, onSelect: () => onDelete(menuRow) },
+        ] : []}
+      />
+    </>
   );
 }

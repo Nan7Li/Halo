@@ -170,7 +170,7 @@ export function ChannelHeader({
         <div className="font-bold text-gray-800 dark:text-gray-100">{title}</div>
       </div>
       <div className="flex items-center gap-2">
-        {onClear ? <Button size="small" variant="danger" plain onClick={onClear}>{tl("清空配置")}</Button> : null}
+        {onClear ? <button type="button" onClick={onClear} className="px-2 ios-subhead font-medium text-sys-red hover:opacity-70">{tl("清空配置")}</button> : null}
         {actions}
         <Switch checked={enabled} onChange={onToggle} />
       </div>

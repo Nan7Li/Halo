@@ -44,8 +44,8 @@ function CardIcon({ children, small }: { children: ReactNode; small?: boolean })
     <div
       className={
         small
-          ? "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-accent"
-          : "flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-accent"
+          ? "ios-card-icon is-small"
+          : "ios-card-icon"
       }
     >
       {children}

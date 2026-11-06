@@ -27,8 +27,8 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
   if (embedded) {
     if (!subtitle && !actions) return null;
     return (
-      <div className="mb-5 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
-        {subtitle ? <p className="min-w-0 ios-subhead text-label-2">{subtitle}</p> : <span />}
+      <div className="ios-embedded-actions mb-5 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+        {subtitle ? <p className="min-w-0 ios-footnote text-label-2">{subtitle}</p> : <span />}
         {actions ? <div className="min-w-0 shrink-0">{actions}</div> : null}
       </div>
     );
@@ -42,7 +42,7 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
         <span />
       </header>
       {mac && !subtitle && !actions ? null : (
-        <div className="mb-5 flex flex-col gap-3 px-1 pt-1 sm:flex-row sm:items-end sm:justify-between">
+        <div className="ios-embedded-actions mb-5 flex flex-col gap-3 px-1 pt-1 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             {mac ? null : <h1 className="ios-large-title text-label">{title}</h1>}
             {subtitle ? <p className={cx("ios-subhead text-label-2", !mac && "mt-1")}>{subtitle}</p> : null}
