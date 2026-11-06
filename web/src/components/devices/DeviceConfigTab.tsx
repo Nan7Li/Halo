@@ -58,7 +58,7 @@ export function DeviceConfigTab({ editConfig, deviceStatus, saving, deleting, on
     <div>
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+          <div className="ios-card-icon">
             <SettingsRegular className="text-[22px]" />
           </div>
           <div>

@@ -1,4 +1,7 @@
+import { useState } from "react";
+import { DeleteRegular, MoreHorizontalRegular, RenameRegular, ShieldRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
+import { ContextMenu } from "../ios";
 import { Button, Input, Tag } from "../ui";
 import { EsimCardPolicyInline } from "./EsimCardPolicyInline";
 import type { EsimProfileItem } from "./types";
@@ -29,9 +32,10 @@ export function EsimProfileRow(props: EsimProfileRowProps) {
   const { t } = useI18n();
   const { profile: p, renaming } = props;
   const active = p.state === 1;
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   return (
     <>
-      <div className="flex flex-col gap-3 px-3 py-3 transition-colors hover:bg-gray-50/50 dark:hover:bg-white/5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0 flex-1">
           {!renaming ? (
             <>
@@ -73,21 +77,35 @@ export function EsimProfileRow(props: EsimProfileRowProps) {
           )}
         </div>
         {!renaming ? (
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-shrink-0 sm:flex-wrap sm:items-center">
-            <Button className="w-full sm:w-auto" variant={active ? "warning" : "success"} size="small" plain loading={props.switching} onClick={props.onSwitch}>
+          // One primary action plus a menu, like an iOS list row, instead of
+          // four colored buttons per profile.
+          <div className="flex shrink-0 items-center gap-1 self-end sm:self-auto">
+            <Button variant={active ? "default" : "success"} size="small" plain loading={props.switching} onClick={props.onSwitch}>
               {active ? t("禁用") : t("切换")}
             </Button>
-            <Button className="w-full sm:w-auto" variant="primary" size="small" plain onClick={props.onStartRename}>
-              {t("改名")}
-            </Button>
-            <Button className="w-full sm:w-auto" variant={props.policyOpen ? "primary" : "default"} size="small" plain onClick={props.onTogglePolicy}>
-              {t("策略")}
-            </Button>
-            <span className="w-full sm:w-auto" title={active ? t("当前启用的 Profile 不能删除；请先切换到另一张卡") : undefined}>
-              <Button className="w-full sm:w-auto" variant="danger" size="small" plain loading={props.deleting} disabled={active} onClick={props.onDelete}>
-                {t("删除")}
-              </Button>
-            </span>
+            <button
+              type="button"
+              aria-label={t("更多操作")}
+              title={t("更多操作")}
+              onClick={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setMenu({ x: rect.right, y: rect.bottom });
+              }}
+              className={cx("inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-fill-4 [&_svg]:h-5 [&_svg]:w-5", props.policyOpen ? "text-accent" : "text-label-2")}
+            >
+              <MoreHorizontalRegular />
+            </button>
+            <ContextMenu
+              open={Boolean(menu)}
+              anchor={menu}
+              onClose={() => setMenu(null)}
+              title={p.name || p.iccid}
+              items={[
+                { label: t("改名"), icon: <RenameRegular />, onSelect: props.onStartRename },
+                { label: props.policyOpen ? t("收起策略") : t("卡策略"), icon: <ShieldRegular />, onSelect: props.onTogglePolicy },
+                { label: active ? t("删除（请先切换到另一张卡）") : t("删除"), icon: <DeleteRegular />, destructive: true, disabled: active || props.deleting, onSelect: props.onDelete },
+              ]}
+            />
           </div>
         ) : null}
       </div>

@@ -99,7 +99,7 @@ export default {
           950: "#000000",
         },
         brand: {
-          DEFAULT: "rgb(var(--color-primary-rgb) / 1)",
+          DEFAULT: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 1))",
           dark: "var(--color-primary-hover)",
         },
         apple: {
@@ -112,14 +112,16 @@ export default {
           grouped: "rgb(var(--ios-grouped) / <alpha-value>)",
           "grouped-dark": "rgb(var(--ios-grouped) / <alpha-value>)",
         },
-        // Old indigo/sky brand classes follow the live accent.
+        // Old indigo/sky brand classes follow the live accent. Light steps
+        // are translucent; an opacity modifier (bg-sky-50/70) multiplies
+        // that base alpha instead of replacing it with a solid 70%.
         indigo: {
-          50: "rgb(var(--color-primary-rgb) / 0.08)",
-          100: "rgb(var(--color-primary-rgb) / 0.14)",
-          200: "rgb(var(--color-primary-rgb) / 0.28)",
-          300: "rgb(var(--color-primary-rgb) / 0.45)",
-          400: "rgb(var(--color-primary-rgb) / 0.7)",
-          500: "rgb(var(--color-primary-rgb) / 1)",
+          50: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.08))",
+          100: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.14))",
+          200: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.28))",
+          300: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.45))",
+          400: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.7))",
+          500: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 1))",
           600: "var(--color-primary-hover)",
           700: "var(--color-primary-active)",
           800: "var(--color-primary-ink)",
@@ -127,12 +129,12 @@ export default {
           950: "var(--color-primary-ink)",
         },
         sky: {
-          50: "rgb(var(--color-primary-rgb) / 0.08)",
-          100: "rgb(var(--color-primary-rgb) / 0.14)",
-          200: "rgb(var(--color-primary-rgb) / 0.28)",
-          300: "rgb(var(--color-primary-rgb) / 0.45)",
-          400: "rgb(var(--color-primary-rgb) / 0.7)",
-          500: "rgb(var(--color-primary-rgb) / 1)",
+          50: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.08))",
+          100: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.14))",
+          200: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.28))",
+          300: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.45))",
+          400: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 0.7))",
+          500: "rgb(var(--color-primary-rgb) / calc(<alpha-value> * 1))",
           600: "var(--color-primary-hover)",
           700: "var(--color-primary-active)",
           800: "var(--color-primary-ink)",
