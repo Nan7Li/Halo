@@ -25,7 +25,7 @@ function hasAnyUrl(urls: string[]): boolean {
 function OneWayNotificationHint() {
   const { t } = useI18n();
   return (
-    <div className="mb-4 rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
+    <div className="mb-4 py-1 ios-footnote text-label-2">
       {t("该渠道仅用于单向通知，不提供设备控制功能。新短信会逐条推送；启用通知的自动任务也会推送执行结果。")}
     </div>
   );
@@ -151,14 +151,12 @@ export function EmailTab({ value, onChange, testing, onTest, onClear }: PushChan
               placeholder="465 / 587"
             />
           </Field>
-          <div className="space-y-1 sm:col-span-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">{t("使用 SSL/TLS")}</label>
-            <div className="flex h-10 items-center">
-              <Switch checked={value.useSsl} onChange={(useSsl) => onChange({ useSsl })} disabled={off} />
-            </div>
+          <div className="ios-form-row items-center">
+            <span className="min-w-0 flex-1 ios-body text-label">{t("使用 SSL/TLS")}</span>
+            <Switch checked={value.useSsl} onChange={(useSsl) => onChange({ useSsl })} disabled={off} />
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1">
           <Field label={t("用户名 (Username)")}>
             <Input value={value.username} onChange={(e) => onChange({ username: e.target.value })} disabled={off} placeholder={t("邮箱账号")} />
           </Field>
@@ -243,7 +241,7 @@ export function WebhookTab({ value, onChange, testing, onTest }: PushChannelProp
               <option key={name} value={name} />
             ))}
           </datalist>
-          <div className="mt-1 text-[10px] text-gray-400">{t("Content-Type 与 X-Vocat-Signature 为系统保留头，自定义同名头会被忽略。")}</div>
+          <div className="ios-form-hint">{t("Content-Type 与 X-Vocat-Signature 为系统保留头，自定义同名头会被忽略。")}</div>
         </div>
         <Field
           label={t("文本模板 (Text Template)")}
@@ -273,7 +271,7 @@ export function WebhookTab({ value, onChange, testing, onTest }: PushChannelProp
             placeholder={"收到新短信\n设备  {{device_label}}\n收信卡  {{recipient}}\n号码  {{number}}\n时间  {{time}}\n内容  {{text}}"}
           />
         </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1">
           <Field label={t("请求超时 (ms)")}>
             <Input
               value={value.timeoutMs}
@@ -324,7 +322,7 @@ export function WecomTab({ value, onChange, testing, onTest }: PushChannelProps<
       />
       <OneWayNotificationHint />
       <div className="space-y-4">
-        <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
+        <div className="py-1 ios-footnote text-label-2">
           {t("每个企业微信消息推送 Webhook URL 单独占一行，点击添加 URL 新增一行；不使用逗号、空格或换行分隔多个 URL。")}
         </div>
         <UrlListEditor
@@ -375,7 +373,7 @@ export function LarkTab({ value, onChange, testing, onTest }: PushChannelProps<L
       />
       <OneWayNotificationHint />
       <div className="space-y-4">
-        <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
+        <div className="py-1 ios-footnote text-label-2">
           {t("支持飞书 open.feishu.cn 与国际版 Lark open.larksuite.com 的群自定义机器人 Webhook，无需创建应用。")}
         </div>
         <Field label={t("群机器人 Webhook URL")}>
@@ -389,12 +387,10 @@ export function LarkTab({ value, onChange, testing, onTest }: PushChannelProps<L
             placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
           />
         </Field>
-        <div className="space-y-1">
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">{t("启用签名校验")}</label>
-          <div className="flex h-10 items-center">
+        <div className="ios-form-row items-center">
+            <span className="min-w-0 flex-1 ios-body text-label">{t("启用签名校验")}</span>
             <Switch checked={value.signingEnabled} onChange={(signingEnabled) => onChange({ signingEnabled })} disabled={off} />
           </div>
-        </div>
         {value.signingEnabled ? (
           <Field
             label={t("签名密钥 (Secret)")}

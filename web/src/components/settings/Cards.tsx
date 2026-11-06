@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import {
   AlertRegular,
   CheckmarkRegular,
-  InfoRegular,
   KeyRegular,
 } from "@fluentui/react-icons";
 import type { AutoUpdateSettings, SystemInfo, UpstreamVocatStatus } from "../../types";
@@ -10,7 +9,9 @@ import { useI18n } from "../../lib/i18n";
 import { Button } from "../ui/Button";
 import { Switch } from "../ui/Switch";
 import { Select } from "../ui/Select";
-import { Field, FieldRow, PasswordInput } from "./controls";
+import { Field, PasswordInput, copyText } from "./controls";
+import { ListSection } from "../ios";
+import { cx } from "../../lib/utils";
 
 export interface PasswordForm {
   oldPassword: string;
@@ -151,69 +152,89 @@ export function SystemInfoCard({
   onMarkUpstreamSynced: () => void;
 }) {
   const { t } = useI18n();
-  return (
-    <div className="ui-card group relative overflow-hidden p-8">
-      <CardDecor />
-      <div className="relative z-10 mb-6 flex items-center gap-3">
-        <CardIcon>
-          <InfoRegular className="text-[24px]" />
-        </CardIcon>
-        <CardTitle title={t("系统信息")} subtitle={t("运行环境")} />
+  const valueRow = (label: ReactNode, value: unknown, opts: { mono?: boolean; copy?: boolean } = {}) => {
+    const text = (value === null || value === undefined ? "" : String(value)).trim() || "—";
+    const canCopy = !!opts.copy && text !== "—";
+    return (
+      <div className="ios-form-row items-center">
+        <span className="shrink-0 ios-body text-label">{label}</span>
+        <span
+          className={cx("min-w-0 flex-1 truncate text-right ios-body text-label-2", opts.mono && "font-mono ios-subhead", canCopy && "cursor-pointer")}
+          title={canCopy ? `${text} · ${t("点击复制")}` : text}
+          onClick={() => void (canCopy && copyText(text))}
+        >
+          {text}
+        </span>
       </div>
-      <div className="relative z-10 space-y-4 text-sm">
-        <div className="rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label={t("版本")} value={info.version} monospace>
-            <span className="font-mono text-sm">{info.version || "Unknown"}</span>
-            <Button size="small" variant="primary" className="!border-0" loading={checkingUpdate} onClick={onCheckUpdate}>
-              {checkingUpdate ? t("正在检查更新") : t("检查更新")}
-            </Button>
-          </FieldRow>
+    );
+  };
+  const switchRow = (title: string, subtitle: string, checked: boolean, disabled: boolean, onChange: (value: boolean) => void) => (
+    <div className="ios-form-row items-center">
+      <span className="min-w-0 flex-1 py-1">
+        <span className="block ios-body text-label">{title}</span>
+        <span className="mt-0.5 block ios-footnote text-label-2">{subtitle}</span>
+      </span>
+      <Switch checked={checked} disabled={disabled} loading={savingAutoUpdate} onChange={onChange} />
+    </div>
+  );
+  const lastCheck = autoUpdate?.lastCheckAt
+    ? `${t("上次检查")} ${autoUpdate.lastCheckAt.replace("T", " ").replace("Z", " UTC")}${
+        autoUpdate.lastError
+          ? ` · ${waitingForCall(autoUpdate.lastError) ? `${t("等待通话结束")} · ` : ""}${autoUpdate.lastError}`
+          : autoUpdate.lastAvailable
+            ? ` · ${t("发现新版本:")} ${autoUpdate.lastVersion || ""}`
+            : ` · ${t("当前已是最新版本")}`
+      }`
+    : "";
+
+  return (
+    <div>
+      <ListSection
+        header={t("软件更新")}
+        footer={updateInfo && !updateInfo.hasUpdate ? t("当前已是最新版本") : undefined}
+        bodyClassName="px-4"
+      >
+        <div className="ios-form-row items-center">
+          <span className="shrink-0 ios-body text-label">{t("版本")}</span>
+          <span className="min-w-0 flex-1 truncate text-right font-mono ios-subhead text-label-2">{info.version || "Unknown"}</span>
+          <button type="button" className="shrink-0 ios-body text-accent disabled:opacity-40" disabled={checkingUpdate} onClick={onCheckUpdate}>
+            {checkingUpdate ? t("正在检查更新") : t("检查更新")}
+          </button>
         </div>
+        {valueRow(t("更新通道"), updateChannelLabel(autoUpdate?.channel, t), { mono: true })}
+        {valueRow(t("可用版本"), autoUpdate?.lastVersion || updateInfo?.latestVersion, { mono: true })}
         {updateInfo?.hasUpdate ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
-            <div className="mb-2 flex items-center gap-2 text-[13px] font-bold text-amber-800 dark:text-amber-200">
+          <div className="ios-form-row flex-col !items-stretch gap-2 py-3">
+            <div className="flex items-center gap-2 ios-body font-semibold text-sys-orange">
               <AlertRegular /> {t("发现新版本:")} {updateInfo.latestVersion}
             </div>
-            <div className="mb-4 max-h-32 overflow-y-auto whitespace-pre-wrap pr-2 text-xs text-amber-700 dark:text-amber-300/80">
+            <div className="max-h-32 overflow-y-auto whitespace-pre-wrap ios-footnote text-label-2">
               {updateInfo.releaseNote || t("暂无更新说明")}
             </div>
-            <Button variant="warning" loading={applyingUpdate} onClick={onApplyUpdate} className="w-full !border-0">
+            <Button variant="primary" loading={applyingUpdate} onClick={onApplyUpdate} className="w-full !border-0">
               {applyingUpdate ? t("正在更新...") : t("立即更新并重启")}
             </Button>
           </div>
-        ) : updateInfo ? (
-          <p className="text-[12px] text-black/45 dark:text-white/50">{t("当前已是最新版本")}</p>
         ) : null}
-        <div className="space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label={t("更新通道")} value={updateChannelLabel(autoUpdate?.channel, t)} monospace />
-          <FieldRow label={t("当前版本")} value={autoUpdate?.currentVersion || info.version} monospace />
-          <FieldRow label={t("可用版本")} value={autoUpdate?.lastVersion || updateInfo?.latestVersion} monospace />
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[13px] font-semibold text-black/80 dark:text-white/80">{t("自动检查更新")}</div>
-              <p className="text-[12px] text-black/40 dark:text-white/45">{t("后台定期查询 Halo 发行版")}</p>
-            </div>
-            <Switch
-              checked={!!autoUpdate?.enabled}
-              disabled={!autoUpdate || savingAutoUpdate}
-              loading={savingAutoUpdate}
-              onChange={(enabled) => onAutoUpdateChange({ enabled })}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[13px] font-semibold text-black/80 dark:text-white/80">{t("自动安装并重启")}</div>
-              <p className="text-[12px] text-black/40 dark:text-white/45">{t("发现新版本后下载校验并替换本机程序")}</p>
-            </div>
-            <Switch
-              checked={!!autoUpdate?.apply}
-              disabled={!autoUpdate || savingAutoUpdate || !!autoUpdate?.isDocker}
-              loading={savingAutoUpdate}
-              onChange={(apply) => onAutoUpdateChange({ apply })}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-[13px] font-semibold text-black/80 dark:text-white/80">{t("检查间隔")}</div>
+      </ListSection>
+
+      <ListSection
+        header={t("自动更新")}
+        footer={
+          <>
+            {lastCheck ? <span className="block">{lastCheck}</span> : autoUpdate?.lastError ? (
+              <span className="block text-sys-orange">{waitingForCall(autoUpdate.lastError) ? `${t("等待通话结束")} · ` : ""}{autoUpdate.lastError}</span>
+            ) : null}
+            {autoUpdate?.repository ? <span className="block font-mono">{autoUpdate.repository}</span> : null}
+          </>
+        }
+        bodyClassName="px-4"
+      >
+        {switchRow(t("自动检查更新"), t("后台定期查询 Halo 发行版"), !!autoUpdate?.enabled, !autoUpdate || savingAutoUpdate, (enabled) => onAutoUpdateChange({ enabled }))}
+        {switchRow(t("自动安装并重启"), t("发现新版本后下载校验并替换本机程序"), !!autoUpdate?.apply, !autoUpdate || savingAutoUpdate || !!autoUpdate?.isDocker, (apply) => onAutoUpdateChange({ apply }))}
+        <div className="ios-form-row">
+          <label className="ios-form-label">{t("检查间隔")}</label>
+          <div className="ios-form-control">
             <Select
               value={String(autoUpdate?.intervalHours || 6)}
               disabled={!autoUpdate || savingAutoUpdate}
@@ -226,89 +247,49 @@ export function SystemInfoCard({
               ]}
             />
           </div>
-          {autoUpdate?.lastCheckAt ? (
-            <p className="text-[12px] text-black/40 dark:text-white/45">
-              {t("上次检查")} {autoUpdate.lastCheckAt.replace("T", " ").replace("Z", " UTC")}
-              {autoUpdate.lastError
-                ? ` · ${waitingForCall(autoUpdate.lastError) ? `${t("等待通话结束")} · ` : ""}${autoUpdate.lastError}`
-                : autoUpdate.lastAvailable
-                  ? ` · ${t("发现新版本:")} ${autoUpdate.lastVersion || ""}`
-                  : ` · ${t("当前已是最新版本")}`}
-            </p>
-          ) : autoUpdate?.lastError ? (
-            <p className="text-[12px] text-amber-700 dark:text-amber-300">
-              {waitingForCall(autoUpdate.lastError) ? `${t("等待通话结束")} · ` : ""}
-              {autoUpdate.lastError}
-            </p>
-          ) : null}
-          {autoUpdate?.repository ? (
-            <p className="font-mono text-[11px] text-black/35 dark:text-white/35">{autoUpdate.repository}</p>
-          ) : null}
         </div>
-        <div className="rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label={t("构建时间")} value={info.buildTime} monospace />
-        </div>
-        <div className="rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label={t("配置路径")} value={info.config} monospace copyable />
-        </div>
-        <div className="rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label={t("运行时长")} value={info.uptime} monospace />
-        </div>
-        <div className="rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label="OS" value={info.os} monospace />
-        </div>
-        <div className="rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <FieldRow label={t("架构")} value={info.architecture} monospace />
-        </div>
-        <div className="space-y-3 rounded-lg bg-gray-50 p-3 dark:bg-white/5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-[13px] font-semibold text-black/80 dark:text-white/80">{t("VoCat 上游")}</div>
-              <p className="text-[12px] text-black/40 dark:text-white/45">
-                {t("跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/VoCat Releases 安装。")}
-              </p>
-            </div>
-            <Button size="small" loading={checkingUpstream} onClick={onCheckUpstream}>
-              {t("检查 VoCat")}
-            </Button>
+      </ListSection>
+
+      <ListSection header={t("关于")} bodyClassName="px-4">
+        {valueRow(t("构建时间"), info.buildTime, { mono: true })}
+        {valueRow(t("配置路径"), info.config, { mono: true, copy: true })}
+        {valueRow(t("运行时长"), info.uptime)}
+        {valueRow("OS", info.os)}
+        {valueRow(t("架构"), info.architecture, { mono: true })}
+      </ListSection>
+
+      <ListSection
+        header={t("VoCat 上游")}
+        footer={
+          <>
+            {upstream?.lastError ? <span className="block text-sys-red">{upstream.lastError}</span> : null}
+            {!upstream?.available && upstream?.lastCheckAt ? <span className="block">{t("官方 VoCat 暂无更新于已同步版本之后")}</span> : null}
+            <span className="block">{t("跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/VoCat Releases 安装。")}</span>
+          </>
+        }
+        bodyClassName="px-4"
+      >
+        {valueRow(t("已同步"), upstream?.syncedVersion || "0.2.12", { mono: true })}
+        {upstream?.latestVersion ? valueRow(t("官方最新"), upstream.latestVersion, { mono: true }) : null}
+        {upstream?.available ? (
+          <div className="ios-form-row flex-col !items-stretch gap-2 py-3">
+            <div className="ios-body font-semibold text-sys-orange">{t("官方 VoCat 有新内容:")} {upstream.latestVersion}</div>
+            <div className="max-h-32 overflow-y-auto whitespace-pre-wrap ios-footnote text-label-2">{upstream.releaseNotes || t("暂无更新说明")}</div>
+            {upstream.htmlUrl ? (
+              <a className="ios-footnote text-accent" href={upstream.htmlUrl} target="_blank" rel="noreferrer">{upstream.repository}</a>
+            ) : null}
+            <Button loading={markingUpstream} onClick={onMarkUpstreamSynced} className="w-full">{t("已合并进 Halo")}</Button>
           </div>
-          <FieldRow label={t("已同步")} value={upstream?.syncedVersion || "0.2.12"} monospace />
-          {upstream?.latestVersion ? <FieldRow label={t("官方最新")} value={upstream.latestVersion} monospace /> : null}
-          {upstream?.available ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">
-              <div className="mb-2 text-[13px] font-bold text-amber-800 dark:text-amber-200">
-                {t("官方 VoCat 有新内容:")} {upstream.latestVersion}
-              </div>
-              <div className="mb-3 max-h-32 overflow-y-auto whitespace-pre-wrap text-xs text-amber-700 dark:text-amber-300/80">
-                {upstream.releaseNotes || t("暂无更新说明")}
-              </div>
-              {upstream.htmlUrl ? (
-                <a className="mb-3 block text-[12px] text-accent underline-offset-2 hover:underline" href={upstream.htmlUrl} target="_blank" rel="noreferrer">
-                  {upstream.repository}
-                </a>
-              ) : null}
-              <Button size="small" loading={markingUpstream} onClick={onMarkUpstreamSynced} className="w-full">
-                {t("已合并进 Halo")}
-              </Button>
-            </div>
-          ) : upstream?.lastCheckAt ? (
-            <p className="text-[12px] text-black/40 dark:text-white/45">{t("官方 VoCat 暂无更新于已同步版本之后")}</p>
-          ) : null}
-          {upstream?.lastError ? <p className="text-[12px] text-red-600 dark:text-red-400">{upstream.lastError}</p> : null}
-        </div>
-        <p className="text-[12px] leading-relaxed text-black/40 dark:text-white/45">
-          {t("Halo 是基于 VoCat 的个人界面与发行版。模组、IMS、WiFi Calling 等核心能力来自原项目。")}
-          {" "}
-          <a
-            className="text-accent underline-offset-2 hover:underline"
-            href="https://github.com/MengMengCode/VoCat"
-            target="_blank"
-            rel="noreferrer"
-          >
-            MengMengCode/VoCat
-          </a>
-        </p>
-      </div>
+        ) : null}
+        <button type="button" className="ios-form-row w-full items-center text-left ios-body text-accent disabled:opacity-40" disabled={checkingUpstream} onClick={onCheckUpstream}>
+          {checkingUpstream ? t("正在检查…") : t("检查 VoCat")}
+        </button>
+      </ListSection>
+
+      <p className="px-4 ios-footnote text-label-2">
+        {t("Halo 是基于 VoCat 的个人界面与发行版。模组、IMS、WiFi Calling 等核心能力来自原项目。")}{" "}
+        <a className="text-accent" href="https://github.com/MengMengCode/VoCat" target="_blank" rel="noreferrer">MengMengCode/VoCat</a>
+      </p>
     </div>
   );
 }

@@ -41,13 +41,13 @@ export function TelegramTab({ value, onChange, onClear }: ChannelProps<TelegramF
     <div className="pt-2">
       <ChannelHeader onClear={onClear} title={t("启用 Telegram 机器人")} enabled={value.enabled} onToggle={(enabled) => onChange({ enabled })} />
       <div className="space-y-4">
-        <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
+        <div className="py-1 ios-footnote text-label-2">
           {t("启用后会推送新短信，并允许指定管理员通过 Bot 查看状态、切卡、管理 WiFi Calling、发送短信和限时拨号。拨号只执行呼叫并自动挂断，不处理音频。")}
         </div>
         <Field label="Bot Token">
           <Input value={value.botToken} onChange={(e) => onChange({ botToken: e.target.value })} disabled={off} placeholder="xxxx:yyyy" />
         </Field>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1">
           <Field label="Chat ID" hint={t("接收短信通知和命令回复的私聊或群组 ID。群组 ID 可以是负数。")}>
             <Input value={value.chatId} onChange={(e) => onChange({ chatId: e.target.value })} disabled={off} type="number" inputMode="numeric" placeholder={t("例如 123456")} />
           </Field>
@@ -89,7 +89,7 @@ export function PushplusTab({ value, onChange }: ChannelProps<PushplusForm>) {
     <div className="pt-2">
       <ChannelHeader title={t("启用 Pushplus 推送")} enabled={value.enabled} onToggle={(enabled) => onChange({ enabled })} />
       <div className="space-y-4">
-        <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
+        <div className="py-1 ios-footnote text-label-2">
           {t("该渠道仅用于单向通知，不提供设备控制功能。新短信会逐条推送；启用通知的自动任务也会推送执行结果。")}
         </div>
         <Field label="Token">

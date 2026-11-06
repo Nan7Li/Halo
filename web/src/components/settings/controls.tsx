@@ -170,15 +170,11 @@ export function ChannelHeader({
   onClear?: () => void;
 }) {
   return (
-    <div className="mb-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <div className="font-bold text-gray-800 dark:text-gray-100">{title}</div>
-      </div>
-      <div className="flex items-center gap-2">
-        {onClear ? <button type="button" onClick={onClear} className="px-2 ios-subhead font-medium text-sys-red hover:opacity-70">{tl("清空配置")}</button> : null}
-        {actions}
-        <Switch checked={enabled} onChange={onToggle} />
-      </div>
+    <div className="ios-channel-header ios-form-row items-center">
+      <span className="min-w-0 flex-1 ios-body font-semibold text-label">{title}</span>
+      {onClear ? <button type="button" onClick={onClear} className="shrink-0 px-1 ios-subhead text-sys-red active:opacity-60">{tl("清空配置")}</button> : null}
+      {actions}
+      <Switch checked={enabled} onChange={onToggle} ariaLabel={typeof title === "string" ? title : undefined} />
     </div>
   );
 }
