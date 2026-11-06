@@ -1,8 +1,9 @@
-import { AddRegular, DeleteRegular } from "@fluentui/react-icons";
+import { AddRegular, CheckmarkRegular, DeleteRegular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../../api";
 import type { DeviceListItem, DeviceProxyBinding, EsimOverview, ProfileProxyCandidate, UpstreamProxy } from "../../types";
-import { Button, EmptyState, Modal, Tag } from "../ui";
+import { Button, EmptyState, ListSkeleton, Modal } from "../ui";
+import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
 
 export interface DeviceBindingsDialogProps {
@@ -117,11 +118,11 @@ export function DeviceBindingsDialog(props: DeviceBindingsDialogProps) {
   return (
     <Modal open={open} onClose={onClose} title={`${adding ? t("添加 SIM / Profile 绑定") : t("SIM / Profile 绑定")} — ${proxyName}`}>
       <div className="space-y-4 pb-2">
-        <div className="rounded-lg border border-sky-200/70 bg-sky-50 px-3 py-2 text-xs text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+        <p className="px-1 ios-footnote text-label-2">
           {t("VoWiFi 会按当前 ICCID 选择代理。实体 SIM 和 eSIM Profile 都可以绑定；同一 ICCID 只能绑定一个代理。")}
-        </div>
+        </p>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs text-gray-500">{adding ? t("从当前 SIM 卡和已安装的 eSIM Profile 中选择") : `${current.length} ${t("个 SIM / Profile")}`}</div>
+          <div className="px-1 ios-footnote font-medium uppercase text-label-2">{adding ? t("从当前 SIM 卡和已安装的 eSIM Profile 中选择") : `${current.length} ${t("个 SIM / Profile")}`}</div>
           <div className="flex gap-2">
             {adding ? (
               <Button size="small" onClick={() => { setAdding(false); setSelected([]); }}>{t("返回绑定列表")}</Button>
@@ -144,40 +145,53 @@ export function DeviceBindingsDialog(props: DeviceBindingsDialogProps) {
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-white/10">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-gray-50/80 text-xs uppercase tracking-wide text-gray-500 dark:bg-white/[0.025]">
-              <tr>
-                <th className="w-12 px-4 py-3"><input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={selectable.length === 0 || busy} aria-label={t("全选")} /></th>
-                <th className="px-4 py-3">{t("设备 ID")}</th>
-                <th className="px-4 py-3">ICCID</th>
-                <th className="px-4 py-3">{t("SIM / Profile")}</th>
-                {adding ? <th className="px-4 py-3">{t("状态")}</th> : null}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-              {rows.map((row) => {
-                const existing = bindingByICCID.get(row.iccid);
-                const unavailable = adding && !!existing;
-                return (
-                  <tr key={`${row.deviceId}:${row.iccid}`} className={unavailable ? "opacity-60" : "hover:bg-sky-50/40 dark:hover:bg-sky-500/[0.04]"}>
-                    <td className="px-4 py-3"><input type="checkbox" checked={selected.includes(row.iccid)} onChange={() => toggle(row.iccid)} disabled={unavailable || busy} aria-label={row.iccid} /></td>
-                    <td className="px-4 py-3 font-mono text-xs">{row.deviceId}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{row.iccid}</td>
-                    <td className="px-4 py-3 font-medium">{row.profileName || row.iccid}</td>
-                    {adding ? (
-                      <td className="px-4 py-3">
-                        {existing ? <Tag type={existing.upstreamProxyId === proxy?.id ? "success" : "info"}>{existing.upstreamProxyId === proxy?.id ? t("已绑定此代理") : `${t("已绑定")}: ${proxyNameById.get(existing.upstreamProxyId) || existing.upstreamProxyId}`}</Tag> : <Tag type="primary">{("stateText" in row && row.stateText) || t("可绑定")}</Tag>}
-                      </td>
-                    ) : null}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {loadingProfiles ? <div className="px-6 py-12 text-center text-sm text-gray-400">{t("读取 Profile 中...")}</div> : null}
-          {!loadingProfiles && rows.length === 0 ? <EmptyState title={adding ? t("没有可显示的 SIM / Profile") : t("尚未绑定 SIM / Profile")} subtitle={adding ? t("请确认设备在线并已读取到 SIM 卡 ICCID。") : t("点击添加，从 SIM / Profile 列表中选择。")}/>: null}
-        </div>
+        {selectable.length > 0 ? (
+          <button type="button" className="px-1 ios-subhead font-medium text-accent disabled:opacity-40" onClick={toggleAll} disabled={busy}>
+            {allSelected ? t("取消全选") : t("全选")}
+          </button>
+        ) : null}
+        {loadingProfiles ? (
+          <ListSkeleton rows={3} />
+        ) : rows.length === 0 ? (
+          <EmptyState title={adding ? t("没有可显示的 SIM / Profile") : t("尚未绑定 SIM / Profile")} subtitle={adding ? t("请确认设备在线并已读取到 SIM 卡 ICCID。") : t("点击添加，从 SIM / Profile 列表中选择。")} />
+        ) : (
+          <div className="overflow-hidden rounded-[var(--radius-lg)] bg-grouped-2">
+            {rows.map((row) => {
+              const existing = bindingByICCID.get(row.iccid);
+              const unavailable = adding && !!existing;
+              const checked = selected.includes(row.iccid);
+              const status = !adding
+                ? null
+                : existing
+                  ? existing.upstreamProxyId === proxy?.id
+                    ? t("已绑定此代理")
+                    : `${t("已绑定")}: ${proxyNameById.get(existing.upstreamProxyId) || existing.upstreamProxyId}`
+                  : ("stateText" in row && row.stateText) || t("可绑定");
+              return (
+                <button
+                  key={`${row.deviceId}:${row.iccid}`}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={checked}
+                  disabled={unavailable || busy}
+                  onClick={() => toggle(row.iccid)}
+                  className="ios-select-row group flex w-full items-center gap-3 px-4 text-left disabled:opacity-50"
+                >
+                  <span className={cx("ios-check-circle", checked && "is-on")} aria-hidden="true">
+                    {checked ? <CheckmarkRegular /> : null}
+                  </span>
+                  <span className="ios-select-row-body flex min-w-0 flex-1 items-center gap-3 py-2.5">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate ios-body font-medium text-label">{row.profileName || row.iccid}</span>
+                      <span className="block truncate font-mono ios-footnote text-label-2">{row.iccid} · {row.deviceId}</span>
+                    </span>
+                    {status ? <span className={cx("shrink-0 ios-footnote", existing ? "text-label-2" : "text-sys-green")}>{status}</span> : null}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Modal>
   );

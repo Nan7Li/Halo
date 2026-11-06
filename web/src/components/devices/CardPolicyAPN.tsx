@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiMessage } from "../../api";
 import type { CardPolicy } from "../../types";
-import { Button, Input, Modal, Select, Spinner, Switch, Tag, confirmDialog, message } from "../ui";
+import { CheckmarkRegular, DeleteRegular, EditRegular, MoreHorizontalRegular } from "@fluentui/react-icons";
+import { Button, Input, Modal, Select, Spinner, confirmDialog, message } from "../ui";
+import { ContextMenu } from "../ios";
+import { Field, ToggleRow } from "../proxy/formUi";
 import { useI18n } from "../../lib/i18n";
 import {
   createCardAPN,
@@ -59,6 +62,7 @@ export function CardPolicyAPN({ deviceId, iccid, policy, deviceOnline, onSaved }
   const [clearPassword, setClearPassword] = useState(false);
   const [adding, setAdding] = useState(false);
   const [pendingKey, setPendingKey] = useState("");
+  const [menu, setMenu] = useState<{ key: string; x: number; y: number } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -225,128 +229,88 @@ export function CardPolicyAPN({ deviceId, iccid, policy, deviceOnline, onSaved }
   };
   const protocolLabel = (value?: "IP" | "IPV6" | "IPV4V6") => value === "IP" ? "IPv4" : value === "IPV6" ? "IPv6" : value === "IPV4V6" ? "IPv4 / IPv6" : "—";
 
-  return (
-    <div className="rounded-lg border border-gray-200/70 bg-white/60 p-3 dark:border-white/10 dark:bg-black/10">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t("蜂窝 APN")}</div>
-          <div className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
-            {t("APN 列表和启用状态跟随当前 ICCID/Profile 保存")}
-          </div>
-        </div>
-        <Button size="small" variant="primary" plain onClick={() => openEditor()}>
-          {t("新增 APN")}
-        </Button>
-      </div>
+  const detailLine = (row: APNRow) => [
+    row.cid ? `CID ${row.cid}` : "",
+    row.username ? `${row.username}${row.hasPassword ? ` · ${t("已设密码")}` : ""}` : "",
+    row.authType && row.authType !== "NONE" ? row.authType.replace("PAP_OR_CHAP", "PAP / CHAP") : "",
+    row.mcc || row.mnc ? `${row.mcc || "—"}/${row.mnc || "—"}` : "",
+    protocolLabel(row.ipVersion),
+    row.roamingIPVersion ? `${t("漫游")} ${protocolLabel(row.roamingIPVersion)}` : "",
+    row.proxy ? `Proxy ${row.proxy}` : "",
+  ].filter(Boolean).join(" · ");
+  const menuRow = rows.find((row) => row.key === menu?.key);
 
+  return (
+    <section className="min-w-0">
+      <div className="flex items-end justify-between gap-3 px-4 pb-1.5">
+        <h3 className="ios-footnote font-medium uppercase text-label-2">{t("蜂窝 APN")}</h3>
+        <button type="button" className="ios-subhead font-medium text-accent" onClick={() => openEditor()}>
+          {t("新增 APN")}
+        </button>
+      </div>
       {loading ? (
-        <div className="flex items-center justify-center gap-2 py-6 text-xs text-gray-400">
+        <div className="flex items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-grouped-2 py-6 ios-footnote text-label-2">
           <Spinner className="h-4 w-4 animate-spin" /> {t("正在读取 APN 列表...")}
         </div>
       ) : (
-        <>
-          <div className="hidden overflow-x-auto rounded-lg border border-gray-200/70 dark:border-white/10 md:block">
-            <table className="w-full min-w-[1050px] text-left text-xs">
-              <thead className="bg-gray-50 text-gray-500 dark:bg-white/5 dark:text-gray-400">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">APN</th>
-                  <th className="px-3 py-2 font-semibold">{t("账号 / 认证")}</th>
-                  <th className="px-3 py-2 font-semibold">MCC / MNC</th>
-                  <th className="px-3 py-2 font-semibold">{t("协议 / 漫游")}</th>
-                  <th className="px-3 py-2 font-semibold">Proxy</th>
-                  <th className="px-3 py-2 font-semibold">{t("来源")}</th>
-                  <th className="px-3 py-2 font-semibold">{t("状态")}</th>
-                  <th className="px-3 py-2 text-right font-semibold">{t("操作")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-                {rows.map((row) => {
-                  const active = isActive(row);
-                  return (
-                    <tr key={row.key} className={active ? "bg-sky-50/60 dark:bg-sky-500/5" : "bg-white/40 dark:bg-transparent"}>
-                      <td className="px-3 py-2.5 font-mono text-gray-800 dark:text-gray-100">
-                        {row.source === "automatic" ? t("运营商自动配置") : row.apn}
-                        {row.cid ? <span className="ml-2 text-[10px] text-gray-400">CID {row.cid}</span> : null}
-                      </td>
-                      <td className="px-3 py-2.5 text-gray-600 dark:text-gray-300">
-                        <div>{row.username || "—"}{row.hasPassword ? <span className="ml-1 text-[10px] text-gray-400">{t("已设密码")}</span> : null}</div>
-                        {row.authType && row.authType !== "NONE" ? <div className="mt-0.5 text-[10px] text-gray-400">{row.authType.replace("PAP_OR_CHAP", "PAP / CHAP")}</div> : null}
-                      </td>
-                      <td className="px-3 py-2.5 text-gray-600 dark:text-gray-300">{row.mcc || "—"} / {row.mnc || "—"}</td>
-                      <td className="px-3 py-2.5 text-gray-600 dark:text-gray-300"><div>{protocolLabel(row.ipVersion)}</div><div className="mt-0.5 text-[10px] text-gray-400">{t("漫游")}：{protocolLabel(row.roamingIPVersion)}</div></td>
-                      <td className="max-w-[150px] truncate px-3 py-2.5 text-gray-600 dark:text-gray-300">{row.proxy || "—"}</td>
-                      <td className="px-3 py-2.5"><Tag type={row.source === "custom" ? "primary" : "info"}>{sourceLabel(row)}</Tag></td>
-                      <td className="px-3 py-2.5">{active ? <Tag type="success">{t("使用中")}</Tag> : <span className="text-gray-400">—</span>}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                        <Button size="small" variant={active ? "default" : "primary"} plain={!active} disabled={active} loading={pendingKey === row.key} onClick={() => enable(row)}>
-                          {active ? t("已启用") : t("启用")}
-                        </Button>
-                        {row.source === "custom" ? (
-                          <>
-                            <Button className="ml-1" size="small" onClick={() => edit(row)}>{t("修改")}</Button>
-                            <Button className="ml-1" size="small" variant="danger" plain loading={pendingKey === row.key} onClick={() => remove(row)}>{t("删除")}</Button>
-                          </>
-                        ) : null}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="space-y-2 md:hidden">
-            {rows.map((row) => {
-              const active = isActive(row);
-              return (
-                <div key={row.key} className={`rounded-xl border px-3 py-3 ${active ? "border-sky-200 bg-sky-50/70 dark:border-sky-500/30 dark:bg-sky-500/10" : "border-gray-200/80 bg-white/70 dark:border-white/10 dark:bg-white/5"}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="break-all font-mono text-sm font-semibold text-gray-800 dark:text-gray-100">
-                        {row.source === "automatic" ? t("运营商自动配置") : row.apn}
-                      </div>
-                      {row.cid ? <div className="mt-0.5 text-[10px] text-gray-400">CID {row.cid}</div> : null}
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      <Tag type={row.source === "custom" ? "primary" : "info"}>{sourceLabel(row)}</Tag>
-                      {active ? <Tag type="success">{t("使用中")}</Tag> : null}
-                    </div>
-                  </div>
-                  <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-gray-500">
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wider text-gray-400">{t("账号 / 认证")}</dt>
-                      <dd className="mt-0.5 break-all text-gray-700 dark:text-gray-200">{row.username || "—"}{row.hasPassword ? ` · ${t("已设密码")}` : ""}{row.authType && row.authType !== "NONE" ? ` · ${row.authType.replace("PAP_OR_CHAP", "PAP / CHAP")}` : ""}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wider text-gray-400">MCC / MNC</dt>
-                      <dd className="mt-0.5 text-gray-700 dark:text-gray-200">{row.mcc || "—"} / {row.mnc || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wider text-gray-400">{t("协议 / 漫游")}</dt>
-                      <dd className="mt-0.5 text-gray-700 dark:text-gray-200">{protocolLabel(row.ipVersion)} · {t("漫游")} {protocolLabel(row.roamingIPVersion)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wider text-gray-400">Proxy</dt>
-                      <dd className="mt-0.5 break-all text-gray-700 dark:text-gray-200">{row.proxy || "—"}</dd>
-                    </div>
-                  </dl>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <Button size="small" variant={active ? "default" : "primary"} plain={!active} disabled={active} loading={pendingKey === row.key} onClick={() => enable(row)}>
-                      {active ? t("已启用") : t("启用")}
-                    </Button>
-                    {row.source === "custom" ? (
-                      <>
-                        <Button size="small" onClick={() => edit(row)}>{t("修改")}</Button>
-                        <Button className="col-span-2" size="small" variant="danger" plain loading={pendingKey === row.key} onClick={() => remove(row)}>{t("删除")}</Button>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
+        <div className="overflow-hidden rounded-[var(--radius-lg)] bg-grouped-2" role="radiogroup" aria-label={t("蜂窝 APN")}>
+          {rows.map((row) => {
+            const active = isActive(row);
+            const pending = pendingKey === row.key;
+            return (
+              <div key={row.key} className="ios-select-row flex items-center gap-1 pl-4 pr-2">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  disabled={active || pending}
+                  onClick={() => enable(row)}
+                  className="ios-select-row-body flex min-w-0 flex-1 items-center gap-3 py-2.5 text-left"
+                >
+                  <span className="flex w-5 shrink-0 justify-center text-accent [&_svg]:h-5 [&_svg]:w-5">
+                    {pending ? <Spinner className="h-4 w-4 animate-spin" /> : active ? <CheckmarkRegular /> : null}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate ios-body font-medium text-label">{row.source === "automatic" ? t("运营商自动配置") : row.apn}</span>
+                      <span className="shrink-0 ios-footnote text-label-2">{sourceLabel(row)}</span>
+                    </span>
+                    <span className="mt-0.5 block ios-footnote text-label-2">{detailLine(row)}</span>
+                  </span>
+                </button>
+                {row.source === "custom" ? (
+                  <button
+                    type="button"
+                    aria-label={t("更多操作")}
+                    title={t("更多操作")}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-accent hover:bg-fill-4 [&_svg]:h-5 [&_svg]:w-5"
+                    onClick={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setMenu({ key: row.key, x: rect.right, y: rect.bottom });
+                    }}
+                  >
+                    <MoreHorizontalRegular />
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       )}
-      {!deviceOnline ? <div className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">{t("设备离线：自定义列表仍可管理，模组已有 APN 将在上线后读取")}</div> : null}
+      <p className="mt-1.5 px-4 ios-footnote text-label-2">
+        {t("APN 列表和启用状态跟随当前 ICCID/Profile 保存")}
+      </p>
+      {!deviceOnline ? <p className="mt-1 px-4 ios-footnote text-sys-orange">{t("设备离线：自定义列表仍可管理，模组已有 APN 将在上线后读取")}</p> : null}
+      <ContextMenu
+        open={Boolean(menuRow)}
+        anchor={menu}
+        onClose={() => setMenu(null)}
+        title={menuRow?.apn}
+        items={menuRow ? [
+          { label: t("修改"), icon: <EditRegular />, onSelect: () => edit(menuRow) },
+          { label: t("删除"), icon: <DeleteRegular />, destructive: true, onSelect: () => remove(menuRow) },
+        ] : []}
+      />
       <Modal
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
@@ -359,27 +323,25 @@ export function CardPolicyAPN({ deviceId, iccid, policy, deviceOnline, onSaved }
           </>
         }
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">APN *</span><Input value={newAPN} maxLength={100} onChange={(event) => setNewAPN(event.target.value)} placeholder="giffgaff.com" /></label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t("用户名")}</span><Input value={newUsername} maxLength={128} onChange={(event) => setNewUsername(event.target.value)} placeholder="gg" /></label>
-          <label className="space-y-1">
-            <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t("密码")}</span>
-            <Input type="password" value={newPassword} disabled={clearPassword} maxLength={128} onChange={(event) => setNewPassword(event.target.value)} placeholder={editingProfile?.hasPassword ? t("留空表示保持原密码") : "p"} />
-          </label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">Proxy</span><Input value={newProxy} maxLength={255} onChange={(event) => setNewProxy(event.target.value)} placeholder={t("留空")} /></label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">MCC</span><Input inputMode="numeric" value={newMCC} maxLength={3} onChange={(event) => setNewMCC(event.target.value.replace(/\D/g, ""))} placeholder="234" /></label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">MNC</span><Input inputMode="numeric" value={newMNC} maxLength={3} onChange={(event) => setNewMNC(event.target.value.replace(/\D/g, ""))} placeholder="10" /></label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t("APN 协议")}</span><Select value={newIPVersion} onChange={(value) => setNewIPVersion(value as "IP" | "IPV6" | "IPV4V6")} options={[{ value: "IPV4V6", label: "IPv4 / IPv6" }, { value: "IP", label: "IPv4" }, { value: "IPV6", label: "IPv6" }]} /></label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t("APN 漫游协议")}</span><Select value={newRoamingIPVersion} onChange={(value) => setNewRoamingIPVersion(value as "IP" | "IPV6" | "IPV4V6")} options={[{ value: "IP", label: "IPv4" }, { value: "IPV4V6", label: "IPv4 / IPv6" }, { value: "IPV6", label: "IPv6" }]} /></label>
-          <label className="space-y-1"><span className="text-xs font-semibold text-gray-600 dark:text-gray-300">{t("认证类型")}</span><Select value={newAuthType} onChange={(value) => setNewAuthType(value as "NONE" | "PAP" | "CHAP" | "PAP_OR_CHAP")} options={[{ value: "NONE", label: t("无") }, { value: "PAP", label: "PAP" }, { value: "CHAP", label: "CHAP" }, { value: "PAP_OR_CHAP", label: "PAP / CHAP" }]} /></label>
+        <div className="space-y-4">
+          <Field label="APN"><Input value={newAPN} maxLength={100} onChange={(event) => setNewAPN(event.target.value)} placeholder={t("必填")} autoCapitalize="none" autoCorrect="off" spellCheck={false} /></Field>
+          <Field label={t("用户名")}><Input value={newUsername} maxLength={128} onChange={(event) => setNewUsername(event.target.value)} placeholder={t("可选")} autoCapitalize="none" autoCorrect="off" spellCheck={false} /></Field>
+          <Field label={t("密码")}><Input type="password" value={newPassword} disabled={clearPassword} maxLength={128} onChange={(event) => setNewPassword(event.target.value)} placeholder={editingProfile?.hasPassword ? t("留空表示保持原密码") : t("可选")} /></Field>
+          <Field label={t("认证类型")}><Select value={newAuthType} onChange={(value) => setNewAuthType(value as "NONE" | "PAP" | "CHAP" | "PAP_OR_CHAP")} options={[{ value: "NONE", label: t("无") }, { value: "PAP", label: "PAP" }, { value: "CHAP", label: "CHAP" }, { value: "PAP_OR_CHAP", label: "PAP / CHAP" }]} /></Field>
         </div>
         {editingProfile?.hasPassword ? (
-          <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/5">
-            <div><div className="text-xs font-semibold text-gray-700 dark:text-gray-200">{t("清除已保存密码")}</div><div className="text-[11px] text-gray-400">{t("关闭时，密码输入框留空会保持原密码")}</div></div>
-            <Switch checked={clearPassword} onChange={(value) => { setClearPassword(value); if (value) setNewPassword(""); }} />
+          <div className="mt-6 space-y-4">
+            <ToggleRow title={t("清除已保存密码")} subtitle={t("关闭时，密码输入框留空会保持原密码")} checked={clearPassword} onChange={(value) => { setClearPassword(value); if (value) setNewPassword(""); }} />
           </div>
         ) : null}
+        <div className="mt-6 space-y-4">
+          <Field label="MCC"><Input inputMode="numeric" value={newMCC} maxLength={3} onChange={(event) => setNewMCC(event.target.value.replace(/\D/g, ""))} placeholder="234" /></Field>
+          <Field label="MNC"><Input inputMode="numeric" value={newMNC} maxLength={3} onChange={(event) => setNewMNC(event.target.value.replace(/\D/g, ""))} placeholder="10" /></Field>
+          <Field label="Proxy"><Input value={newProxy} maxLength={255} onChange={(event) => setNewProxy(event.target.value)} placeholder={t("可选")} autoCapitalize="none" autoCorrect="off" spellCheck={false} /></Field>
+          <Field label={t("APN 协议")}><Select value={newIPVersion} onChange={(value) => setNewIPVersion(value as "IP" | "IPV6" | "IPV4V6")} options={[{ value: "IPV4V6", label: "IPv4 / IPv6" }, { value: "IP", label: "IPv4" }, { value: "IPV6", label: "IPv6" }]} /></Field>
+          <Field label={t("APN 漫游协议")}><Select value={newRoamingIPVersion} onChange={(value) => setNewRoamingIPVersion(value as "IP" | "IPV6" | "IPV4V6")} options={[{ value: "IP", label: "IPv4" }, { value: "IPV4V6", label: "IPv4 / IPv6" }, { value: "IPV6", label: "IPv6" }]} /></Field>
+        </div>
       </Modal>
-    </div>
+    </section>
   );
 }

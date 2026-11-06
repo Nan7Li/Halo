@@ -664,7 +664,7 @@ export default function SettingsPage() {
 
   return (
     <Page title={t(current.label)} leading={<BackButton to="/settings" label={t("设置")} />} largeTitle={false} className="ios-push">
-      <div className="mx-auto max-w-[760px] space-y-6">
+      <div className="ios-settings-detail mx-auto max-w-[760px] space-y-6">
         {section === "appearance" ? <AppearanceSettings /> : null}
         {section === "security" ? (
           <>
@@ -700,9 +700,7 @@ export default function SettingsPage() {
           </>
         ) : null}
         {section === "calls" ? (
-          <div className="ui-card p-5">
-            <CellBridgeSettings devices={lines} />
-          </div>
+          <CellBridgeSettings devices={lines} />
         ) : null}
         {section === "vowifi" ? <VoWiFiMTUCard /> : null}
         {section === "sms" ? (

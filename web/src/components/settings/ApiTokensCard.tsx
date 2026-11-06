@@ -3,19 +3,17 @@ import {
   AddRegular,
   CheckmarkRegular,
   CopyRegular,
-  DeleteRegular,
   KeyRegular,
 } from "@fluentui/react-icons";
 import type { ApiTokenListItem } from "../../types";
 import { apiMessage, createApiToken } from "../../api";
 import { tf, useI18n } from "../../lib/i18n";
-import { Button, Input, Modal, Select, Switch, confirmDialog, message } from "../ui";
+import { Button, Input, ListSkeleton, Modal, Select, confirmDialog, message } from "../ui";
+import { cx } from "../../lib/utils";
+import { ToggleRow } from "../proxy/formUi";
 import { CardDecor, CardIcon, CardTitle } from "./Cards";
-import { copyText } from "./controls";
+import { Field, copyText } from "./controls";
 
-const CELL_CLASS = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300";
-const HEAD_CLASS =
-  "px-4 py-2 text-left text-xs font-bold uppercase tracking-wider text-gray-500";
 
 interface CreateTokenForm {
   name: string;
@@ -36,6 +34,13 @@ function formatTime(value: string, never: string): string {
   if (!value) return never;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+// List rows show dates only (like iOS Settings); the full time is in the title.
+function formatDate(value: string, never: string): string {
+  if (!value) return never;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
 }
 
 // API 令牌管理：列表、创建与吊销。创建响应中的明文令牌仅在一次性
@@ -124,9 +129,9 @@ export function ApiTokensCard({
       </div>
 
       {loading ? (
-        <div className="text-sm text-gray-500">{t("加载中...")}</div>
+        <ListSkeleton rows={2} />
       ) : error ? (
-        <div role="alert" className="flex items-center justify-between rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-[var(--radius-lg)] bg-sys-red/10 px-4 py-3 ios-subhead text-sys-red">
           <span>{t("令牌列表加载失败")}</span>
           <Button variant="default" onClick={onRefresh}>
             {t("重试")}
@@ -137,63 +142,42 @@ export function ApiTokensCard({
           {t("尚未创建任何 API 令牌。点击右上角「创建令牌」，或在设备上运行 vocat token create。")}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className={HEAD_CLASS}>{t("名称")}</th>
-                <th className={HEAD_CLASS}>{t("权限")}</th>
-                <th className={HEAD_CLASS}>{t("创建时间")}</th>
-                <th className={HEAD_CLASS}>{t("最后使用")}</th>
-                <th className={HEAD_CLASS}>{t("过期时间")}</th>
-                <th className={HEAD_CLASS}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {tokens.map((token) => (
-                <tr
-                  key={token.name}
-                  className="border-b border-gray-100 last:border-b-0 dark:border-gray-800"
-                >
-                  <td className={`${CELL_CLASS} font-mono`}>{token.name}</td>
-                  <td className={CELL_CLASS}>
-                    <span
-                      className={
-                        token.readOnly
-                          ? "rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                          : "rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                      }
-                    >
+        <div className="ios-card-list">
+          {tokens.map((token) => (
+            <div key={token.name} className="ios-select-row flex items-center gap-3 px-4">
+              <span className="ios-select-row-body flex min-w-0 flex-1 items-center gap-3 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate ios-body font-medium text-label">{token.name}</span>
+                    <span className={cx("shrink-0 rounded-full px-2 py-px ios-caption font-semibold", token.readOnly ? "bg-sys-green/15 text-sys-green" : "bg-sys-orange/15 text-sys-orange")}>
                       {token.readOnly ? t("只读") : t("读写")}
                     </span>
-                  </td>
-                  <td className={CELL_CLASS}>{formatTime(token.createdAt, "-")}</td>
-                  <td className={CELL_CLASS}>{formatTime(token.lastUsedAt, t("从未使用"))}</td>
-                  <td className={CELL_CLASS}>{formatTime(token.expiresAt, t("永不过期"))}</td>
-                  <td className={CELL_CLASS}>
-                    <Button
-                      variant="danger"
-                      loading={revoking === token.name}
-                      disabled={revoking !== null}
-                      onClick={async () => {
-                        const ok = await confirmDialog(
-                          tf("确定吊销令牌「{name}」？使用它的脚本与 MCP 客户端将立即失去访问权限。", { name: token.name }),
-                          t("确认吊销"),
-                          { type: "warning", confirmText: t("吊销"), cancelText: t("取消") },
-                        );
-                        if (ok) onRevoke(token.name);
-                      }}
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <DeleteRegular className="text-[16px]" />
-                        {t("吊销")}
-                      </span>
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </span>
+                  <span
+                    className="mt-0.5 block ios-footnote text-label-2"
+                    title={`${t("创建时间")} ${formatTime(token.createdAt, "-")}\n${t("最后使用")} ${formatTime(token.lastUsedAt, t("从未使用"))}\n${t("过期时间")} ${formatTime(token.expiresAt, t("永不过期"))}`}
+                  >
+                    {t("最后使用")} {formatDate(token.lastUsedAt, t("从未使用"))} · {token.expiresAt ? `${t("过期时间")} ${formatDate(token.expiresAt, "")}` : t("永不过期")}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="shrink-0 ios-body text-sys-red disabled:opacity-40"
+                  disabled={revoking !== null}
+                  onClick={async () => {
+                    const ok = await confirmDialog(
+                      tf("确定吊销令牌「{name}」？使用它的脚本与 MCP 客户端将立即失去访问权限。", { name: token.name }),
+                      t("确认吊销"),
+                      { type: "warning", confirmText: t("吊销"), cancelText: t("取消") },
+                    );
+                    if (ok) onRevoke(token.name);
+                  }}
+                >
+                  {revoking === token.name ? t("吊销中…") : t("吊销")}
+                </button>
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -217,43 +201,32 @@ export function ApiTokensCard({
           </div>
         }
       >
-        <div className="space-y-5">
-          <div className="space-y-1">
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              {t("名称")}
-            </label>
+        <div className="space-y-4">
+          <Field label={t("名称")} hint={t("1-64 个字母、数字、点、下划线或连字符")}>
             <Input
               value={form.name}
               placeholder={t("例如 ci-runner、home-assistant")}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
             />
-            <p className="text-xs text-gray-400">
-              {t("1-64 个字母、数字、点、下划线或连字符")}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              {t("有效期")}
-            </label>
+          </Field>
+          <Field label={t("有效期")}>
             <Select
               value={String(form.ttlHours)}
               options={ttlOptions}
               onChange={(value) => setForm((prev) => ({ ...prev, ttlHours: Number(value) }))}
             />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-            <div>
-              <div className="text-sm font-semibold">{t("只读令牌")}</div>
-              <div className="text-xs text-gray-500">
-                {t("仅能调用查询类接口，不能发送短信、切换 eSIM 或触发重连")}
-              </div>
-            </div>
-            <Switch
-              checked={form.readOnly}
-              ariaLabel={t("只读令牌")}
-              onChange={(checked) => setForm((prev) => ({ ...prev, readOnly: checked }))}
-            />
-          </div>
+          </Field>
+        </div>
+        <div className="mt-6 space-y-4">
+          <ToggleRow
+            title={t("只读令牌")}
+            subtitle={t("仅能调用查询类接口，不能发送短信、切换 eSIM 或触发重连")}
+            checked={form.readOnly}
+            onChange={(checked) => setForm((prev) => ({ ...prev, readOnly: checked }))}
+          />
         </div>
       </Modal>
 
@@ -271,11 +244,11 @@ export function ApiTokensCard({
         }
       >
         <div className="space-y-4">
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          <div className="rounded-[var(--radius-md)] bg-sys-orange/15 px-4 py-3 ios-subhead text-sys-orange">
             {t("此令牌仅显示这一次，关闭后无法再查看。请立即复制并保存到凭据管理器。")}
           </div>
           <div className="flex items-center gap-3">
-            <code className="flex-1 overflow-x-auto rounded-lg bg-gray-100 p-3 font-mono text-sm break-all dark:bg-gray-800">
+            <code className="flex-1 overflow-x-auto rounded-[var(--radius-md)] bg-fill-3 px-4 py-3 font-mono ios-subhead text-label break-all">
               {created?.token}
             </code>
             <Button variant={copied ? "success" : "default"} onClick={() => void copyToken()}>
@@ -286,7 +259,7 @@ export function ApiTokensCard({
             </Button>
           </div>
           {created ? (
-            <div className="text-xs text-gray-500">
+            <div className="px-1 ios-footnote text-label-2">
               {tf("名称：{name} · {scope} · {expires}", {
                 name: created.name,
                 scope: created.readOnly ? t("只读") : t("读写"),

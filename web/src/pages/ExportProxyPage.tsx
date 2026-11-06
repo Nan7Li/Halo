@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AddRegular, DeleteRegular, EditRegular, GlobeRegular } from "@fluentui/react-icons";
+import { AddRegular, DeleteRegular, EditRegular, GlobeRegular, MoreHorizontalRegular } from "@fluentui/react-icons";
 import { api, apiMessage } from "../api";
 import type { DeviceListItem, DevicesResponse } from "../types";
-import { Button, Input, Modal, PageFrame, PageHeader, Select, Switch, Tag, confirmDialog, message } from "../components/ui";
+import { Button, Input, ListSkeleton, Modal, PageFrame, PageHeader, Select, Switch, confirmDialog, message } from "../components/ui";
+import { ContentUnavailable, ContextMenu, ListRow, ListSection } from "../components/ios";
+import { Field, ToggleRow } from "../components/proxy/formUi";
 import { useI18n } from "../lib/i18n";
 
 interface ExportProxyConfig {
@@ -79,6 +81,8 @@ export default function ExportProxyPage() {
 
   const statusByID = useMemo(() => new Map(statuses.map((status) => [status.id, status])), [statuses]);
   const deviceByID = useMemo(() => new Map(devices.map((device) => [device.id, device])), [devices]);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const menuConfig = configs.find((config) => config.id === menu?.id);
 
   const edit = (config?: ExportProxyConfig) => {
     if (config) {
@@ -154,64 +158,86 @@ export default function ExportProxyPage() {
         actions={<Button variant="primary" icon={<AddRegular />} onClick={() => edit()} disabled={!devices.length}>{t("添加代理")}</Button>}
       />
 
-      <div className="ui-card overflow-hidden">
-        {error ? <div className="border-b border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">{error}</div> : null}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50/70 text-xs uppercase tracking-wide text-gray-500 dark:border-white/10 dark:bg-white/[0.025]">
-              <tr>
-                <th className="px-4 py-3">{t("名称")}</th>
-                <th className="px-4 py-3">{t("设备")}</th>
-                <th className="px-4 py-3">{t("网络接口")}</th>
-                <th className="px-4 py-3">{t("协议")}</th>
-                <th className="px-4 py-3">{t("监听地址")}</th>
-                <th className="px-4 py-3">{t("认证")}</th>
-                <th className="px-4 py-3">{t("状态")}</th>
-                <th className="px-4 py-3 text-right">{t("操作")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-              {configs.map((config) => {
-                const status = statusByID.get(config.id);
-                const device = deviceByID.get(config.deviceId);
-                return (
-                  <tr key={config.id} className="hover:bg-sky-50/40 dark:hover:bg-sky-500/[0.04]">
-                    <td className="px-4 py-3 font-semibold">{config.name}</td>
-                    <td className="px-4 py-3">{device?.name || config.deviceId}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{config.interface}</td>
-                    <td className="px-4 py-3"><Tag type="primary">{config.mode.toUpperCase()}</Tag></td>
-                    <td className="px-4 py-3 font-mono text-xs">{status?.listen || `${config.listenHost}:${config.listenPort}`}</td>
-                    <td className="px-4 py-3">{config.authEnabled ? config.username : t("无")}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Switch checked={config.enabled} loading={busy === config.id} onChange={() => void toggle(config)} size="small" />
-                        <span className={status?.running ? "text-green-600" : status?.error ? "text-red-500" : "text-gray-400"}>
-                          {status?.running ? t("运行中") : status?.error ? t("错误") : t("已停用")}
-                        </span>
-                      </div>
-                      {status?.error ? <div className="mt-1 max-w-xs text-xs text-red-500">{status.error}</div> : null}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2">
-                        <Button size="small" icon={<EditRegular />} onClick={() => edit(config)}>{t("编辑")}</Button>
-                        <Button size="small" variant="danger" plain icon={<DeleteRegular />} loading={busy === config.id} onClick={() => void remove(config)}>{t("删除")}</Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {!loading && !configs.length ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-gray-400">
-            <GlobeRegular className="mb-3 text-4xl" />
-            <div className="text-sm">{t("暂无导出代理配置")}</div>
-            <div className="mt-1 text-xs">{t("先在设备页面开启漫游数据，再创建代理")}</div>
-          </div>
-        ) : null}
-        {loading ? <div className="px-6 py-16 text-center text-sm text-gray-400">{t("加载中...")}</div> : null}
-      </div>
+      {error ? (
+        <div className="mb-4 rounded-[var(--radius-lg)] bg-sys-red/10 px-4 py-3 ios-subhead text-sys-red">{error}</div>
+      ) : null}
+      {loading && !configs.length ? (
+        <ListSkeleton rows={2} />
+      ) : !configs.length ? (
+        <ContentUnavailable
+          icon={<GlobeRegular />}
+          title={t("暂无导出代理配置")}
+          description={t("先在设备页面开启漫游数据，再创建代理")}
+        />
+      ) : (
+        <ListSection header={t("导出代理")}>
+          {configs.map((config) => {
+            const status = statusByID.get(config.id);
+            const device = deviceByID.get(config.deviceId);
+            const state = status?.running ? t("运行中") : status?.error ? t("错误") : t("已停用");
+            const tone = status?.running ? "text-sys-green" : status?.error ? "text-sys-red" : "text-label-3";
+            return (
+              <ListRow
+                key={config.id}
+                icon={<GlobeRegular />}
+                iconColor={status?.running ? "green" : status?.error ? "red" : "gray"}
+                onClick={() => edit(config)}
+                chevron={false}
+                multiline
+                swipeActions={[{ label: t("删除"), color: "rgb(var(--ios-red))", onAction: () => void remove(config) }]}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  setMenu({ id: config.id, x: event.clientX, y: event.clientY });
+                }}
+                title={
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-semibold">{config.name}</span>
+                    <span className="shrink-0 rounded-full bg-accent/15 px-2 py-px ios-caption font-semibold text-accent">{config.mode.toUpperCase()}</span>
+                  </span>
+                }
+                subtitle={
+                  <>
+                    <span className="font-mono">{status?.listen || `${config.listenHost}:${config.listenPort}`}</span>
+                    {" · "}
+                    {device?.name || config.deviceId} · <span className="font-mono">{config.interface}</span>
+                    <br />
+                    <span className={tone}>{state}</span>
+                    {config.authEnabled ? <> · {t("认证")} {config.username}</> : null}
+                    {status?.error ? <span className="block text-sys-red">{status.error}</span> : null}
+                  </>
+                }
+                accessory={
+                  <span className="flex shrink-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                    <button
+                      type="button"
+                      aria-label={t("更多操作")}
+                      title={t("更多操作")}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-accent hover:bg-fill-4 [&_svg]:h-5 [&_svg]:w-5"
+                      onClick={(event) => {
+                        const rect = event.currentTarget.getBoundingClientRect();
+                        setMenu({ id: config.id, x: rect.right, y: rect.bottom });
+                      }}
+                    >
+                      <MoreHorizontalRegular />
+                    </button>
+                    <Switch checked={config.enabled} loading={busy === config.id} onChange={() => void toggle(config)} />
+                  </span>
+                }
+              />
+            );
+          })}
+        </ListSection>
+      )}
+      <ContextMenu
+        open={Boolean(menuConfig)}
+        anchor={menu}
+        onClose={() => setMenu(null)}
+        title={menuConfig?.name}
+        items={menuConfig ? [
+          { label: t("编辑"), icon: <EditRegular />, onSelect: () => edit(menuConfig) },
+          { label: t("删除"), icon: <DeleteRegular />, destructive: true, onSelect: () => void remove(menuConfig) },
+        ] : []}
+      />
 
       <Modal
         open={open}
@@ -219,19 +245,23 @@ export default function ExportProxyPage() {
         title={form.id ? t("编辑导出代理") : t("添加导出代理")}
         footer={<><Button onClick={() => setOpen(false)}>{t("取消")}</Button><Button variant="primary" loading={saving} onClick={() => void save()}>{t("保存")}</Button></>}
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="space-y-1.5 text-sm"><span>{t("名称")}</span><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("例如：EC20 漫游出口")} /></label>
-          <label className="space-y-1.5 text-sm"><span>{t("目标设备")}</span><Select value={form.deviceId} onChange={chooseDevice} options={devices.map((device) => ({ value: device.id, label: `${device.name || device.id} · ${device.interface}` }))} /></label>
-          <label className="space-y-1.5 text-sm"><span>{t("网络接口")}</span><Input value={form.interface} readOnly disabled /></label>
-          <label className="space-y-1.5 text-sm"><span>{t("协议")}</span><Select value={form.mode} onChange={(value) => setForm({ ...form, mode: value as "http" | "socks5" })} options={[{ value: "socks5", label: "SOCKS5" }, { value: "http", label: "HTTP" }]} /></label>
-          <label className="space-y-1.5 text-sm"><span>{t("监听地址")}</span><Input value={form.listenHost} onChange={(event) => setForm({ ...form, listenHost: event.target.value })} /></label>
-          <label className="space-y-1.5 text-sm"><span>{t("端口")}</span><Input type="number" min={1} max={65535} value={form.listenPort} onChange={(event) => setForm({ ...form, listenPort: Number(event.target.value) })} /></label>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 dark:border-white/10"><span className="text-sm">{t("代理认证")}</span><Switch checked={form.authEnabled} onChange={(authEnabled) => setForm({ ...form, authEnabled })} /></div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 dark:border-white/10"><span className="text-sm">{t("保存后立即启用")}</span><Switch checked={form.enabled} onChange={(enabled) => setForm({ ...form, enabled })} /></div>
+        <div className="space-y-4">
+          <Field label={t("名称")}><Input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={t("例如：EC20 漫游出口")} /></Field>
+          <Field label={t("目标设备")}><Select value={form.deviceId} onChange={chooseDevice} options={devices.map((device) => ({ value: device.id, label: `${device.name || device.id} · ${device.interface}` }))} /></Field>
+          <Field label={t("网络接口")}><Input value={form.interface} readOnly disabled /></Field>
+          <Field label={t("协议")}><Select value={form.mode} onChange={(value) => setForm({ ...form, mode: value as "http" | "socks5" })} options={[{ value: "socks5", label: "SOCKS5" }, { value: "http", label: "HTTP" }]} /></Field>
+          <Field label={t("监听地址")}><Input value={form.listenHost} onChange={(event) => setForm({ ...form, listenHost: event.target.value })} /></Field>
+          <Field label={t("端口")}><Input type="number" min={1} max={65535} value={form.listenPort} onChange={(event) => setForm({ ...form, listenPort: Number(event.target.value) })} /></Field>
+        </div>
+        <div className="mt-6 space-y-4">
+          <ToggleRow title={t("代理认证")} subtitle={t("连接代理时需要用户名和密码")} checked={form.authEnabled} onChange={(authEnabled) => setForm({ ...form, authEnabled })} />
           {form.authEnabled ? <>
-            <label className="space-y-1.5 text-sm"><span>{t("用户名")}</span><Input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} autoComplete="off" /></label>
-            <label className="space-y-1.5 text-sm"><span>{t("密码")}</span><Input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} autoComplete="new-password" placeholder={form.id ? t("留空则保留原密码") : ""} /></label>
+            <Field label={t("用户名")}><Input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} autoComplete="off" /></Field>
+            <Field label={t("密码")}><Input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} autoComplete="new-password" placeholder={form.id ? t("留空则保留原密码") : t("必填")} /></Field>
           </> : null}
+        </div>
+        <div className="mt-6 space-y-4">
+          <ToggleRow title={t("保存后立即启用")} subtitle={t("关闭后只保存配置，不开始监听")} checked={form.enabled} onChange={(enabled) => setForm({ ...form, enabled })} />
         </div>
       </Modal>
     </PageFrame>

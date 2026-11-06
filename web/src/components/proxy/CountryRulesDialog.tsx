@@ -1,7 +1,7 @@
-import { SearchRegular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import type { Country, CountryRule, UpstreamProxy } from "../../types";
-import { Button, EmptyState, Input, Modal, Select } from "../ui";
+import { Button, EmptyState, Modal, Select } from "../ui";
+import { SearchField } from "../ios";
 import { useI18n } from "../../lib/i18n";
 
 export interface CountryRulesDialogProps {
@@ -72,53 +72,38 @@ export function CountryRulesDialog(props: CountryRulesDialogProps) {
         </>
       )}
     >
-      <div className="space-y-4 pb-1">
-        <div className="rounded-lg border border-sky-200/70 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-200">
+      <div className="space-y-3 pb-1">
+        <p className="px-1 ios-footnote text-label-2">
           {t("为每个国家的 MCC 选择代理。未配置时直连；已有 ICCID 绑定始终优先，首次命中国家规则后会生成独立的 ICCID 绑定。")}
+        </p>
+        <SearchField value={query} onChange={setQuery} placeholder={t("搜索国家、地区代码或 MCC")} />
+        <div className="px-1 ios-footnote font-medium uppercase text-label-2">
+          {configuredCount} {t("个国家规则")}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs text-gray-500">{configuredCount} {t("个国家规则")}</div>
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("搜索国家、地区代码或 MCC")}
-            prefix={<SearchRegular />}
-            className="w-full sm:w-72"
-          />
-        </div>
-        <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-white/10">
-          <div className="max-h-[55vh] overflow-auto">
-            <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-grouped-2">
-                <tr>
-                  <th className="px-4 py-3">{t("国家 / 地区")}</th>
-                  <th className="px-4 py-3">MCC</th>
-                  <th className="w-72 px-4 py-3">{t("规则")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-                {filtered.map((country) => (
-                  <tr key={country.countryCode} className="hover:bg-sky-50/40 dark:hover:bg-sky-500/[0.04]">
-                    <td className="px-4 py-3">
-                      <span className="font-medium">{countryLabel(country)}</span>
-                      <span className="ml-2 font-mono text-xs text-gray-400">{country.countryCode}</span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-300">{country.mccs.join(", ")}</td>
-                    <td className="px-4 py-2">
-                      <Select
-                        value={assignments[country.countryCode] || ""}
-                        options={proxyOptions}
-                        disabled={busy}
-                        onChange={(value) => setAssignments((current) => ({ ...current, [country.countryCode]: value }))}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {filtered.length === 0 ? (
+          <EmptyState title={t("没有匹配的国家或 MCC")} />
+        ) : (
+          <div className="max-h-[55vh] overflow-auto rounded-[var(--radius-lg)] bg-grouped-2 px-4">
+            {filtered.map((country) => (
+              <div key={country.countryCode} className="ios-form-row items-center">
+                <div className="ios-form-label !pt-0">
+                  <div className="truncate">{countryLabel(country)}</div>
+                  <div className="truncate font-mono ios-caption text-label-2">
+                    {country.countryCode} · MCC {country.mccs.join(", ")}
+                  </div>
+                </div>
+                <div className="ios-form-control">
+                  <Select
+                    value={assignments[country.countryCode] || ""}
+                    options={proxyOptions}
+                    disabled={busy}
+                    onChange={(value) => setAssignments((current) => ({ ...current, [country.countryCode]: value }))}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-          {filtered.length === 0 ? <EmptyState title={t("没有匹配的国家或 MCC")} /> : null}
-        </div>
+        )}
       </div>
     </Modal>
   );

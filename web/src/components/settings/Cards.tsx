@@ -10,7 +10,7 @@ import { useI18n } from "../../lib/i18n";
 import { Button } from "../ui/Button";
 import { Switch } from "../ui/Switch";
 import { Select } from "../ui/Select";
-import { FieldRow, PasswordInput } from "./controls";
+import { Field, FieldRow, PasswordInput } from "./controls";
 
 export interface PasswordForm {
   oldPassword: string;
@@ -62,7 +62,6 @@ function CardTitle({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-const PASSWORD_LABEL = "text-xs font-bold uppercase tracking-wider text-gray-500";
 
 export function SecurityCard({
   value,
@@ -85,39 +84,33 @@ export function SecurityCard({
         </CardIcon>
         <CardTitle title={t("安全")} subtitle={t("更新访问凭证")} />
       </div>
-      <div className="relative z-10 space-y-4">
-        <div className="space-y-1">
-          <label className={PASSWORD_LABEL}>{t("当前密码")}</label>
+      <div className="relative z-10">
+        <Field label={t("当前密码")}>
           <PasswordInput
-            inputSize="large"
-            placeholder="••••••••"
+            placeholder={t("必填")}
             autoComplete="current-password"
             value={value.oldPassword}
             onChange={(oldPassword) => onChange({ oldPassword })}
           />
-        </div>
-        <div className="space-y-1">
-          <label className={PASSWORD_LABEL}>{t("新密码")}</label>
+        </Field>
+        <Field label={t("新密码")}>
           <PasswordInput
-            inputSize="large"
-            placeholder="••••••••"
+            placeholder={t("必填")}
             autoComplete="new-password"
             value={value.newPassword}
             onChange={(newPassword) => onChange({ newPassword })}
           />
-        </div>
-        <div className="space-y-1">
-          <label className={PASSWORD_LABEL}>{t("确认新密码")}</label>
+        </Field>
+        <Field label={t("确认新密码")}>
           <PasswordInput
-            inputSize="large"
-            placeholder="••••••••"
+            placeholder={t("再次输入")}
             autoComplete="new-password"
             value={value.confirmPassword}
             onChange={(confirmPassword) => onChange({ confirmPassword })}
           />
-        </div>
+        </Field>
         <div className="pt-4">
-          <Button variant="primary" size="large" loading={loading} onClick={onSubmit} className="w-full !border-0" icon={<CheckmarkRegular />}>
+          <Button variant="primary" loading={loading} onClick={onSubmit} className="w-full !border-0" icon={<CheckmarkRegular />}>
             {t("更新凭证")}
           </Button>
         </div>
