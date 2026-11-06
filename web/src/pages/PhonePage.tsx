@@ -17,7 +17,7 @@ import { useMediaQuery } from "../lib/useMediaQuery";
 import { cx } from "../lib/utils";
 import type { CallRecord, CallRecordsResponse } from "../types";
 import { message } from "../components/ui";
-import { BarButton, BarGroup, ContentUnavailable, GroupButton, ListSection, Page, SegmentedControl, Sheet } from "../components/ios";
+import { BackButton, BarButton, BarGroup, ContentUnavailable, GroupButton, ListSection, Page, SegmentedControl, Sheet } from "../components/ios";
 import { CellBridgeSettings } from "../components/devices/CellBridgeSettings";
 import { Keypad } from "../components/phone/Keypad";
 import { useCalls } from "../components/phone/CallProvider";
@@ -91,7 +91,7 @@ export default function PhonePage() {
 
   const trailing = (
     <BarGroup>
-      <GroupButton icon={<HeadphonesRegular />} aria-label={t("通话桥设置")} title={t("通话桥设置")} onClick={() => setBridgeOpen(true)} />
+      {wide ? <GroupButton icon={<HeadphonesRegular />} aria-label={t("通话桥设置")} title={t("通话桥设置")} onClick={() => setBridgeOpen(true)} /> : null}
       {!wide && section === "recents" ? (
         <GroupButton icon={<DialpadRegular />} aria-label={t("拨号键盘")} onClick={() => navigate("/phone/keypad")} />
       ) : null}
@@ -111,19 +111,22 @@ export default function PhonePage() {
     />
   );
 
-  const recents = (
-    <div>
-      <div className="mb-4 flex justify-center lg:justify-start">
-        <SegmentedControl<Filter>
+  // iOS Phone app / Telegram: the All/Missed filter is the bar title.
+  const filterControl = (
+    <SegmentedControl<Filter>
           value={filter}
           onChange={setFilter}
           options={[
             { value: "all", label: t("全部") },
             { value: "missed", label: missedCount ? `${t("未接")} · ${missedCount}` : t("未接") },
           ]}
-          className="w-full max-w-[280px]"
+          className="w-[200px]"
         />
-      </div>
+  );
+
+  const recents = (
+    <div>
+      {wide ? <div className="mb-4 flex justify-start">{filterControl}</div> : null}
       {!recordsLoaded ? null : visible.length === 0 ? (
         <ContentUnavailable
           icon={<CallFilled />}
@@ -149,23 +152,11 @@ export default function PhonePage() {
 
   return (
     <Page
-      title={!wide && section === "keypad" ? t("拨号键盘") : t("电话")}
+      title={wide ? t("电话") : section === "keypad" ? t("拨号键盘") : filterControl}
+      leading={!wide && section === "keypad" ? <BackButton to="/phone" label={t("最近通话")} /> : undefined}
       trailing={trailing}
       largeTitle={wide || section === "recents"}
-      accessory={
-        !wide ? (
-          <SegmentedControl<Section>
-            pill
-            block
-            value={section}
-            onChange={(next) => navigate(next === "keypad" ? "/phone/keypad" : "/phone")}
-            options={[
-              { value: "recents", label: t("最近通话") },
-              { value: "keypad", label: t("拨号键盘") },
-            ]}
-          />
-        ) : undefined
-      }
+
     >
       {noLines ? (
         <ContentUnavailable

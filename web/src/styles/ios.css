@@ -247,7 +247,7 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
   top: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   height: 56px;
   margin: 0 -16px;
@@ -281,7 +281,7 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 50vw;
+  max-width: 62vw;
 }
 .ios-navbar.is-scrolled .ios-navbar-title { opacity: 1; transform: none; }
 .ios-navbar.is-inline .ios-navbar-title { opacity: 1; transform: none; }
