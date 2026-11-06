@@ -97,7 +97,7 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
         disabled={disabled}
         onClick={toggleOpen}
         className={cx(
-          "halo-select-trigger flex w-full items-center justify-between gap-2 rounded-[12px] border border-separator bg-white px-3 text-left text-sm text-label outline-none",
+          "halo-select-trigger flex w-full items-center justify-between gap-2 rounded-full border border-separator bg-white px-4 text-left text-sm text-label outline-none",
           "transition-[border-color,box-shadow,transform] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
           "hover:border-separator focus:border-accent focus:ring-2 focus:ring-accent/20",
           "active:scale-[0.99]",
@@ -116,7 +116,7 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
           <div
             ref={menuRef}
             style={menuStyle}
-            className="halo-select-menu ui-pop overflow-auto rounded-[12px] border border-separator bg-white p-1 shadow-[0_10px_32px_rgba(0,0,0,0.14)] dark:border-separator dark:bg-grouped-2"
+            className="halo-select-menu ui-pop overflow-auto rounded-[20px] border border-separator bg-white p-1 shadow-[0_10px_32px_rgba(0,0,0,0.14)] dark:border-separator dark:bg-grouped-2"
           >
           {options.length === 0 && <div className="px-3 py-2 text-sm text-gray-400">{t("暂无数据")}</div>}
           {options.map((option) => {
@@ -131,7 +131,7 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
                   setOpen(false);
                 }}
                 className={cx(
-                  "flex w-full items-center justify-between gap-2 rounded-[10px] px-3 py-1.5 text-left text-sm",
+                  "flex w-full items-center justify-between gap-2 rounded-[14px] px-3 py-1.5 text-left text-sm",
                   "transition-[background-color,color,transform] duration-[160ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]",
                   active
                     ? "font-semibold text-accent bg-[var(--color-primary-soft)]"

@@ -136,7 +136,15 @@ export default {
           900: "var(--color-primary-ink)",
         },
       },
+      // iOS 26/27 rounds everything more: small boxes approach capsules.
       borderRadius: {
+        sm: "8px",
+        DEFAULT: "10px",
+        md: "12px",
+        lg: "14px",
+        xl: "18px",
+        "2xl": "22px",
+        "3xl": "28px",
         ios: "var(--radius-md)",
         "ios-lg": "var(--radius-lg)",
         "ios-xl": "var(--radius-xl)",

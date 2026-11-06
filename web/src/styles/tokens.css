@@ -57,8 +57,8 @@
      shape's radius is its container's radius minus the inset between them,
      anchored on the 62pt display corner. Inset grouped sections and cards
      sit 16pt in from the edge, sheets 8pt. */
-  --radius-xs: 7px;     /* icon tiles (30pt) */
-  --radius-sm: 12px;    /* small thumbnails, inner chips */
+  --radius-xs: 8px;     /* icon tiles (30pt) */
+  --radius-sm: 14px;    /* small thumbnails, inner rows */
   --radius-md: 18px;    /* message bubbles, menus' inner items */
   --radius-lg: 26px;    /* inset grouped sections, cards, widgets */
   --radius-xl: 38px;    /* sheets, the floating sidebar on iPad */
@@ -70,25 +70,20 @@
    System Settings-style form groups. Driven by html[data-idiom], which
    theme-init.js sets before first paint (fine pointer, >= 1024px). */
 html[data-idiom="mac"] {
-  --radius-xs: 5px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 12px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 14px;
   --radius-xl: 18px;
   --radius-menu: 12px;
 }
 
-/* Continuous ("squircle") corners like UIKit's .continuous curve. Browsers
-   with corner-shape get the smooth curvature transition; others keep the
-   same radius as a circular arc. Capsules stay capsules. */
-@supports (corner-shape: superellipse(1.5)) {
-  .ios-list, .ios-card, .ios-widget, .ios-sheet, .ios-menu, .ios-row-icon,
-  .ios-sidebar, .ios-sidebar-item,
-  .ios-bubble, .squircle, .ui-card, .ui-panel,
-  [class*="rounded-["]:not([class*="rounded-full"]), .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-lg {
-    corner-shape: superellipse(1.5);
-  }
-}
+/* Corners are circular arcs at Apple's nominal radii. CSS corner-shape
+   superellipse() makes corners squarer than a circle, the opposite of
+   UIKit's continuous curve, so it is not used. Small controls are
+   capsules (iOS 26/27); rectangles get radius >= 40% of their height up
+   to the concentric value. */
+
 
 @supports (transition-timing-function: linear(0, 1)) {
   :root {

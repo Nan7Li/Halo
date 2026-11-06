@@ -756,7 +756,7 @@ html[data-motion="reduced"] .ios-sheet-root.is-closing .ios-sheet { transform: n
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 13px;
   background: var(--ios-fill-4);
 }
 .ios-row-thumb img { width: 32px; height: 32px; object-fit: contain; }
@@ -773,7 +773,7 @@ html.dark .ios-row.is-selected { background: rgb(var(--color-primary-rgb) / 0.24
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 18px;
+  border-radius: 24px;
   background: rgb(var(--ios-grouped-2));
 }
 .ios-device-hero img { width: 56px; height: 56px; object-fit: contain; }
@@ -789,7 +789,7 @@ html.dark .ios-row.is-selected { background: rgb(var(--color-primary-rgb) / 0.24
   justify-content: center;
   gap: 4px;
   padding: 0 6px;
-  border-radius: 16px;
+  border-radius: 22px;
   background: rgb(var(--ios-grouped-2));
   transition: background-color 240ms var(--spring-smooth), color 240ms var(--spring-smooth), transform 260ms var(--spring-bouncy);
 }
@@ -797,7 +797,6 @@ html.dark .ios-row.is-selected { background: rgb(var(--color-primary-rgb) / 0.24
 .ios-control-tile-icon { display: inline-flex; height: 24px; align-items: center; }
 .ios-control-tile-icon svg { width: 24px; height: 24px; }
 .ios-control-tile-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 16px; font-weight: 500; }
-@supports (corner-shape: superellipse(1.5)) { .ios-control-tile, .ios-device-hero, .ios-row-thumb { corner-shape: superellipse(1.5); } }
 
 /* Device tabs sit directly on the grouped background now, so their muted
    panels become the white inset-grouped cards they are. */

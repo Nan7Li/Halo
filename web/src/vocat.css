@@ -253,10 +253,10 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
   --ui-border: rgb(var(--ios-separator) / 0.6);
   --ui-border-muted: rgb(var(--ios-separator) / 0.4);
   --ui-backdrop: none;
-  --ui-radius-sm: 10px;
-  --ui-radius-md: 14px;
+  --ui-radius-sm: 14px;
+  --ui-radius-md: 18px;
   --ui-radius-lg: var(--radius-lg);
-  --ui-radius-xl: 22px;
+  --ui-radius-xl: var(--radius-lg);
   --ui-shadow-sm: none;
   --ui-shadow-md: none;
   --ui-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.08);
@@ -321,7 +321,7 @@ html.dark .ui-panel {
 .ui-panel-muted {
   background: var(--color-fill);
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 20px;
 }
 html.dark .ui-panel-muted {
   background: var(--color-card-2);

@@ -85,7 +85,7 @@ html[data-idiom="mac"] .ios-sidebar-item {
   height: 28px;
   margin: 0 8px;
   padding: 0 8px;
-  border-radius: 7px;
+  border-radius: 9px;
   font-size: 13px;
   font-weight: 400;
   letter-spacing: -0.006em;
@@ -163,7 +163,7 @@ html[data-idiom="mac"] .ios-search input { font-size: 13px; }
 
 /* ---- Menus: 13pt items, accent selection like NSMenu ---- */
 html[data-idiom="mac"] .ios-menu { min-width: 200px; padding: 5px; }
-html[data-idiom="mac"] .ios-menu-item { padding: 0 10px; height: 24px; gap: 12px; border-radius: 6px; font-size: 13px; }
+html[data-idiom="mac"] .ios-menu-item { padding: 0 10px; height: 24px; gap: 12px; border-radius: 8px; font-size: 13px; }
 html[data-idiom="mac"] .ios-menu-item + .ios-menu-item { border-top: 0; }
 html[data-idiom="mac"] .ios-menu-item:hover,
 html[data-idiom="mac"] .ios-menu-item:focus-visible { background: var(--color-primary); color: var(--color-on-primary); }
@@ -183,7 +183,7 @@ html[data-idiom="mac"] .ios-badge { min-width: 18px; height: 18px; font-size: 11
 html[data-idiom="mac"] .ios-tab:active,
 html[data-idiom="mac"] .ios-key:active { transform: none; }
 html[data-idiom="mac"] .ios-search-chip { height: 28px; padding: 0 10px; font-size: 13px; }
-html[data-idiom="mac"] .ios-row-thumb { width: 28px; height: 28px; border-radius: 7px; }
+html[data-idiom="mac"] .ios-row-thumb { width: 28px; height: 28px; border-radius: 8px; }
 html[data-idiom="mac"] .ios-row-thumb img { width: 24px; height: 24px; }
 /* Mac list selection: accent fill, white text (focused window). */
 html[data-idiom="mac"] .ios-row.is-selected,
@@ -193,9 +193,9 @@ html[data-idiom="mac"] .ios-row.is-selected [class*="text-sys-"] { color: rgb(25
 html[data-idiom="mac"] .ios-row.is-selected .ios-row-body::before,
 html[data-idiom="mac"] .ios-row.is-selected + * .ios-row-body::before { opacity: 0; }
 html[data-idiom="mac"] .ios-search-chip.w-10 { width: 28px; }
-html[data-idiom="mac"] .ios-device-hero { width: 56px; height: 56px; border-radius: 12px; }
+html[data-idiom="mac"] .ios-device-hero { width: 56px; height: 56px; border-radius: 16px; }
 html[data-idiom="mac"] .ios-device-hero img { width: 44px; height: 44px; }
-html[data-idiom="mac"] .ios-control-tile { height: 52px; border-radius: 10px; gap: 3px; }
+html[data-idiom="mac"] .ios-control-tile { height: 52px; border-radius: 16px; gap: 3px; }
 html[data-idiom="mac"] .ios-control-tile:active { transform: none; filter: brightness(0.95); }
 html[data-idiom="mac"] .ios-control-tile-icon { height: 20px; }
 html[data-idiom="mac"] .ios-control-tile-icon svg { width: 20px; height: 20px; }

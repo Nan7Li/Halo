@@ -110,7 +110,7 @@ export function ContactList(props: ContactListProps) {
                 className={cx(
                   "relative flex w-full cursor-pointer items-stretch gap-3 pl-2 pr-4 text-left transition-colors duration-100",
                   active ? "bg-accent text-[var(--color-on-primary)]" : "bg-bg hover:bg-fill-4 active:bg-fill-3",
-                  active && "rounded-[14px] md:mx-2 md:w-[calc(100%-16px)]",
+                  active && "rounded-[18px] md:mx-2 md:w-[calc(100%-16px)]",
                 )}
                 role="button"
                 tabIndex={0}

@@ -229,7 +229,7 @@ function ThemeThumb({ kind }: { kind: ThemePreference }) {
   const half = kind === "system";
   const dark = kind === "dark";
   return (
-    <span className="relative block h-[88px] w-[54px] overflow-hidden rounded-[12px] shadow-[0_0_0_0.5px_rgb(0_0_0/0.18),0_4px_12px_rgb(0_0_0/0.12)]">
+    <span className="relative block h-[88px] w-[54px] overflow-hidden rounded-[14px] shadow-[0_0_0_0.5px_rgb(0_0_0/0.18),0_4px_12px_rgb(0_0_0/0.12)]">
       <span className={cx("absolute inset-0", dark ? "bg-black" : "bg-[#f2f2f7]")} />
       {half ? <span className="absolute inset-y-0 right-0 w-1/2 bg-black" /> : null}
       <span className="absolute inset-x-2 top-3 space-y-1.5">
