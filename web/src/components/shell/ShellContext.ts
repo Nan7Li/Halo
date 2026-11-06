@@ -9,8 +9,6 @@ export interface ShellState {
   onLogout: () => void;
   /** Sets the badge count shown on a tab or sidebar item (0 hides it). */
   setBadge: (path: string, count: number) => void;
-  /** Hides the phone tab bar (inside a conversation, like iOS). */
-  setTabBarHidden: (hidden: boolean) => void;
 }
 
 export const ShellContext = createContext<ShellState>({
@@ -20,7 +18,6 @@ export const ShellContext = createContext<ShellState>({
   onToggleTheme: () => undefined,
   onLogout: () => undefined,
   setBadge: () => undefined,
-  setTabBarHidden: () => undefined,
 });
 
 export function useShell() {

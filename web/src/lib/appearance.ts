@@ -30,6 +30,7 @@ export function applyAppearance(appearance: Appearance) {
   root.dataset.motion = attrs.motion;
   root.dataset.highlight = attrs.highlight;
   root.dataset.contrast = attrs.contrast;
+  root.dataset.bold = attrs.bold;
 }
 
 export function writeAppearance(appearance: Appearance) {

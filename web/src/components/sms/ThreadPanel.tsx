@@ -159,7 +159,7 @@ export function ThreadPanel(props: ThreadPanelProps) {
                       onPointerCancel={onMsgPointerEnd}
                     >
                       <div
-                        className={cx("ios-bubble ios-bubble-in", outbound ? "is-out" : "is-in", tail && "has-tail", failed && "is-failed")}
+                        className={cx("ios-bubble", outbound ? "is-out" : "is-in", tail && "has-tail", failed && "is-failed")}
                         title={`${new Date(message.timestamp).toLocaleString()}${message.deviceName ? ` · ${message.deviceName}` : ""}`}
                       >
                         {!outbound && message.sender && message.sender !== activeThread.peer && message.sender !== activeThread.displayName ? (
@@ -203,7 +203,7 @@ export function ThreadPanel(props: ThreadPanelProps) {
       </div>
 
       {/* Composer: a glass capsule with the send arrow inside. */}
-      <div className="shrink-0 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2">
+      <div className={cx("shrink-0 px-3 pt-2", isMobile ? "pb-[calc(84px+env(safe-area-inset-bottom))]" : "pb-3")}>
         {composerLength > 0 ? (
           <div className="mb-1 px-3 text-right ios-caption-2 text-label-3">
             {tf("{encoding} · 预计 {parts} 段 · {length} 字", { encoding: composerInfo.encoding, parts: composerInfo.parts, length: composerLength })}

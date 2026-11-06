@@ -17,7 +17,7 @@ import { useMediaQuery } from "../lib/useMediaQuery";
 import { cx } from "../lib/utils";
 import type { CallRecord, CallRecordsResponse } from "../types";
 import { message } from "../components/ui";
-import { BarButton, ContentUnavailable, ListSection, Page, SegmentedControl, Sheet } from "../components/ios";
+import { BarButton, BarGroup, ContentUnavailable, GroupButton, ListSection, Page, SegmentedControl, Sheet } from "../components/ios";
 import { CellBridgeSettings } from "../components/devices/CellBridgeSettings";
 import { Keypad } from "../components/phone/Keypad";
 import { useCalls } from "../components/phone/CallProvider";
@@ -90,12 +90,12 @@ export default function PhonePage() {
   };
 
   const trailing = (
-    <>
-      <BarButton icon={<HeadphonesRegular />} aria-label={t("通话桥设置")} title={t("通话桥设置")} onClick={() => setBridgeOpen(true)} />
+    <BarGroup>
+      <GroupButton icon={<HeadphonesRegular />} aria-label={t("通话桥设置")} title={t("通话桥设置")} onClick={() => setBridgeOpen(true)} />
       {!wide && section === "recents" ? (
-        <BarButton icon={<DialpadRegular />} aria-label={t("拨号键盘")} onClick={() => navigate("/phone/keypad")} />
+        <GroupButton icon={<DialpadRegular />} aria-label={t("拨号键盘")} onClick={() => navigate("/phone/keypad")} />
       ) : null}
-    </>
+    </BarGroup>
   );
 
   const keypad = (
@@ -180,9 +180,9 @@ export default function PhonePage() {
           {recents}
         </div>
       ) : section === "keypad" ? (
-        <div className="ios-push pt-2">{keypad}</div>
+        <div className="ios-crossfade pt-2">{keypad}</div>
       ) : (
-        <div className="ios-push">{recents}</div>
+        <div className="ios-crossfade">{recents}</div>
       )}
 
       <RecordSheet record={detail} lineName={detail ? lineLabel(detail.deviceId) : ""} onClose={() => setDetail(null)} onCall={(record) => { setDetail(null); void callNumber(record.number, record.deviceId); }} />

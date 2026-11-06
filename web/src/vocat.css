@@ -88,9 +88,8 @@
 }
 /* ---- Base ---- */
 html {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro",
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue",
-    "Segoe UI", system-ui, sans-serif;
+  font-family: "-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "Inter Variable", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", "Segoe UI", system-ui, sans-serif;
+  font-optical-sizing: auto;
 }
 html, body {
   height: 100%;
@@ -109,7 +108,8 @@ html.dark body {
   color: var(--color-text);
 }
 #root {
-  font-feature-settings: "tnum" 1, "ss01" 1;
+  /* SF-like Inter alternates: open digits, straight-sided l and single-storey a off. */
+  font-feature-settings: "cv11" 1, "ss03" 1;
 }
 button, a, [role="button"], [role="tab"], [role="switch"] {
   touch-action: manipulation;
@@ -277,13 +277,13 @@ html.dark {
 .ui-glass { border-color: transparent; }
 .ui-card {
   background: rgb(var(--ios-grouped-2));
-  border: 1px solid var(--ui-border);
+  border: 0;
   border-radius: var(--ui-radius-xl);
   box-shadow: var(--ui-shadow-md);
 }
 html.dark .ui-card {
   background: var(--color-card);
-  border-color: var(--color-border);
+  border: 0;
   box-shadow: none;
 }
 html.dark .ui-card:hover {
@@ -300,7 +300,7 @@ html.dark .ui-card:hover {
 }
 .ui-panel {
   background: rgb(var(--ios-grouped-2));
-  border: 1px solid var(--ui-border);
+  border: 0;
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-sm);
 }

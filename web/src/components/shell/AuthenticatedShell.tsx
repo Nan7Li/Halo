@@ -10,18 +10,21 @@ import { listPlugins, type InstalledPlugin } from "../../extensions";
 import { api } from "../../api";
 import type { SystemInfo } from "../../types";
 import { Sidebar } from "./Sidebar";
-import { TabBar } from "./TabBar";
-import { pluginNav } from "./nav";
+import { TabBar, TopTabBar } from "./TabBar";
+import { PRIMARY_NAV, SECONDARY_NAV, pluginNav } from "./nav";
+import { cx } from "../../lib/utils";
 import { ShellContext } from "./ShellContext";
 import { CallProvider } from "../phone/CallProvider";
 
-const SIDEBAR_KEY = "halo.sidebar.collapsed";
+const SIDEBAR_KEY = "halo.navigation";
 
-function readCollapsed() {
+type WideNavigation = "sidebar" | "tabbar";
+
+function readWideNavigation(): WideNavigation {
   try {
-    return localStorage.getItem(SIDEBAR_KEY) === "1";
+    return localStorage.getItem(SIDEBAR_KEY) === "tabbar" ? "tabbar" : "sidebar";
   } catch {
-    return false;
+    return "sidebar";
   }
 }
 
@@ -32,11 +35,10 @@ function readCollapsed() {
  */
 export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean; onToggleTheme: () => void }) {
   const wide = useMediaQuery("(min-width: 768px)");
-  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [wideNav, setWideNav] = useState<WideNavigation>(readWideNavigation);
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [developer, setDeveloper] = useState(false);
   const [badges, setBadges] = useState<Record<string, number>>({});
-  const [tabBarHidden, setTabBarHidden] = useState(false);
   const { logout } = useAuth();
   const { t, lang } = useI18n();
   const navigate = useNavigate();
@@ -91,19 +93,18 @@ export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean;
     }
   }
 
-  function toggleSidebar() {
-    setCollapsed((value) => {
-      try {
-        localStorage.setItem(SIDEBAR_KEY, value ? "0" : "1");
-      } catch {
-        /* ignore */
-      }
-      return !value;
-    });
+  // sidebarAdaptable: people switch between the sidebar and a top tab bar.
+  function setNavigation(next: WideNavigation) {
+    try {
+      localStorage.setItem(SIDEBAR_KEY, next);
+    } catch {
+      /* ignore */
+    }
+    setWideNav(next);
   }
 
   const shell = useMemo(
-    () => ({ developer, extensions, isDark, onToggleTheme, onLogout, setBadge: (path: string, count: number) => setBadges((current) => (current[path] === count ? current : { ...current, [path]: count })), setTabBarHidden }),
+    () => ({ developer, extensions, isDark, onToggleTheme, onLogout, setBadge: (path: string, count: number) => setBadges((current) => (current[path] === count ? current : { ...current, [path]: count })) }),
     // onLogout only closes over stable values.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [developer, extensions, isDark, onToggleTheme],
@@ -114,15 +115,20 @@ export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean;
       <ScrollContainerContext.Provider value={scrollRef}>
         <CallProvider>
           <div className="ios-app">
-            {wide ? <Sidebar collapsed={collapsed} onToggle={toggleSidebar} extensions={extensions} badges={badges} onLogout={onLogout} /> : null}
-            <main ref={scrollRef} className="ios-scroll">
+            {wide && wideNav === "sidebar" ? (
+              <Sidebar onHide={() => setNavigation("tabbar")} extensions={extensions} badges={badges} onLogout={onLogout} />
+            ) : null}
+            {wide && wideNav === "tabbar" ? (
+              <TopTabBar items={[...PRIMARY_NAV, SECONDARY_NAV[0], SECONDARY_NAV[3]]} badges={badges} onShowSidebar={() => setNavigation("sidebar")} />
+            ) : null}
+            <main ref={scrollRef} className={cx("ios-scroll", wide && wideNav === "tabbar" && "has-top-tabbar")}>
               <ErrorBoundary title={t("页面渲染失败")}>
                 <div key={section} className="min-h-full">
                   <Outlet />
                 </div>
               </ErrorBoundary>
             </main>
-            {!wide && !tabBarHidden ? <TabBar badges={badges} /> : null}
+            {!wide ? <TabBar badges={badges} /> : null}
           </div>
         </CallProvider>
       </ScrollContainerContext.Provider>

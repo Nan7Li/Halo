@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { PanelLeftRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
-import { glassClass, useScrollContainer, useSlidingIndicator } from "../ios/core";
+import { glassClass, useSlidingIndicator } from "../ios/core";
 import { MORE_TAB, PRIMARY_NAV, isActive, type NavItem } from "./nav";
 
 /**
- * iOS 27 floating tab bar. A glass capsule whose selection lens slides and
- * stretches between tabs; scrolling down minimizes it to the active tab,
- * scrolling up restores it.
+ * iOS 27 floating tab bar: a Liquid Glass capsule at the bottom that stays
+ * visible on every screen. The selection lens slides between tabs. It does
+ * not minimize: HIG ties minimizing to a bottom accessory, which Halo has
+ * none of.
  */
 export function TabBar({ badges = {} }: { badges?: Record<string, number> }) {
   const { t } = useI18n();
@@ -17,15 +19,14 @@ export function TabBar({ badges = {} }: { badges?: Record<string, number> }) {
   const active = tabs.findIndex((tab) => isActive(tab, pathname));
   const barRef = useRef<HTMLElement>(null);
   const lens = useSlidingIndicator(barRef, active);
-  const minimized = useMinimizeOnScroll();
-
   return (
-    <div className={cx("ios-tabbar-wrap", minimized && "is-minimized")}>
+    <div className="ios-tabbar-wrap">
       <nav ref={barRef} aria-label={t("主导航")} className={cx("ios-tabbar", glassClass("regular"))}>
         <span className="ios-tab-lens" style={lens} aria-hidden />
         {tabs.map((tab, index) => {
           const selected = index === active;
-          const Icon = selected && tab.activeIcon ? tab.activeIcon : tab.icon;
+          // HIG: prefer filled symbols in tab bars.
+          const Icon = tab.activeIcon ?? tab.icon;
           return (
             <NavLink
               key={tab.to}
@@ -46,26 +47,54 @@ export function TabBar({ badges = {} }: { badges?: Record<string, number> }) {
   );
 }
 
-function useMinimizeOnScroll() {
-  const container = useScrollContainer();
+/**
+ * iPadOS 26/27 tab bar near the top of the window (regular width), with
+ * symbols and labels side by side and a leading button that converts it
+ * back into the sidebar (sidebarAdaptable).
+ */
+export function TopTabBar({ items, onShowSidebar, badges = {} }: { items: NavItem[]; onShowSidebar: () => void; badges?: Record<string, number> }) {
+  const { t } = useI18n();
   const { pathname } = useLocation();
-  const [minimized, setMinimized] = useState(false);
-  useEffect(() => setMinimized(false), [pathname]);
-  useEffect(() => {
-    const element = container?.current;
-    if (!element) return;
-    let last = element.scrollTop;
-    const onScroll = () => {
-      const top = element.scrollTop;
-      const delta = top - last;
-      if (Math.abs(delta) < 8) return;
-      // Near the top, or at the bottom where the bar would hide content, stay expanded.
-      const atEnd = top + element.clientHeight >= element.scrollHeight - 4;
-      setMinimized(delta > 0 && top > 120 && !atEnd);
-      last = top;
-    };
-    element.addEventListener("scroll", onScroll, { passive: true });
-    return () => element.removeEventListener("scroll", onScroll);
-  }, [container]);
-  return minimized;
+  const active = items.findIndex((tab) => isActive(tab, pathname));
+  const barRef = useRef<HTMLElement>(null);
+  const lens = useSlidingIndicator(barRef, active);
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-3">
+      <div className="pointer-events-auto flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onShowSidebar}
+          aria-label={t("显示侧栏")}
+          title={t("显示侧栏")}
+          className={cx("ios-bar-btn is-icon glass-interactive", glassClass("regular"))}
+        >
+          <PanelLeftRegular />
+        </button>
+        <nav ref={barRef} aria-label={t("主导航")} className={cx("relative flex h-11 items-center rounded-full p-1", glassClass("regular"))}>
+          <span className="ios-tab-lens !top-1 !bottom-1" style={lens} aria-hidden />
+          {items.map((tab, index) => {
+            const selected = index === active;
+            const Icon = tab.activeIcon ?? tab.icon;
+            return (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={tab.end}
+                data-indicator-item
+                aria-current={selected ? "page" : undefined}
+                className={cx(
+                  "relative z-[1] flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[15px] font-semibold tracking-[-0.016em] transition-colors",
+                  selected ? "text-accent" : "text-label",
+                )}
+              >
+                <Icon className="h-[19px] w-[19px]" />
+                <span>{tab.literal ? tab.label : t(tab.label)}</span>
+                {badges[tab.to] ? <span className="ios-badge ml-0.5 !h-[18px] !min-w-[18px] !text-[11px]">{badges[tab.to]}</span> : null}
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
+  );
 }

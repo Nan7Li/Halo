@@ -61,16 +61,18 @@ test("defaults to system blue and the default glass appearance", () => {
   assert.equal(result.attributes.get("data-motion"), "full");
   assert.equal(result.attributes.get("data-highlight"), "dynamic");
   assert.equal(result.attributes.get("data-contrast"), "normal");
+  assert.equal(result.attributes.get("data-bold"), "off");
 });
 
 test("applies a stored appearance before first paint", () => {
   const result = initializeTheme(null, false, {
-    appearance: JSON.stringify({ clarity: 0.9, motion: "off", dynamicHighlight: false, increaseContrast: true }),
+    appearance: JSON.stringify({ clarity: 0.9, motion: "off", dynamicHighlight: false, increaseContrast: true, boldText: true }),
   });
   assert.equal(result.styles.get("--glass-clarity"), "0.9");
   assert.equal(result.attributes.get("data-motion"), "off");
   assert.equal(result.attributes.get("data-highlight"), "static");
   assert.equal(result.attributes.get("data-contrast"), "high");
+  assert.equal(result.attributes.get("data-bold"), "on");
 });
 
 test("clamps clarity and follows the OS reduced-motion setting", () => {

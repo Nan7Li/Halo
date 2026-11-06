@@ -8,7 +8,7 @@ export const EmbeddedPageContext = createContext(false);
 /** Root of a screen built from <PageHeader>; a plain block when embedded. */
 export function PageFrame({ children, className, wide = false }: { children: ReactNode; className?: string; wide?: boolean }) {
   const embedded = useContext(EmbeddedPageContext);
-  if (embedded) return <div className={cx("ios-push", className)}>{children}</div>;
+  if (embedded) return <div className={cx("ios-crossfade", className)}>{children}</div>;
   return <div className={cx("ios-content ios-page", wide && "is-wide", className)}>{children}</div>;
 }
 

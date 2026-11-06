@@ -8,16 +8,17 @@ import { BrandLogo } from "./BrandLogo";
 import { VersionBadge } from "./VersionBadge";
 import { PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
 
-/** iPadOS 27 floating glass sidebar. */
+/**
+ * iPadOS 27 floating glass sidebar (the regular, more opaque variant). Its
+ * leading button converts it into the top tab bar (sidebarAdaptable).
+ */
 export function Sidebar({
-  collapsed,
-  onToggle,
+  onHide,
   extensions,
   badges = {},
   onLogout,
 }: {
-  collapsed: boolean;
-  onToggle: () => void;
+  onHide: () => void;
   extensions: NavItem[];
   badges?: Record<string, number>;
   onLogout: () => void;
@@ -25,6 +26,7 @@ export function Sidebar({
   const { t } = useI18n();
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const collapsed = false;
 
   const renderItem = (item: NavItem) => {
     const label = item.literal ? item.label : t(item.label);
@@ -61,8 +63,9 @@ export function Sidebar({
         ) : null}
         <button
           type="button"
-          onClick={onToggle}
-          aria-label={collapsed ? t("展开侧栏") : t("收起侧栏")}
+          onClick={onHide}
+          aria-label={t("隐藏侧栏")}
+          title={t("隐藏侧栏")}
           className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-label-2 transition-colors hover:bg-fill-3 hover:text-label"
         >
           <PanelLeftRegular className="h-[22px] w-[22px]" />

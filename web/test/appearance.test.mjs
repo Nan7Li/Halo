@@ -35,12 +35,14 @@ test("motion preference resolves against the OS setting", () => {
 });
 
 test("attributes match what the pre-paint script writes", () => {
-  assert.deepEqual(model.appearanceAttributes({ clarity: 1.4, motion: "reduced", dynamicHighlight: false, increaseContrast: true }, false), {
+  assert.deepEqual(model.appearanceAttributes({ clarity: 1.4, motion: "reduced", dynamicHighlight: false, increaseContrast: true, boldText: true }, false), {
     clarity: "1",
     motion: "reduced",
     highlight: "static",
     contrast: "high",
+    bold: "on",
   });
+  assert.equal(model.appearanceAttributes(model.DEFAULT_APPEARANCE, false).bold, "off");
 });
 
 test("clarity labels cover the whole slider", () => {

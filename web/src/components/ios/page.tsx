@@ -62,7 +62,11 @@ type BarButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   prominent?: boolean;
 };
 
-/** Floating glass toolbar button (icon, label, or both). */
+/**
+ * Floating glass toolbar button (symbol, label, or both). Symbols stay
+ * monochrome; `prominent` tints the background with the accent color and
+ * is reserved for the one primary action (HIG Toolbars, Liquid Glass color).
+ */
 export const BarButton = forwardRef<HTMLButtonElement, BarButtonProps>(function BarButton(
   { icon, label, accent, prominent, className, type = "button", ...rest },
   ref,
@@ -75,7 +79,6 @@ export const BarButton = forwardRef<HTMLButtonElement, BarButtonProps>(function 
         "ios-bar-btn glass-interactive disabled:opacity-40",
         prominent ? "glass-tinted" : "glass",
         !label && "is-icon",
-        accent && !prominent && "is-accent",
         className,
       )}
       {...rest}
@@ -86,17 +89,30 @@ export const BarButton = forwardRef<HTMLButtonElement, BarButtonProps>(function 
   );
 });
 
+/** Standard Back: the chevron symbol only, no "Back" text (HIG Toolbars). */
 export function BackButton({ to, label }: { to?: string; label?: ReactNode }) {
   const navigate = useNavigate();
   const { t } = useI18n();
   return (
     <BarButton
       icon={<ChevronLeftRegular />}
-      label={label}
-      aria-label={t("返回")}
+      aria-label={typeof label === "string" ? `${t("返回")} ${label}` : t("返回")}
       onClick={() => (to ? navigate(to) : navigate(-1))}
-      className={label ? "pl-2 pr-3" : undefined}
     />
+  );
+}
+
+/** Adjacent symbol buttons share one glass capsule, like iOS 26 bar item groups. */
+export function BarGroup({ children }: { children: ReactNode }) {
+  return <div className="ios-bar-group glass">{children}</div>;
+}
+
+/** A symbol button inside a BarGroup (no glass of its own). */
+export function GroupButton({ icon, className, type = "button", ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: ReactNode }) {
+  return (
+    <button type={type} className={cx("ios-bar-btn is-icon rounded-full transition-colors hover:bg-fill-4 active:bg-fill-3 disabled:opacity-40", className)} {...rest}>
+      {icon}
+    </button>
   );
 }
 

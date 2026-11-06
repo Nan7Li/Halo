@@ -1,9 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertRegular, ArrowDownloadRegular, CheckmarkRegular } from "@fluentui/react-icons";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useParams } from "react-router-dom";
+import {
+  AlertRegular,
+  ArrowDownloadRegular,
+  ArrowSyncRegular,
+  ChatRegular,
+  CheckmarkRegular,
+  HeadphonesRegular,
+  LockClosedRegular,
+  PaintBrushRegular,
+  ShieldLockRegular,
+  Wifi1Regular,
+  WrenchRegular,
+} from "@fluentui/react-icons";
+import { Badge, BackButton, ListRow, ListSection, Page } from "../components/ios";
+import { AppearanceSettings } from "../components/settings/AppearanceSettings";
+import { CellBridgeSettings } from "../components/devices/CellBridgeSettings";
+import { useCalls } from "../components/phone/CallProvider";
+import { clarityLabel, useAppearance } from "../lib/appearance";
 import { api, apiMessage, getApiTokens, getSecuritySettings, revokeApiToken, updateSecuritySettings } from "../api";
 import type { ApiTokenListItem, AutoUpdateSettings, DeveloperSettings, DeviceListItem, DevicesResponse, HTTPSSettings, NotificationSettings, SecuritySettings, SMSSettings, SystemInfo, UpstreamVocatStatus } from "../types";
-import { Button, PageHeader, confirmDialog, message } from "../components/ui";
-import { CardDecor, CardIcon, CardTitle, SecurityCard, SystemInfoCard } from "../components/settings/Cards";
+import { Button, confirmDialog, message } from "../components/ui";
+import { SecurityCard, SystemInfoCard } from "../components/settings/Cards";
 import type { PasswordForm, UpdateInfo } from "../components/settings/Cards";
 import { NetworkAccessCard } from "../components/settings/NetworkAccessCard";
 import { ApiTokensCard } from "../components/settings/ApiTokensCard";
@@ -31,7 +49,6 @@ import { PluginsCard } from "../components/settings/PluginsCard";
 import { HTTPSCard } from "../components/settings/HTTPSCard";
 import { DeviceQuotaCard } from "../components/settings/DeviceQuotaCard";
 import { SMSRateLimitCard } from "../components/settings/SMSRateLimitCard";
-import { AppearanceCard } from "../components/settings/AppearanceCard";
 import { SMSAutoClearCard } from "../components/settings/SMSAutoClearCard";
 import { VoWiFiMTUCard } from "../components/settings/VoWiFiMTUCard";
 
@@ -51,7 +68,19 @@ const NOTIFY_TABS = [
 const EMPTY_SYSTEM_INFO: SystemInfo = { version: "", buildTime: "", config: "" };
 
 const EMPTY_SECURITY: NetworkAccessForm = { mode: "internal", allowedCidrs: [], trustProxyHeaders: false };
+interface SettingsSection {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  tint: string;
+  detail?: string;
+  badge?: number;
+}
+
 export default function SettingsPage() {
+  const { section } = useParams();
+  const { appearance } = useAppearance();
+  const { lines } = useCalls();
   const { refresh } = useAuth();
   const { t, lang } = useI18n();
   const [systemInfo, setSystemInfo] = useState<SystemInfo>(EMPTY_SYSTEM_INFO);
@@ -600,146 +629,156 @@ export default function SettingsPage() {
     window.open("/api/system/diagnostics", "_blank", "noopener,noreferrer");
   }, []);
 
+  const sections: SettingsSection[] = [
+    { key: "appearance", label: "外观", icon: <PaintBrushRegular />, tint: "blue", detail: t(clarityLabel(appearance.clarity)) },
+    { key: "notifications", label: "通知", icon: <AlertRegular />, tint: "red" },
+    { key: "security", label: "账户与登录", icon: <LockClosedRegular />, tint: "gray", detail: "SSO · API Token" },
+    { key: "network", label: "网络访问", icon: <ShieldLockRegular />, tint: "blue" },
+    { key: "calls", label: "通话桥", icon: <HeadphonesRegular />, tint: "green", detail: "CellBridge" },
+    { key: "vowifi", label: "VoWiFi", icon: <Wifi1Regular />, tint: "blue", detail: "MTU" },
+    { key: "sms", label: "短信", icon: <ChatRegular />, tint: "green" },
+    { key: "system", label: "系统与更新", icon: <ArrowSyncRegular />, tint: "gray", detail: systemInfo.version ? `v${systemInfo.version}` : undefined, badge: updateInfo?.hasUpdate || autoUpdate?.lastAvailable ? 1 : 0 },
+    ...(systemInfo.developer ? [{ key: "developer", label: "开发者", icon: <WrenchRegular />, tint: "indigo" }] : []),
+  ];
+  const current = sections.find((item) => item.key === section);
+
+  if (!current) {
+    return (
+      <Page title={t("设置")}>
+        <ListSection>
+          {sections.slice(0, 1).map(renderRow)}
+        </ListSection>
+        <ListSection>
+          {sections.slice(1, 4).map(renderRow)}
+        </ListSection>
+        <ListSection>
+          {sections.slice(4, 7).map(renderRow)}
+        </ListSection>
+        <ListSection>
+          {sections.slice(7).map(renderRow)}
+          <ListRow icon={<ArrowDownloadRegular />} iconColor="teal" title={t("下载脱敏诊断包")} onClick={onDownloadDiagnostics} />
+        </ListSection>
+      </Page>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <PageHeader title={t("系统设置")} subtitle={t("管理网关参数与运行信息")} />
-        <Button variant="default" onClick={onDownloadDiagnostics}>
-          <ArrowDownloadRegular className="mr-1.5 h-4 w-4" />
-          {t("下载脱敏诊断包")}
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <AppearanceCard />
-        <SecurityCard
-          value={password}
-          onChange={(patch) => setPassword((prev) => ({ ...prev, ...patch }))}
-          loading={changingPassword}
-          onSubmit={onChangePassword}
-        />
-        <SystemInfoCard
-          info={systemInfo}
-          updateInfo={updateInfo}
-          checkingUpdate={checkingUpdate}
-          applyingUpdate={applyingUpdate}
-          autoUpdate={autoUpdate}
-          savingAutoUpdate={savingAutoUpdate}
-          onCheckUpdate={onCheckUpdate}
-          onApplyUpdate={onApplyUpdate}
-          onAutoUpdateChange={onAutoUpdateChange}
-          upstream={upstream}
-          checkingUpstream={checkingUpstream}
-          markingUpstream={markingUpstream}
-          onCheckUpstream={onCheckUpstream}
-          onMarkUpstreamSynced={onMarkUpstreamSynced}
-        />
-
-        <NetworkAccessCard
-          value={security}
-          clientIp={clientIp}
-          clientAllowed={clientAllowed}
-          loading={loadingSecurity}
-          saving={savingSecurity}
-          onChange={(patch) => setSecurity((prev) => ({ ...prev, ...patch }))}
-          onSave={onSaveSecurity}
-        />
-        <ApiTokensCard
-          tokens={apiTokens}
-          loading={loadingTokens}
-          error={tokensError}
-          revoking={revokingToken}
-          onRevoke={(name) => void onRevokeApiToken(name)}
-          onRefresh={() => void fetchApiTokens()}
-        />
-        <VoWiFiMTUCard />
-        <SMSAutoClearCard
-          enabled={smsAutoClear}
-          loading={loadingSMSSettings}
-          saving={savingSMSSettings}
-          onToggle={onToggleSMSAutoClear}
-        />
-
-        {systemInfo.developer ? (
+    <Page title={t(current.label)} leading={<BackButton to="/settings" label={t("设置")} />} largeTitle={false} className="ios-push">
+      <div className="mx-auto max-w-[760px] space-y-6">
+        {section === "appearance" ? <AppearanceSettings /> : null}
+        {section === "security" ? (
           <>
-            <HTTPSCard
-              value={httpsSettings}
-              loading={loadingHTTPS}
-              saving={savingHTTPS}
-              onToggle={onToggleHTTPS}
+            <SecurityCard
+              value={password}
+              onChange={(patch) => setPassword((prev) => ({ ...prev, ...patch }))}
+              loading={changingPassword}
+              onSubmit={onChangePassword}
             />
-            <DeviceQuotaCard
-              value={developerSettings}
-              limit={deviceLimit}
-              loading={loadingDeveloper}
-              saving={savingDeveloper}
-              onLimitChange={setDeviceLimit}
-              onSave={onSaveDeviceLimit}
+            <SSOCard />
+            <ApiTokensCard
+              tokens={apiTokens}
+              loading={loadingTokens}
+              error={tokensError}
+              revoking={revokingToken}
+              onRevoke={(name) => void onRevokeApiToken(name)}
+              onRefresh={() => void fetchApiTokens()}
             />
-            <SMSRateLimitCard
-              value={developerSettings}
-              limit={smsHourlyLimit}
-              loading={loadingDeveloper}
-              saving={savingSMSLimit}
-              onLimitChange={setSMSHourlyLimit}
-              onSave={onSaveSMSHourlyLimit}
+          </>
+        ) : null}
+        {section === "network" ? (
+          <>
+            <NetworkAccessCard
+              value={security}
+              clientIp={clientIp}
+              clientAllowed={clientAllowed}
+              loading={loadingSecurity}
+              saving={savingSecurity}
+              onChange={(patch) => setSecurity((prev) => ({ ...prev, ...patch }))}
+              onSave={onSaveSecurity}
             />
+            {systemInfo.developer ? <HTTPSCard value={httpsSettings} loading={loadingHTTPS} saving={savingHTTPS} onToggle={onToggleHTTPS} /> : null}
+          </>
+        ) : null}
+        {section === "calls" ? (
+          <div className="ui-card p-5">
+            <CellBridgeSettings devices={lines} />
+          </div>
+        ) : null}
+        {section === "vowifi" ? <VoWiFiMTUCard /> : null}
+        {section === "sms" ? (
+          <>
+            <SMSAutoClearCard enabled={smsAutoClear} loading={loadingSMSSettings} saving={savingSMSSettings} onToggle={onToggleSMSAutoClear} />
+            {systemInfo.developer ? (
+              <SMSRateLimitCard value={developerSettings} limit={smsHourlyLimit} loading={loadingDeveloper} saving={savingSMSLimit} onLimitChange={setSMSHourlyLimit} onSave={onSaveSMSHourlyLimit} />
+            ) : null}
+          </>
+        ) : null}
+        {section === "system" ? (
+          <SystemInfoCard
+            info={systemInfo}
+            updateInfo={updateInfo}
+            checkingUpdate={checkingUpdate}
+            applyingUpdate={applyingUpdate}
+            autoUpdate={autoUpdate}
+            savingAutoUpdate={savingAutoUpdate}
+            onCheckUpdate={onCheckUpdate}
+            onApplyUpdate={onApplyUpdate}
+            onAutoUpdateChange={onAutoUpdateChange}
+            upstream={upstream}
+            checkingUpstream={checkingUpstream}
+            markingUpstream={markingUpstream}
+            onCheckUpstream={onCheckUpstream}
+            onMarkUpstreamSynced={onMarkUpstreamSynced}
+          />
+        ) : null}
+        {section === "developer" && systemInfo.developer ? (
+          <>
+            <DeviceQuotaCard value={developerSettings} limit={deviceLimit} loading={loadingDeveloper} saving={savingDeveloper} onLimitChange={setDeviceLimit} onSave={onSaveDeviceLimit} />
             <PluginsCard />
           </>
         ) : null}
-
-        <div className="notify-card ui-card group relative overflow-hidden p-8 lg:col-span-2">
-          <CardDecor />
-          <div className="relative z-10 mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <CardIcon>
-                <AlertRegular className="text-[24px]" />
-              </CardIcon>
-              <CardTitle title={t("通知")} subtitle={t("Telegram / Bark / Email / Pushplus / Webhook / 企业微信 / 飞书 / Lark 群机器人 / MeoW")} />
+        {section === "notifications" ? (
+          <div className="ui-card p-5 sm:p-6">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <p className="ios-footnote text-label-2">{t("新短信和来电会推送到已启用的渠道")}</p>
+              <Button variant="primary" loading={savingNotif} disabled={loadingNotif} onClick={onSaveNotifications} icon={<CheckmarkRegular />}>
+                {t("保存")}
+              </Button>
             </div>
-            <Button variant="primary" loading={savingNotif} disabled={loadingNotif} onClick={onSaveNotifications} className="!border-0" icon={<CheckmarkRegular />}>
-              {t("保存通知配置")}
-            </Button>
+            {loadingNotif ? (
+              <div className="p-6 ios-subhead text-label-2">{t("正在加载通知配置…")}</div>
+            ) : (
+              <fieldset disabled={savingNotif} className="min-w-0 w-full">
+                <SegmentedTabs tabs={NOTIFY_TABS.map((tab) => ({ ...tab, label: t(tab.label) }))} value={activeTab} onChange={setActiveTab} />
+                {activeTab === "meow" ? <MeowTab value={forms.meow} onChange={(p) => updateChannel("meow", p)} testing={testingMeow} onTest={onTestMeow} /> : null}
+                {activeTab === "telegram" ? <TelegramTab onClear={() => void clearChannel("telegram")} value={forms.telegram} onChange={(p) => updateChannel("telegram", p)} /> : null}
+                {activeTab === "bark" ? <BarkTab value={forms.bark} onChange={(p) => updateChannel("bark", p)} testing={testingBark} onTest={onTestBark} devices={devices} devicesFailed={devicesFailed} /> : null}
+                {activeTab === "email" ? <EmailTab onClear={() => void clearChannel("email")} value={forms.email} onChange={(p) => updateChannel("email", p)} testing={testingEmail} onTest={onTestEmail} /> : null}
+                {activeTab === "pushplus" ? <PushplusTab value={forms.pushplus} onChange={(p) => updateChannel("pushplus", p)} /> : null}
+                {activeTab === "webhook" ? <WebhookTab value={forms.webhook} onChange={(p) => updateChannel("webhook", p)} testing={testingWebhook} onTest={onTestWebhook} /> : null}
+                {activeTab === "wecom" ? <WecomTab value={forms.wecom} onChange={(p) => updateChannel("wecom", p)} testing={testingWecom} onTest={onTestWecom} /> : null}
+                {activeTab === "lark" ? <LarkTab value={forms.lark} onChange={(p) => updateChannel("lark", p)} testing={testingLark} onTest={onTestLark} /> : null}
+                <NotificationDeviceScope value={forms[activeTab as keyof NotifyForms].deviceIds} devices={devices} failed={devicesFailed}
+                  onChange={deviceIds => updateChannel(activeTab as keyof NotifyForms, { deviceIds })} />
+              </fieldset>
+            )}
           </div>
-          {loadingNotif ? (
-            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">{t("正在加载通知配置…")}</div>
-          ) : (
-            <fieldset disabled={savingNotif} className="relative z-10 min-w-0 w-full overflow-hidden">
-              <SegmentedTabs tabs={NOTIFY_TABS.map((tab) => ({ ...tab, label: t(tab.label) }))} value={activeTab} onChange={setActiveTab} />
-              {activeTab === "meow" ? <MeowTab value={forms.meow} onChange={(p) => updateChannel("meow", p)} testing={testingMeow} onTest={onTestMeow} /> : null}
-              {activeTab === "telegram" ? (
-                <TelegramTab onClear={() => void clearChannel("telegram")} value={forms.telegram} onChange={(p) => updateChannel("telegram", p)} />
-              ) : null}
-              {activeTab === "bark" ? (
-                <BarkTab value={forms.bark} onChange={(p) => updateChannel("bark", p)} testing={testingBark} onTest={onTestBark}
-                  devices={devices} devicesFailed={devicesFailed} />
-              ) : null}
-              {activeTab === "email" ? (
-                <EmailTab onClear={() => void clearChannel("email")} value={forms.email} onChange={(p) => updateChannel("email", p)} testing={testingEmail} onTest={onTestEmail} />
-              ) : null}
-              {activeTab === "pushplus" ? (
-                <PushplusTab value={forms.pushplus} onChange={(p) => updateChannel("pushplus", p)} />
-              ) : null}
-              {activeTab === "webhook" ? (
-                <WebhookTab
-                  value={forms.webhook}
-                  onChange={(p) => updateChannel("webhook", p)}
-                  testing={testingWebhook}
-                  onTest={onTestWebhook}
-                />
-              ) : null}
-              {activeTab === "wecom" ? (
-                <WecomTab value={forms.wecom} onChange={(p) => updateChannel("wecom", p)} testing={testingWecom} onTest={onTestWecom} />
-              ) : null}
-              {activeTab === "lark" ? (
-                <LarkTab value={forms.lark} onChange={(p) => updateChannel("lark", p)} testing={testingLark} onTest={onTestLark} />
-              ) : null}
-              <NotificationDeviceScope value={forms[activeTab as keyof NotifyForms].deviceIds} devices={devices} failed={devicesFailed}
-                onChange={deviceIds => updateChannel(activeTab as keyof NotifyForms, { deviceIds })} />
-            </fieldset>
-          )}
-        </div>
-        <SSOCard />
+        ) : null}
       </div>
-    </div>
+    </Page>
   );
+
+  function renderRow(item: SettingsSection) {
+    return (
+      <ListRow
+        key={item.key}
+        to={`/settings/${item.key}`}
+        icon={item.icon}
+        iconColor={item.tint}
+        title={t(item.label)}
+        detail={item.detail}
+        accessory={item.badge ? <Badge count={item.badge} /> : undefined}
+      />
+    );
+  }
 }

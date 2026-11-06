@@ -14,6 +14,8 @@ export interface Appearance {
   dynamicHighlight: boolean;
   /** Increase Contrast: more opaque glass, darker secondary text. */
   increaseContrast: boolean;
+  /** Bold Text: every text style uses its emphasized weight (HIG Typography). */
+  boldText: boolean;
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -21,6 +23,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   motion: "system",
   dynamicHighlight: true,
   increaseContrast: false,
+  boldText: false,
 };
 
 /** Named stops shown under the clarity slider. */
@@ -48,6 +51,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
     motion: MOTIONS.includes(value.motion as MotionPreference) ? (value.motion as MotionPreference) : DEFAULT_APPEARANCE.motion,
     dynamicHighlight: typeof value.dynamicHighlight === "boolean" ? value.dynamicHighlight : DEFAULT_APPEARANCE.dynamicHighlight,
     increaseContrast: typeof value.increaseContrast === "boolean" ? value.increaseContrast : DEFAULT_APPEARANCE.increaseContrast,
+    boldText: typeof value.boldText === "boolean" ? value.boldText : DEFAULT_APPEARANCE.boldText,
   };
 }
 
@@ -72,6 +76,7 @@ export function appearanceAttributes(appearance: Appearance, systemReduced: bool
     motion: resolveMotion(appearance.motion, systemReduced),
     highlight: appearance.dynamicHighlight ? "dynamic" : "static",
     contrast: appearance.increaseContrast ? "high" : "normal",
+    bold: appearance.boldText ? "on" : "off",
   };
 }
 

@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type UIEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ArrowDownloadRegular, ComposeRegular, DeleteRegular } from "@fluentui/react-icons";
-import { BarButton, ContextMenu } from "../components/ios";
-import { useShell } from "../components/shell/ShellContext";
+import { BarGroup, ContextMenu, GroupButton } from "../components/ios";
 import { SmsExportModal } from "../components/sms/SmsExportModal";
 import { ApiError, apiMessage } from "../api";
 import { ErrorState, confirmDialog, message } from "../components/ui";
@@ -623,20 +622,14 @@ export default function SmsPage() {
 
   useEffect(() => () => clearLongPress(), [clearLongPress]);
 
-  const { setTabBarHidden } = useShell();
-  // A conversation on a phone is a pushed screen without the tab bar.
-  const inConversation = isMobile && hasActiveThread;
-  useEffect(() => {
-    setTabBarHidden(inConversation);
-    return () => setTabBarHidden(false);
-  }, [inConversation, setTabBarHidden]);
-
   const listHeader = (
     <div className="mb-3 flex items-end justify-between gap-3 pt-[max(8px,env(safe-area-inset-top))]">
       <h1 className="ios-large-title text-label">{t("信息")}</h1>
       <div className="flex items-center gap-2 pb-1">
-        <BarButton icon={<ArrowDownloadRegular />} aria-label={t("导出短信")} title={t("导出短信")} onClick={() => setExportOpen(true)} />
-        <BarButton icon={<ComposeRegular />} accent aria-label={t("新信息")} title={t("新信息")} onClick={openNewSms} />
+        <BarGroup>
+          <GroupButton icon={<ArrowDownloadRegular />} aria-label={t("导出短信")} title={t("导出短信")} onClick={() => setExportOpen(true)} />
+          <GroupButton icon={<ComposeRegular />} aria-label={t("新信息")} title={t("新信息")} onClick={openNewSms} />
+        </BarGroup>
       </div>
     </div>
   );
@@ -671,7 +664,7 @@ export default function SmsPage() {
       ) : null}
       <div className={cx("flex min-h-0 flex-1", isDesktop && "gap-0 md:p-2.5 md:pl-0")}>
         {showContactColumn ? (
-          <div className={cx("flex min-h-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[24px] md:border-r-[0.5px] md:border-separator" : "flex-1 ios-push")}>
+          <div className={cx("flex min-h-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[24px] md:border-r-[0.5px] md:border-separator" : "flex-1")}>
             <ContactList
               isMobile={isMobile}
               isDesktop={isDesktop}
