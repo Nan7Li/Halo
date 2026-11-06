@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type UIEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ArrowDownloadRegular, ComposeRegular, DeleteRegular } from "@fluentui/react-icons";
-import { BarGroup, ContextMenu, GroupButton } from "../components/ios";
+import { BarGroup, ContextMenu, GroupButton, useIsMac } from "../components/ios";
 import { SmsExportModal } from "../components/sms/SmsExportModal";
 import { ApiError, apiMessage } from "../api";
 import { ErrorState, confirmDialog, message } from "../components/ui";
@@ -621,11 +621,21 @@ export default function SmsPage() {
   }, []);
 
   useEffect(() => () => clearLongPress(), [clearLongPress]);
+  // Split view (iPad/Mac): open the newest conversation instead of leaving
+  // the detail pane empty, as Messages does.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!isDesktop || autoOpened.current || selectedKey || !filteredContacts.length) return;
+    autoOpened.current = true;
+    void selectContact(filteredContacts[0].key);
+  }, [isDesktop, selectedKey, filteredContacts, selectContact]);
+  const mac = useIsMac();
 
+  // macOS: the title sits in the 52pt toolbar row; iOS: large title.
   const listHeader = (
-    <div className="mb-3 flex items-end justify-between gap-3 pt-[max(8px,env(safe-area-inset-top))]">
-      <h1 className="ios-large-title text-label">{t("信息")}</h1>
-      <div className="flex items-center gap-2 pb-1">
+    <div className={cx("flex justify-between gap-3", mac ? "-mx-1 mb-2 h-[52px] items-center" : "mb-3 items-end pt-[max(8px,env(safe-area-inset-top))]")}>
+      <h1 className={mac ? "text-[15px] font-bold leading-5 tracking-[-0.016em] text-label" : "ios-large-title text-label"}>{t("信息")}</h1>
+      <div className={cx("flex items-center gap-2", !mac && "pb-1")}>
         <BarGroup>
           <GroupButton icon={<ArrowDownloadRegular />} aria-label={t("导出短信")} title={t("导出短信")} onClick={() => setExportOpen(true)} />
           <GroupButton icon={<ComposeRegular />} aria-label={t("新信息")} title={t("新信息")} onClick={openNewSms} />
@@ -664,7 +674,7 @@ export default function SmsPage() {
       ) : null}
       <div className={cx("flex min-h-0 flex-1", isDesktop && "gap-0 md:p-2.5 md:pl-0")}>
         {showContactColumn ? (
-          <div className={cx("flex min-h-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[24px] md:border-r-[0.5px] md:border-separator" : "flex-1")}>
+          <div className={cx("flex min-h-0 flex-col bg-bg", isDesktop ? "w-[340px] shrink-0 overflow-hidden md:rounded-l-[var(--radius-xl)] md:border-r-[0.5px] md:border-separator" : "flex-1")}>
             <ContactList
               isMobile={isMobile}
               isDesktop={isDesktop}
@@ -689,7 +699,7 @@ export default function SmsPage() {
           </div>
         ) : null}
         {showDetailColumn ? (
-          <div className={cx("flex min-h-0 min-w-0 flex-1 overflow-hidden", isDesktop ? "md:rounded-r-[24px]" : "ios-push")}>
+          <div className={cx("flex min-h-0 min-w-0 flex-1 overflow-hidden", isDesktop ? "md:rounded-r-[var(--radius-xl)]" : "ios-push")}>
             <ThreadPanel
               isMobile={isMobile}
               isDesktop={isDesktop}

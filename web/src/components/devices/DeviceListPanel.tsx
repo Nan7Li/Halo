@@ -1,8 +1,12 @@
+import { useState } from "react";
+import { CheckmarkRegular, FilterRegular } from "@fluentui/react-icons";
 import type { DeviceListItem } from "../../types";
-import { Input, Select, Tag, ListSkeleton, EmptyState } from "../ui";
-import { isDeviceOnline, isRegistered, isVoWiFiInUse, lifecycleLabel } from "./shared";
-import { DeviceListItemCard } from "./DeviceListItemCard";
+import { ListSkeleton } from "../ui";
+import { ContentUnavailable, ContextMenu, ListRow, ListSection, SearchField } from "../ios";
+import { deviceStatusMeta, isDeviceOnline, isRegistered, isVoWiFiInUse, lifecycleLabel } from "./shared";
+import { deviceTypeImage } from "../../lib/deviceTypes";
 import { tl, useI18n } from "../../lib/i18n";
+import { cx } from "../../lib/utils";
 
 export type StatusFilter = "all" | "online" | "offline";
 export type SortKey = "name" | "signal";
@@ -18,6 +22,8 @@ export interface DeviceListPanelProps {
   filteredDevices: DeviceListItem[];
   deviceCount: number;
   deviceLimit: number;
+  /** Highlight the selected row (split view); phones push instead. */
+  showSelection?: boolean;
   onQueryChange: (v: string) => void;
   onStatusFilterChange: (v: StatusFilter) => void;
   onSortKeyChange: (v: SortKey) => void;
@@ -40,73 +46,93 @@ function primaryLine(d: DeviceListItem): string {
 }
 
 function statusLine(d: DeviceListItem): string {
-  if (isVoWiFiInUse(d)) return "WiFi-Calling";
+  if (isVoWiFiInUse(d)) return "Wi-Fi Calling";
   return primaryLine(d);
 }
 
+const TONE: Record<string, string> = { success: "text-sys-green", warning: "text-sys-orange", danger: "text-sys-red" };
+
+/**
+ * Device list in iOS style: search field and a filter menu above an inset
+ * grouped list. Filtering and sorting live in one menu, like Mail's filter
+ * button, instead of three dropdowns.
+ */
 export function DeviceListPanel(props: DeviceListPanelProps) {
   const { t } = useI18n();
-  const { loading, query, statusFilter, sortKey, sortDir, selectedId, filteredDevices, deviceCount, deviceLimit } = props;
+  const { loading, query, statusFilter, sortKey, sortDir, selectedId, filteredDevices, deviceCount, deviceLimit, showSelection } = props;
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const filtered = statusFilter !== "all" || sortKey !== "name" || sortDir !== "asc";
+  const check = (on: boolean) => (on ? <CheckmarkRegular /> : <span className="inline-block w-[18px]" />);
+
   return (
-    <div className="ui-card p-4 sm:p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <Input value={query} onChange={(e) => props.onQueryChange(e.target.value)} placeholder={t("搜索设备 / ICCID / IMEI / 网卡")} />
+    <div className="min-w-0">
+      <div className="mb-4 flex items-center gap-2">
+        <SearchField value={query} onChange={props.onQueryChange} placeholder={t("搜索设备 / ICCID / IMEI / 网卡")} className="min-w-0 flex-1" />
+        <button
+          type="button"
+          aria-label={t("筛选与排序")}
+          title={t("筛选与排序")}
+          onClick={(event) => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            setMenu({ x: rect.right, y: rect.bottom });
+          }}
+          className={cx(
+            "ios-search-chip inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:h-5 [&_svg]:w-5",
+            filtered ? "bg-accent text-[var(--color-on-primary)]" : "bg-fill-3 text-label",
+          )}
+        >
+          <FilterRegular />
+        </button>
       </div>
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <Select
-          value={statusFilter}
-          onChange={(v) => props.onStatusFilterChange(v as StatusFilter)}
-          placeholder={t("在线")}
-          options={[
-            { value: "all", label: t("全部状态") },
-            { value: "online", label: t("仅在线") },
-            { value: "offline", label: t("仅离线") },
-          ]}
-        />
-        <Select
-          value={sortKey}
-          onChange={(v) => props.onSortKeyChange(v as SortKey)}
-          placeholder={t("排序")}
-          options={[
-            { value: "name", label: t("排序：名称") },
-            { value: "signal", label: t("排序：信号") },
-          ]}
-        />
-        <Select
-          value={sortDir}
-          onChange={(v) => props.onSortDirChange(v as SortDir)}
-          placeholder={t("方向")}
-          options={[
-            { value: "asc", label: t("升序") },
-            { value: "desc", label: t("降序") },
-          ]}
-        />
-        {deviceLimit > 0 ? (
-          <div className="flex items-center">
-            <Tag type={deviceCount >= deviceLimit ? "warning" : "info"} className="w-full justify-center">
-              {t("配额")} {deviceCount} / {deviceLimit}
-            </Tag>
-          </div>
-        ) : null}
-      </div>
+      <ContextMenu
+        open={Boolean(menu)}
+        anchor={menu}
+        onClose={() => setMenu(null)}
+        title={t("显示")}
+        items={[
+          { label: t("全部设备"), icon: check(statusFilter === "all"), onSelect: () => props.onStatusFilterChange("all") },
+          { label: t("仅在线"), icon: check(statusFilter === "online"), onSelect: () => props.onStatusFilterChange("online") },
+          { label: t("仅离线"), icon: check(statusFilter === "offline"), onSelect: () => props.onStatusFilterChange("offline") },
+          { label: t("按名称排序"), icon: check(sortKey === "name"), onSelect: () => props.onSortKeyChange("name") },
+          { label: t("按信号排序"), icon: check(sortKey === "signal"), onSelect: () => props.onSortKeyChange("signal") },
+          { label: sortDir === "asc" ? t("改为降序") : t("改为升序"), onSelect: () => props.onSortDirChange(sortDir === "asc" ? "desc" : "asc") },
+        ]}
+      />
       {loading && filteredDevices.length === 0 ? (
-        <ListSkeleton rows={8} />
+        <ListSkeleton rows={4} />
       ) : filteredDevices.length === 0 ? (
-        <EmptyState title={t("暂无设备")} subtitle={t("点击右上角“添加设备”开始接管")} />
+        <ContentUnavailable
+          title={query ? t("无结果") : t("暂无设备")}
+          description={query ? undefined : t("点击右上角 + 开始接管设备")}
+        />
       ) : (
-        <div className="device-list-scroll max-h-[65vh] overflow-y-auto pr-1">
-          <div className="device-list-grid">
-            {filteredDevices.map((d) => (
-              <DeviceListItemCard
-                key={d.id}
-                device={d}
-                selected={selectedId === d.id}
-                statusText={statusLine(d)}
-                onSelect={props.onSelectDevice}
+        <ListSection footer={deviceLimit > 0 ? `${t("已使用配额")} ${deviceCount} / ${deviceLimit}` : undefined}>
+          {filteredDevices.map((device) => {
+            const meta = deviceStatusMeta(device);
+            const selected = showSelection && selectedId === device.id;
+            return (
+              <ListRow
+                key={device.id}
+                onClick={() => props.onSelectDevice(device.id)}
+                chevron={!showSelection}
+                className={cx(selected && "is-selected")}
+                leading={
+                  <span className="ios-row-thumb">
+                    <img src={deviceTypeImage(device.deviceType)} alt="" />
+                  </span>
+                }
+                title={<span className="font-semibold">{device.name || device.id}</span>}
+                subtitle={statusLine(device)}
+                accessory={
+                  <span className={cx("flex shrink-0 items-center gap-1.5 ios-footnote font-medium", TONE[meta.tone] ?? "text-label-2")}>
+                    <span className={cx("h-2 w-2 rounded-full bg-current", meta.animated && "animate-pulse")} />
+                    {meta.label}
+                  </span>
+                }
               />
-            ))}
-          </div>
-        </div>
+            );
+          })}
+        </ListSection>
       )}
     </div>
   );

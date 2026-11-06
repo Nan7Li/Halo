@@ -255,7 +255,7 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
   --ui-backdrop: none;
   --ui-radius-sm: 10px;
   --ui-radius-md: 14px;
-  --ui-radius-lg: 18px;
+  --ui-radius-lg: var(--radius-lg);
   --ui-radius-xl: 22px;
   --ui-shadow-sm: none;
   --ui-shadow-md: none;

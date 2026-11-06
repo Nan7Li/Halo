@@ -748,3 +748,64 @@ html[data-motion="reduced"] .ios-sheet-root.is-closing .ios-sheet { transform: n
    title and centered content move out of its way. */
 .ios-scroll.has-top-tabbar .ios-navbar-title { display: none; }
 .ios-scroll.has-top-tabbar .ios-navbar { height: 68px; }
+
+/* Device photo in a list row: a 40pt continuous-corner tile. */
+.ios-row-thumb {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--ios-fill-4);
+}
+.ios-row-thumb img { width: 32px; height: 32px; object-fit: contain; }
+/* Selected row in a split view list (iPad/Mac): tinted like the sidebar. */
+.ios-row.is-selected,
+.ios-row.is-selected:hover { background: rgb(var(--color-primary-rgb) / 0.14); }
+html.dark .ios-row.is-selected { background: rgb(var(--color-primary-rgb) / 0.24); }
+
+/* ---- Device detail: hero and control tiles ---- */
+.ios-device-hero {
+  display: inline-flex;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgb(var(--ios-grouped-2));
+}
+.ios-device-hero img { width: 56px; height: 56px; object-fit: contain; }
+.ios-control-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 768px) { .ios-control-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+/* Like the action buttons under a contact card: symbol over label. */
+.ios-control-tile {
+  display: flex;
+  min-width: 0;
+  height: 64px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 16px;
+  background: rgb(var(--ios-grouped-2));
+  transition: background-color 240ms var(--spring-smooth), color 240ms var(--spring-smooth), transform 260ms var(--spring-bouncy);
+}
+.ios-control-tile.is-on { color: #fff; }
+.ios-control-tile-icon { display: inline-flex; height: 24px; align-items: center; }
+.ios-control-tile-icon svg { width: 24px; height: 24px; }
+.ios-control-tile-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; line-height: 16px; font-weight: 500; }
+@supports (corner-shape: superellipse(1.5)) { .ios-control-tile, .ios-device-hero, .ios-row-thumb { corner-shape: superellipse(1.5); } }
+
+/* Device tabs sit directly on the grouped background now, so their muted
+   panels become the white inset-grouped cards they are. */
+.device-detail-tabs .ui-panel-muted,
+.device-detail-tabs .ui-card {
+  background: rgb(var(--ios-grouped-2));
+  border: 0;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}

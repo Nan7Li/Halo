@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowSyncRegular, AddRegular, ChevronLeftRegular } from "@fluentui/react-icons";
+import { ArrowClockwiseRegular, AddRegular, RouterRegular, ScanRegular } from "@fluentui/react-icons";
+import { BackButton, BarGroup, ContentUnavailable, GroupButton, Page } from "../components/ios";
+import { cx } from "../lib/utils";
 import { api, apiMessage, camelize } from "../api";
 import type { CardPolicy, DeviceConfig, DeviceListItem, DiscoveredDevice } from "../types";
 import { usePolling } from "../lib/usePolling";
 import { useMediaQuery } from "../lib/useMediaQuery";
-import { Button, PageFrame, PageHeader, RefreshButton, ErrorState, ListSkeleton, Tabs, confirmDialog, message } from "../components/ui";
+import { ErrorState, ListSkeleton, Tabs, confirmDialog, message } from "../components/ui";
 import { DeviceListPanel, type StatusFilter, type SortDir, type SortKey } from "../components/devices/DeviceListPanel";
 import { DeviceDetailHeader } from "../components/devices/DeviceDetailHeader";
 import { DeviceOverviewTab } from "../components/devices/DeviceOverviewTab";
@@ -715,30 +717,55 @@ export default function DevicesPage() {
     </div>
   ) : null;
 
+  const pushed = isMobile && Boolean(selectedId);
+  const listPanel = (
+    <DeviceListPanel
+      loading={listLoading}
+      query={query}
+      statusFilter={statusFilter}
+      sortKey={sortKey}
+      sortDir={sortDir}
+      selectedId={selectedId}
+      filteredDevices={filteredDevices}
+      deviceCount={list.length}
+      deviceLimit={deviceLimit}
+      showSelection={!isMobile}
+      onQueryChange={setQuery}
+      onStatusFilterChange={setStatusFilter}
+      onSortKeyChange={setSortKey}
+      onSortDirChange={setSortDir}
+      onSelectDevice={(id) => selectDevice(id)}
+    />
+  );
+
+  // iOS: the list is the root screen and a device pushes in with a Back
+  // chevron. iPad/Mac: a split view, list on the leading side.
   return (
-    <PageFrame className="devices-page" wide>
-      <PageHeader
-        title={t("设备管理")}
-        subtitle={t("接管 EC20 模组并执行射频、网络、SIM 与终端功能检测")}
-        actions={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <RefreshButton loading={listLoading} onClick={refreshAll} />
-            <Button loading={rescanning} onClick={handleRescan} icon={<ArrowSyncRegular />}>
-              {t("重新扫描")}
-            </Button>
-            <Button
-              variant="primary"
-              onClick={openAddDialog}
-              disabled={addAtLimit}
-              title={addAtLimit ? t("设备数量已达上限，无法继续添加") : undefined}
-              className="!border-0"
-              icon={<AddRegular />}
-            >
-              {t("添加设备")}
-            </Button>
-          </div>
-        }
-      />
+    <Page
+      key={pushed ? "detail" : "list"}
+      className={cx("devices-page", pushed && "ios-push")}
+      wide={!isMobile}
+      title={pushed ? detail?.name || selectedId : t("设备")}
+      largeTitle={!pushed}
+      leading={pushed ? <BackButton onBack={handleBackToList} label={t("设备")} /> : null}
+      trailing={
+        <BarGroup>
+          <GroupButton icon={<ArrowClockwiseRegular className={cx(listLoading && "animate-spin")} />} aria-label={t("刷新")} title={t("刷新")} onClick={refreshAll} />
+          {pushed ? null : (
+            <>
+          <GroupButton icon={<ScanRegular className={cx(rescanning && "animate-pulse")} />} aria-label={t("重新扫描")} title={t("重新扫描")} onClick={handleRescan} disabled={rescanning} />
+              <GroupButton
+                icon={<AddRegular />}
+                aria-label={t("添加设备")}
+                title={addAtLimit ? t("设备数量已达上限，无法继续添加") : t("添加设备")}
+                onClick={openAddDialog}
+                disabled={addAtLimit}
+              />
+            </>
+          )}
+        </BarGroup>
+      }
+    >
       {listError ? (
         <ErrorState
           className="mb-4"
@@ -750,55 +777,33 @@ export default function DevicesPage() {
           onRetry={() => void loadDevices(true)}
         />
       ) : null}
-      <div className="devices-layout">
-        {(!isMobile || !selectedId) && (
-          <DeviceListPanel
-            loading={listLoading}
-            query={query}
-            statusFilter={statusFilter}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            selectedId={selectedId}
-            filteredDevices={filteredDevices}
-            deviceCount={list.length}
-            deviceLimit={deviceLimit}
-            onQueryChange={setQuery}
-            onStatusFilterChange={setStatusFilter}
-            onSortKeyChange={setSortKey}
-            onSortDirChange={setSortDir}
-            onSelectDevice={(id) => selectDevice(id)}
-          />
-        )}
-        <div className={`min-w-0 space-y-4 ${isMobile && selectedId ? "" : isMobile ? "hidden" : ""}`}>
-          {isMobile && selectedId && detail ? (
-            <Button variant="text" onClick={handleBackToList} icon={<ChevronLeftRegular />}>
-              {t("返回")}
-            </Button>
-          ) : null}
-          {detail ? (
-            <>
-			<DeviceDetailHeader
-				device={detail}
-				dataToggling={dataToggling || detail.modemPhase === "rebooting" || ["starting", "stopping"].includes(detail.networkPhase || "")}
-				dataToggleTarget={detail.modemPhase === "rebooting" ? null : dataToggling ? dataToggleTarget : detail.networkPhase === "starting" ? true : detail.networkPhase === "stopping" ? false : null}
-				modemRebooting={detail.modemPhase === "rebooting"}
-                rebooting={rebooting}
-                reconnectingVoWiFi={reconnectingVoWiFi}
-                onCopyText={handleCopyText}
-				onToggleRoamingData={handleToggleRoamingData}
-                onReconnectVowifi={handleReconnectVoWiFi}
-                onRebootModem={handleRebootModem}
-                onOpenSms={handleOpenSms}
-				onToggleAirplane={handleToggleAirplane}
-				onToggleVoWiFi={handleToggleVoWiFi}
-				airplaneToggling={airplaneToggling}
-				vowifiToggling={vowifiToggling}
-				wifiCallingOnly={isReader}
-				modemControlOnly={isNative410}
-              />
-              <div className="device-detail-tabs ui-card p-4 sm:p-6">
-                <Tabs tabs={tabItems} value={activeTab} onChange={handleTabChange} />
-                <div className="mt-5">
+      <div className={cx(!isMobile && "grid grid-cols-[300px_minmax(0,1fr)] items-start gap-6 xl:grid-cols-[340px_minmax(0,1fr)]")}>
+        {!pushed ? <div className={cx(!isMobile && "sticky top-16")}>{listPanel}</div> : null}
+        {isMobile && !pushed ? null : (
+          <div className="min-w-0">
+            {detail ? (
+              <>
+                <DeviceDetailHeader
+                  device={detail}
+                  dataToggling={dataToggling || detail.modemPhase === "rebooting" || ["starting", "stopping"].includes(detail.networkPhase || "")}
+                  dataToggleTarget={detail.modemPhase === "rebooting" ? null : dataToggling ? dataToggleTarget : detail.networkPhase === "starting" ? true : detail.networkPhase === "stopping" ? false : null}
+                  modemRebooting={detail.modemPhase === "rebooting"}
+                  rebooting={rebooting}
+                  reconnectingVoWiFi={reconnectingVoWiFi}
+                  onCopyText={handleCopyText}
+                  onToggleRoamingData={handleToggleRoamingData}
+                  onReconnectVowifi={handleReconnectVoWiFi}
+                  onRebootModem={handleRebootModem}
+                  onOpenSms={handleOpenSms}
+                  onToggleAirplane={handleToggleAirplane}
+                  onToggleVoWiFi={handleToggleVoWiFi}
+                  airplaneToggling={airplaneToggling}
+                  vowifiToggling={vowifiToggling}
+                  wifiCallingOnly={isReader}
+                  modemControlOnly={isNative410}
+                />
+                <div className="device-detail-tabs">
+                  <Tabs tabs={tabItems} value={activeTab} onChange={handleTabChange} className="mb-5" />
                   {activeTab === "overview" ? overviewNode : null}
                   {activeTab === "esim" ? (
                     <DeviceEsimTab
@@ -822,16 +827,18 @@ export default function DevicesPage() {
                     <CardPolicyPanel deviceId={detail.id} iccid={detail.modem?.iccid} policy={cardPolicy} deviceOnline={detailOnline} onPolicyChanged={handlePolicyChanged} wifiCallingOnly={isReader} />
                   ) : null}
                 </div>
-              </div>
-            </>
-          ) : listLoading ? (
-            <ListSkeleton rows={8} />
-          ) : (
-            <div className="ui-card p-10 text-center text-sm text-gray-400">
-              {list.length === 0 ? t("暂无设备，点击右上角“添加设备”开始接管") : t("请选择左侧设备查看详情")}
-            </div>
-          )}
-        </div>
+              </>
+            ) : listLoading ? (
+              <ListSkeleton rows={8} />
+            ) : (
+              <ContentUnavailable
+                icon={<RouterRegular />}
+                title={list.length === 0 ? t("暂无设备") : t("未选择设备")}
+                description={list.length === 0 ? t("点击右上角 + 开始接管设备") : t("从左侧列表选择一台设备")}
+              />
+            )}
+          </div>
+        )}
       </div>
       <DeviceAddDialog
         open={addOpen}
@@ -853,6 +860,6 @@ export default function DevicesPage() {
         onClose={() => setWebsheetOpen(false)}
         onDone={handleWebsheetDone}
       />
-    </PageFrame>
+    </Page>
   );
 }

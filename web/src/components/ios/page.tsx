@@ -100,14 +100,14 @@ export const BarButton = forwardRef<HTMLButtonElement, BarButtonProps>(function 
 });
 
 /** Standard Back: the chevron symbol only, no "Back" text (HIG Toolbars). */
-export function BackButton({ to, label }: { to?: string; label?: ReactNode }) {
+export function BackButton({ to, label, onBack }: { to?: string; label?: ReactNode; onBack?: () => void }) {
   const navigate = useNavigate();
   const { t } = useI18n();
   return (
     <BarButton
       icon={<ChevronLeftRegular />}
       aria-label={typeof label === "string" ? `${t("返回")} ${label}` : t("返回")}
-      onClick={() => (to ? navigate(to) : navigate(-1))}
+      onClick={() => (onBack ? onBack() : to ? navigate(to) : navigate(-1))}
     />
   );
 }

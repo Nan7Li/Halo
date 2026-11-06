@@ -7,6 +7,10 @@ import { glassClass } from "../ios/core";
 import { BrandLogo } from "./BrandLogo";
 import { VersionBadge } from "./VersionBadge";
 import { PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
+import { useCalls } from "../phone/CallProvider";
+import { deviceStatusMeta, isVoWiFiInUse } from "../devices/shared";
+
+const DOT: Record<string, string> = { success: "bg-sys-green", warning: "bg-sys-orange", danger: "bg-label-4" };
 
 /**
  * iPadOS 27 floating glass sidebar (the regular, more opaque variant). Its
@@ -25,7 +29,9 @@ export function Sidebar({
 }) {
   const { t } = useI18n();
   const { user } = useAuth();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const { lines } = useCalls();
+  const openDevice = pathname.startsWith("/devices") ? new URLSearchParams(search).get("device") : null;
 
   const renderItem = (item: NavItem) => {
     const label = item.literal ? item.label : t(item.label);
@@ -68,6 +74,31 @@ export function Sidebar({
 
       <nav className="min-h-0 flex-1 overflow-y-auto pb-3">
         {PRIMARY_NAV.map(renderItem)}
+        {lines.length ? (
+          <>
+            {/* Like Finder's Locations: every module with its live state. */}
+            <div className="ios-sidebar-heading">{t("设备")}</div>
+            {lines.map((device) => {
+              const meta = deviceStatusMeta(device);
+              return (
+                <NavLink
+                  key={device.id}
+                  to={`/devices?device=${encodeURIComponent(device.id)}&tab=overview`}
+                  className={cx("ios-sidebar-item", openDevice === device.id && "is-active")}
+                  title={`${device.name || device.id} · ${meta.label}`}
+                >
+                  <span className="ios-sidebar-icon items-center justify-center">
+                    <span className={cx("h-2 w-2 rounded-full", DOT[meta.tone] ?? "bg-label-4")} />
+                  </span>
+                  <span className="ios-sidebar-label min-w-0 flex-1 truncate">{device.name || device.id}</span>
+                  <span className="ios-sidebar-label shrink-0 ios-caption text-label-3">
+                    {isVoWiFiInUse(device) ? "Wi-Fi" : device.modem?.networkMode || ""}
+                  </span>
+                </NavLink>
+              );
+            })}
+          </>
+        ) : null}
         <div className="ios-sidebar-heading">{t("网络与自动化")}</div>
         {SECONDARY_NAV.slice(0, 2).map(renderItem)}
         {extensions.length ? <div className="ios-sidebar-heading">{t("扩展")}</div> : null}

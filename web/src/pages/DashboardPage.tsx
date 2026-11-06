@@ -2,7 +2,10 @@ import { useCallback, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowDownRegular, ArrowUpRegular, ClockRegular, GlobeRegular, RouterRegular, ServerRegular, SendClockRegular } from "@fluentui/react-icons";
 import { api } from "../api";
-import type { DashboardDevice, DashboardHost, DashboardUpcomingTask } from "../types";
+import type { CallRecord, CallRecordsResponse, DashboardDevice, DashboardHost, DashboardUpcomingTask, SMSContact } from "../types";
+import { formatNumber, formatRecentTime } from "../components/phone/model";
+import { deriveThread, sortThreads, type SmsThread } from "../components/sms/smsText";
+import { CallInboundRegular, CallMissedRegular, CallOutboundRegular} from "@fluentui/react-icons";
 import { usePolling } from "../lib/usePolling";
 import { useI18n } from "../lib/i18n";
 import { cx } from "../lib/utils";
@@ -14,6 +17,8 @@ import { ArrowSyncRegular } from "@fluentui/react-icons";
 interface LoadError { message: string; status?: number }
 
 const UPCOMING_TASK_COUNT = 3;
+/** Two minutes of host samples at the 2 s poll. */
+const RATE_SAMPLES = 60;
 const TASKS_POLL_INTERVAL = 15000;
 
 function formatBytes(value: number) {
@@ -37,6 +42,7 @@ export default function DashboardPage() {
   const [devicesOkAt, setDevicesOkAt] = useState<number | null>(null);
   const [host, setHost] = useState<DashboardHost | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState<DashboardUpcomingTask[]>([]);
+  const [rates, setRates] = useState<Array<{ rx: number; tx: number }>>([]);
 
   const fetchDevices = useCallback(async () => {
     setDevicesLoading(true);
@@ -55,7 +61,10 @@ export default function DashboardPage() {
 
   const fetchHost = useCallback(async () => {
     try {
-      setHost(await api<DashboardHost>("/dashboard/host"));
+      const next = await api<DashboardHost>("/dashboard/host");
+      setHost(next);
+      const perf = next?.perf;
+      if (perf) setRates((list) => [...list.slice(-(RATE_SAMPLES - 1)), { rx: perf.netRxBps || 0, tx: perf.netTxBps || 0 }]);
     } catch {
       /* keep the last good sample */
     }
@@ -74,6 +83,22 @@ export default function DashboardPage() {
       /* keep the last list */
     }
   }, []);
+
+  // Recent activity fills the overview the way the iOS Phone and Messages
+  // widgets do: the last few calls and conversations, one tap away.
+  const [calls, setCalls] = useState<CallRecord[] | null>(null);
+  const [threads, setThreads] = useState<SmsThread[] | null>(null);
+  const fetchActivity = useCallback(async () => {
+    const [callResult, smsResult] = await Promise.allSettled([
+      api<CallRecordsResponse>("/calls/history?limit=5"),
+      api<SMSContact[]>("/sms/contacts?limit=20"),
+    ]);
+    if (callResult.status === "fulfilled") setCalls((callResult.value?.records || []).slice(0, 5));
+    else setCalls((current) => current ?? []);
+    if (smsResult.status === "fulfilled") setThreads(sortThreads((smsResult.value || []).map(deriveThread)).slice(0, 5));
+    else setThreads((current) => current ?? []);
+  }, []);
+  usePolling(fetchActivity, 15000);
 
   usePolling(fetchDevices, 5000);
   usePolling(fetchHost, 2000);
@@ -115,9 +140,12 @@ export default function DashboardPage() {
               ))}
             </ul>
           ) : (
-            <div className="flex items-center gap-2 pt-1 ios-footnote text-label-2">
-              <ClockRegular className="h-4 w-4" />
-              {t("没有计划中的任务")}
+            <div>
+              <div className="flex items-center gap-2 ios-footnote text-label-2">
+                <ClockRegular className="h-4 w-4" />
+                {t("没有计划中的任务")}
+              </div>
+              <div className="mt-2 ios-subhead font-semibold text-accent">{t("新建任务")}</div>
             </div>
           )}
         </Widget>
@@ -138,13 +166,60 @@ export default function DashboardPage() {
             <RateLine icon={<ArrowDownRegular />} label={t("下载")} value={perf ? formatRate(perf.netRxBps) : "—"} tint="teal" />
             <RateLine icon={<ArrowUpRegular />} label={t("上传")} value={perf ? formatRate(perf.netTxBps) : "—"} tint="blue" />
           </div>
-          {perf ? (
-            <div className="mt-3 ios-caption text-label-2">
-              {t("内存")} {formatBytes(perf.memoryUsedBytes)} / {formatBytes(perf.memoryTotalBytes)}
-            </div>
-          ) : null}
+          <Sparkline samples={rates} />
         </Widget>
 
+      </div>
+
+      <div className="grid gap-x-6 lg:grid-cols-2">
+        <ListSection header={<SectionLink label={t("最近通话")} onClick={() => navigate("/phone")} />} prominent>
+          {calls === null ? (
+            <ListSkeleton rows={3} />
+          ) : calls.length === 0 ? (
+            <div className="px-4 py-5 ios-subhead text-label-2">{t("没有最近通话")}</div>
+          ) : (
+            calls.map((call) => {
+              const missed = call.state === "missed";
+              return (
+                <ListRow
+                  key={call.id}
+                  icon={missed ? <CallMissedRegular /> : call.direction === "incoming" ? <CallInboundRegular /> : <CallOutboundRegular />}
+                  iconColor={missed ? "red" : "green"}
+                  to="/phone"
+                  chevron={false}
+                  title={<span className={cx("font-semibold", missed && "text-sys-red")}>{formatNumber(call.number)}</span>}
+                  subtitle={[devices.find((device) => device.id === call.deviceId)?.name || call.deviceId, call.transport === "vowifi" ? "Wi-Fi Calling" : t("蜂窝")].join(" · ")}
+                  detail={<span className="ios-subhead">{formatRecentTime(call.startedAt)}</span>}
+                />
+              );
+            })
+          )}
+        </ListSection>
+
+        <ListSection header={<SectionLink label={t("最近信息")} onClick={() => navigate("/sms")} />} prominent>
+          {threads === null ? (
+            <ListSkeleton rows={3} />
+          ) : threads.length === 0 ? (
+            <div className="px-4 py-5 ios-subhead text-label-2">{t("没有信息")}</div>
+          ) : (
+            threads.map((thread) => (
+              <ListRow
+                key={thread.key}
+                to={`/sms?contact=${encodeURIComponent(thread.key)}`}
+                chevron={false}
+                leading={
+                  <span className="relative">
+                    <span className="ios-avatar h-[30px] w-[30px] text-[13px]">{(thread.displayName || thread.peer || "?").replace(/^\+/, "").slice(0, 1).toUpperCase()}</span>
+                    {thread.unread ? <span className="absolute -left-2.5 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-accent" /> : null}
+                  </span>
+                }
+                title={<span className="font-semibold">{thread.displayName || thread.peer}</span>}
+                subtitle={thread.lastMessage}
+                detail={<span className="ios-subhead">{formatRecentTime(thread.lastTs ? new Date(thread.lastTs).toISOString() : undefined)}</span>}
+              />
+            ))
+          )}
+        </ListSection>
       </div>
 
       {devicesError ? (
@@ -181,6 +256,53 @@ export default function DashboardPage() {
         </ListSection>
       )}
     </Page>
+  );
+}
+
+/** Download/upload over the last two minutes, drawn like a Stocks widget line. */
+function Sparkline({ samples }: { samples: Array<{ rx: number; tx: number }> }) {
+  const width = 240;
+  const height = 44;
+  if (samples.length < 2) return <div className="mt-3 h-11" />;
+  // Headroom keeps a steady rate mid-chart instead of pinned to the top.
+  const max = Math.max(1, ...samples.map((sample) => Math.max(sample.rx, sample.tx))) * 1.3;
+  const last = samples.length - 1;
+  const path = (key: "rx" | "tx") =>
+    samples
+      .map((sample, index) => {
+        const x = (index / last) * width;
+        const y = height - 2 - (sample[key] / max) * (height - 6);
+        return `${index ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ");
+  const rx = path("rx");
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="mt-3 h-11 w-full overflow-visible" aria-hidden>
+      <defs>
+        <linearGradient id="spark-rx" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="rgb(var(--ios-teal))" stopOpacity="0.28" />
+          <stop offset="1" stopColor="rgb(var(--ios-teal))" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <g>
+        <path d={`${rx} L${width},${height} L0,${height} Z`} fill="url(#spark-rx)" />
+        <path d={rx} fill="none" stroke="rgb(var(--ios-teal))" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <path d={path("tx")} fill="none" stroke="rgb(var(--ios-blue))" strokeWidth="1.25" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />
+      </g>
+    </svg>
+  );
+}
+
+/** Prominent section header with a trailing "show all" link, like the Fitness summary. */
+function SectionLink({ label, onClick }: { label: string; onClick: () => void }) {
+  const { t } = useI18n();
+  return (
+    <span className="flex items-baseline justify-between gap-3">
+      <span>{label}</span>
+      <button type="button" onClick={onClick} className="ios-body font-normal text-accent">
+        {t("全部")}
+      </button>
+    </span>
   );
 }
 

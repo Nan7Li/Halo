@@ -1,6 +1,6 @@
 import { ArrowSyncRegular, PowerRegular, ChatRegular, Cellular4GRegular, Wifi1Regular, AirplaneRegular } from "@fluentui/react-icons";
 import type { ReactNode } from "react";
-import { Button } from "../ui";
+import { Spinner } from "../ui";
 import type { DeviceDetail } from "./types";
 import { useI18n } from "../../lib/i18n";
 import { deviceTypeImage } from "../../lib/deviceTypes";
@@ -27,11 +27,13 @@ export interface DeviceDetailHeaderProps {
   modemControlOnly?: boolean;
 }
 
-// RadioTriadButton is one of the three independent RF toggles (4G / airplane
-// / VoWiFi). Each button flips exactly one backend switch; enabling VoWiFi
-// keeps airplane locked on (the IMS stack needs RF off) but never toggles it
-// in the other direction, so the two never get re-bound in the UI.
-function RadioTriadButton({
+/**
+ * One control tile, like the action buttons under a contact card: a symbol
+ * over a short label. Toggles fill with their color when on (Control
+ * Center style); actions stay neutral. Each RF toggle flips exactly one
+ * backend switch, so 4G / airplane / VoWiFi are never re-bound in the UI.
+ */
+function ControlTile({
   active,
   locked,
   loading,
@@ -40,9 +42,10 @@ function RadioTriadButton({
   icon,
   label,
   title,
-  activeClass,
+  color,
+  destructive,
 }: {
-  active: boolean;
+  active?: boolean;
   locked?: boolean;
   loading?: boolean;
   disabled?: boolean;
@@ -50,7 +53,8 @@ function RadioTriadButton({
   icon: ReactNode;
   label: string;
   title?: string;
-  activeClass: string;
+  color?: string;
+  destructive?: boolean;
 }) {
   return (
     <button
@@ -58,17 +62,17 @@ function RadioTriadButton({
       disabled={disabled || loading}
       onClick={onClick}
       title={title}
+      aria-pressed={active === undefined ? undefined : active}
       className={cx(
-        "flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-[12px] border px-2 text-[11px] font-semibold transition-colors sm:h-9 sm:flex-none sm:gap-1.5 sm:px-3 sm:text-[12px]",
-        active
-          ? cx("border-transparent", activeClass)
-          : "border-separator bg-white/60 text-gray-600 hover:bg-white dark:border-separator dark:bg-grouped-3 dark:text-[var(--color-btn-secondary-text)] dark:hover:border-[var(--color-border-hover)] dark:hover:bg-grouped-3",
-        locked && "cursor-not-allowed opacity-90",
-        disabled && "cursor-not-allowed opacity-50",
+        "ios-control-tile ios-press",
+        active ? "is-on" : destructive ? "text-sys-red" : "text-accent",
+        locked && "cursor-not-allowed",
+        disabled && !loading && "opacity-40",
       )}
+      style={active && color ? { background: `rgb(var(--ios-${color}))` } : undefined}
     >
-      {icon}
-      <span>{label}</span>
+      <span className="ios-control-tile-icon">{loading ? <Spinner className="h-5 w-5" /> : icon}</span>
+      <span className="ios-control-tile-label">{label}</span>
     </button>
   );
 }
@@ -82,8 +86,7 @@ export function DeviceDetailHeader(props: DeviceDetailHeaderProps) {
 
   const networkEnabled = !!device.networkEnabled;
   // While VoWiFi is enabled the IMS stack keeps the radio in airplane mode;
-  // the backend refuses a flight toggle with 409. Show that lock explicitly
-  // instead of re-binding the two switches.
+  // the backend refuses a flight toggle with 409. Show that lock explicitly.
   const airplaneLocked = vowifiInUse;
   const airplaneActive = airplaneLocked || !!device.flightMode;
   const simLabel = device.modem?.operator || device.activeEsimProfileName || t("SIM");
@@ -91,89 +94,61 @@ export function DeviceDetailHeader(props: DeviceDetailHeaderProps) {
     ? t("重启中")
     : props.dataToggling && props.dataToggleTarget !== null && props.dataToggleTarget !== undefined
       ? props.dataToggleTarget ? t("开启中") : t("关闭中")
-      : t("4G");
+      : t("蜂窝数据");
 
   return (
-    <div className="ui-card p-4 sm:p-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <img src={deviceTypeImage(device.deviceType)} alt="" className="h-11 w-11 flex-shrink-0 object-contain" />
-          <div className="min-w-0">
-            <div className="truncate text-lg font-bold text-gray-900 dark:text-label sm:text-xl">{device.name || device.id}</div>
-            <div className="mt-0.5 truncate text-xs text-gray-500 dark:text-label-2">
-              <span className="cursor-pointer font-mono hover:underline" onClick={() => props.onCopyText(device.id)}>
-                {device.id}
-              </span>
-            </div>
-            <div className="mt-1 text-[11px] font-semibold text-accent">{t("当前射频模式")}：{modeLabel}</div>
-          </div>
+    <div className="mb-6">
+      <div className="flex flex-col items-center gap-3 px-2 pb-5 pt-1 text-center md:flex-row md:items-center md:text-left">
+        <span className="ios-device-hero">
+          <img src={deviceTypeImage(device.deviceType)} alt="" />
+        </span>
+        <div className="min-w-0">
+          <div className="truncate ios-title-2 text-label">{device.name || device.id}</div>
+          <button type="button" onClick={() => props.onCopyText(device.id)} title={t("复制")} className="mt-0.5 max-w-full truncate ios-subhead text-label-2">
+            {simLabel} · {modeLabel} · <span className="font-mono">{device.id}</span>
+          </button>
         </div>
+      </div>
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-label-2">{t("状态")}</div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <RadioTriadButton
-                active={networkEnabled}
-                loading={props.dataToggling}
-                disabled={!device.interface}
-                onClick={() => void props.onToggleRoamingData(!networkEnabled)}
-                icon={<Cellular4GRegular className="h-4 w-4" />}
-                label={cellularLabel}
-                title={t("蜂窝数据开关（漫游数据，仅供受保护路由使用）")}
-                activeClass="bg-[var(--color-success)] text-white hover:bg-[#23b57c]"
-              />
-              <RadioTriadButton
-                active={vowifiInUse}
-                loading={props.vowifiToggling}
-                disabled={props.wifiCallingOnly}
-                onClick={() => void props.onToggleVoWiFi(!vowifiInUse)}
-                icon={<Wifi1Regular className="h-4 w-4" />}
-                label={t("VoWiFi")}
-                title={t("VoWiFi 开关（独立于飞行模式）")}
-                activeClass="bg-[var(--color-success)] text-white hover:bg-[#23b57c]"
-              />
-              <span className="inline-flex h-8 items-center rounded-full border border-separator px-2.5 text-[11px] font-semibold text-gray-600 dark:border-separator dark:bg-grouped-3 dark:text-label/85 sm:h-9">
-                {simLabel}
-              </span>
-              <span className="inline-flex h-8 items-center rounded-full bg-[var(--color-primary-soft)] px-2.5 text-[11px] font-semibold text-accent sm:h-9">
-                {modeLabel}
-              </span>
-            </div>
-          </div>
-
-          <div className="min-w-0">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-label-2">{t("操作")}</div>
-            <div className="flex flex-wrap items-center gap-2">
-              <RadioTriadButton
-                active={airplaneActive}
-                locked={airplaneLocked}
-                loading={props.airplaneToggling}
-                disabled={props.wifiCallingOnly}
-                onClick={() => void props.onToggleAirplane(!airplaneActive)}
-                icon={<AirplaneRegular className="h-4 w-4" />}
-                label={airplaneLocked ? t("飞行·锁") : t("飞行")}
-                title={airplaneLocked ? t("VoWiFi 需要射频关闭，飞行模式由系统锁定；关闭 VoWiFi 后可手动切换。") : t("飞行模式开关（独立于 VoWiFi，不会联动）")}
-                activeClass="bg-[var(--color-warning)] hover:bg-[#d49418] text-grouped"
-              />
-              {vowifiInUse ? (
-                <Button loading={props.reconnectingVoWiFi} onClick={props.onReconnectVowifi} className="flex-1 sm:flex-none" icon={<ArrowSyncRegular />}>
-                  {t("重连 VoWiFi")}
-                </Button>
-              ) : null}
-              {!props.wifiCallingOnly && !props.modemControlOnly ? (
-                <Button loading={props.rebooting} onClick={props.onRebootModem} className="flex-1 hover:!text-[var(--color-danger)] sm:flex-none" icon={<PowerRegular />}>
-                  {t("重启模组")}
-                </Button>
-              ) : null}
-              {!props.modemControlOnly ? (
-                <Button onClick={props.onOpenSms} className="flex-1 sm:flex-none" icon={<ChatRegular />}>
-                  {t("短信")}
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </div>
+      <div className="ios-control-grid">
+        <ControlTile
+          active={networkEnabled}
+          color="green"
+          loading={props.dataToggling}
+          disabled={!device.interface}
+          onClick={() => void props.onToggleRoamingData(!networkEnabled)}
+          icon={<Cellular4GRegular />}
+          label={cellularLabel}
+          title={t("蜂窝数据开关（漫游数据，仅供受保护路由使用）")}
+        />
+        <ControlTile
+          active={vowifiInUse}
+          color="blue"
+          loading={props.vowifiToggling}
+          disabled={props.wifiCallingOnly}
+          onClick={() => void props.onToggleVoWiFi(!vowifiInUse)}
+          icon={<Wifi1Regular />}
+          label="VoWiFi"
+          title={t("VoWiFi 开关（独立于飞行模式）")}
+        />
+        <ControlTile
+          active={airplaneActive}
+          color="orange"
+          locked={airplaneLocked}
+          loading={props.airplaneToggling}
+          disabled={props.wifiCallingOnly}
+          onClick={() => void props.onToggleAirplane(!airplaneActive)}
+          icon={<AirplaneRegular />}
+          label={airplaneLocked ? t("飞行·锁") : t("飞行")}
+          title={airplaneLocked ? t("VoWiFi 需要射频关闭，飞行模式由系统锁定；关闭 VoWiFi 后可手动切换。") : t("飞行模式开关（独立于 VoWiFi，不会联动）")}
+        />
+        {vowifiInUse ? (
+          <ControlTile loading={props.reconnectingVoWiFi} onClick={props.onReconnectVowifi} icon={<ArrowSyncRegular />} label={t("重连 VoWiFi")} />
+        ) : null}
+        {!props.modemControlOnly ? <ControlTile onClick={props.onOpenSms} icon={<ChatRegular />} label={t("短信")} /> : null}
+        {!props.wifiCallingOnly && !props.modemControlOnly ? (
+          <ControlTile destructive loading={props.rebooting} onClick={props.onRebootModem} icon={<PowerRegular />} label={t("重启模组")} />
+        ) : null}
       </div>
     </div>
   );

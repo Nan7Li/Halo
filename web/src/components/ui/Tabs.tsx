@@ -47,7 +47,7 @@ export function Tabs({
               disabled={tab.disabled}
               onClick={() => onChange(tab.key)}
               className={cx(
-                "relative z-[1] h-8 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] outline-none ios-press",
+                "ui-tab relative z-[1] h-8 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] outline-none ios-press",
                 "disabled:cursor-not-allowed disabled:opacity-40",
                 selected ? "font-semibold text-label" : "font-medium text-label-2 hover:text-label",
               )}

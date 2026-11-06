@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AddRegular,
+  CallRegular,
+  Cellular4GRegular,
+  ChatRegular,
+  GlobeRegular,
+  MoreHorizontalRegular,
   DeleteRegular,
   EditRegular,
   PlayRegular,
@@ -13,16 +18,17 @@ import {
   Button,
   Input,
   Modal,
-  PageFrame, PageHeader,
+  ListSkeleton,
   Pagination,
   Select,
   Switch,
-  Tag,
   Textarea,
   confirmDialog,
   message,
 } from "../components/ui";
 import { useI18n } from "../lib/i18n";
+import { BackButton, BarButton, ContentUnavailable, ContextMenu, ListRow, ListSection, Page } from "../components/ios";
+import { useMediaQuery } from "../lib/useMediaQuery";
 import {
   buildAutomaticTaskProfileOptions,
   createAutomaticTaskProfileRequestGuard,
@@ -160,6 +166,8 @@ export default function AutomaticTasksPage() {
   const [form, setForm] = useState<TaskForm>(() => emptyForm());
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(0);
+  const [taskMenu, setTaskMenu] = useState<{ id: number; x: number; y: number } | null>(null);
+  const phone = !useMediaQuery("(min-width: 768px)");
   // Refs mirror the runs page/pageSize so the 5s poll reloads the page the user
   // is actually looking at instead of snapping back to page 1 on every tick.
   const runsPageRef = useRef(1);
@@ -442,97 +450,127 @@ export default function AutomaticTasksPage() {
 	  ? [{ value: "vowifi", label: "VoWiFi" }]
 	  : [{ value: "vowifi", label: "VoWiFi" }, { value: "cellular", label: t("基站直连（自动选网）") }];
 
+  const typeIcon = (value: TaskType) => ({ sms: <ChatRegular />, call: <CallRegular />, public_ip: <GlobeRegular />, cellular_attach: <Cellular4GRegular /> })[value];
+  const typeColor = (value: TaskType) => ({ sms: "green", call: "green", public_ip: "blue", cellular_attach: "orange" })[value];
+  const runStatus = (status: AutomaticTaskRun["status"]) =>
+    ({
+      queued: { label: t("排队中"), className: "text-label-2" },
+      running: { label: t("执行中"), className: "text-sys-orange" },
+      success: { label: t("成功"), className: "text-sys-green" },
+      failed: { label: t("失败"), className: "text-sys-red" },
+    })[status];
+  const menuTask = tasks.find((task) => task.id === taskMenu?.id);
+
   return (
-    <PageFrame>
-      <PageHeader
-        title={t("自动任务")}
-		subtitle={advancedTasksAvailable
-		  ? t("按周期使用指定 SIM 卡或切换到指定 eSIM Profile，并在设备串行队列中执行短信、通话、蜂窝注册或漫游公网 IP 任务")
-		  : t("按周期使用指定 SIM 卡或切换到指定 eSIM Profile，并在设备串行队列中执行短信、通话或蜂窝注册任务")}
-        actions={<Button variant="primary" icon={<AddRegular />} onClick={() => edit()} disabled={!devices.length}>{t("添加任务")}</Button>}
+    <Page
+      title={t("自动任务")}
+      leading={phone ? <BackButton to="/more" label={t("更多")} /> : null}
+      trailing={<BarButton icon={<AddRegular />} aria-label={t("添加任务")} title={t("添加任务")} onClick={() => edit()} disabled={!devices.length} />}
+    >
+      {loading && !tasks.length ? (
+        <ListSkeleton rows={3} />
+      ) : !tasks.length ? (
+        <ContentUnavailable
+          icon={<SendClockRegular />}
+          title={t("暂无自动任务")}
+          description={t("添加任务后，系统会按设备排队并在执行前校验目标 SIM / Profile")}
+          action={devices.length ? <Button variant="primary" icon={<AddRegular />} onClick={() => edit()}>{t("添加任务")}</Button> : undefined}
+        />
+      ) : (
+        <ListSection
+          header={t("任务")}
+          footer={advancedTasksAvailable
+            ? t("按周期使用指定 SIM 卡或切换到指定 eSIM Profile，并在设备串行队列中执行短信、通话、蜂窝注册或漫游公网 IP 任务")
+            : t("按周期使用指定 SIM 卡或切换到指定 eSIM Profile，并在设备串行队列中执行短信、通话或蜂窝注册任务")}
+        >
+          {tasks.map((task) => (
+            <ListRow
+              key={task.id}
+              icon={typeIcon(task.taskType)}
+              iconColor={task.enabled ? typeColor(task.taskType) : "gray"}
+              onClick={() => edit(task)}
+              chevron={false}
+              multiline
+              swipeActions={[
+                { label: t("执行"), color: "rgb(var(--ios-blue))", onAction: () => void runNow(task) },
+                { label: t("删除"), color: "rgb(var(--ios-red))", onAction: () => void remove(task) },
+              ]}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setTaskMenu({ id: task.id, x: event.clientX, y: event.clientY });
+              }}
+              title={<span className={task.enabled ? "font-semibold" : "font-semibold text-label-2"}>{task.name}</span>}
+              subtitle={
+                <>
+                  {deviceByID.get(task.deviceId)?.name || task.deviceId} · {taskTypeLabel(task.taskType)} · {environmentLabel(task.environment)}
+                  <br />
+                  {t("每 {days} 天").replace("{days}", String(task.intervalDays))} {task.runTime}
+                  {task.enabled ? <> · {t("下次")} {formatDateTime(task.nextRunAt)}</> : null}
+                  {task.lastStatus ? (
+                    <span className={task.lastStatus === "success" ? "text-sys-green" : "text-sys-red"}> · {task.lastStatus === "success" ? t("上次成功") : t("上次失败")}</span>
+                  ) : null}
+                  {task.lastError ? <span className="block truncate text-sys-red" title={task.lastError}>{task.lastError}</span> : null}
+                </>
+              }
+              accessory={
+                <span className="flex shrink-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                  <button
+                    type="button"
+                    aria-label={t("更多操作")}
+                    title={t("更多操作")}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-accent hover:bg-fill-4 [&_svg]:h-5 [&_svg]:w-5"
+                    onClick={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      setTaskMenu({ id: task.id, x: rect.right, y: rect.bottom });
+                    }}
+                  >
+                    <MoreHorizontalRegular />
+                  </button>
+                  <Switch checked={task.enabled} loading={busy === task.id} onChange={() => void toggle(task)} />
+                </span>
+              }
+            />
+          ))}
+        </ListSection>
+      )}
+      <ContextMenu
+        open={Boolean(menuTask)}
+        anchor={taskMenu}
+        onClose={() => setTaskMenu(null)}
+        title={menuTask?.name}
+        items={menuTask ? [
+          { label: t("立即执行"), icon: <PlayRegular />, onSelect: () => void runNow(menuTask) },
+          { label: t("编辑"), icon: <EditRegular />, onSelect: () => edit(menuTask) },
+          { label: t("删除"), icon: <DeleteRegular />, destructive: true, onSelect: () => void remove(menuTask) },
+        ] : []}
       />
 
-      <div className="ui-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-left text-sm">
-            <thead className="border-b border-gray-100 bg-gray-50/70 text-xs uppercase tracking-wide text-gray-500 dark:border-white/10 dark:bg-white/[0.025]">
-              <tr>
-                <th className="px-4 py-3">{t("任务")}</th>
-                <th className="px-4 py-3">{t("设备 / SIM / Profile")}</th>
-                <th className="px-4 py-3">{t("类型")}</th>
-                <th className="px-4 py-3">{t("执行环境")}</th>
-                <th className="px-4 py-3">{t("周期")}</th>
-                <th className="px-4 py-3">{t("下次执行")}</th>
-                <th className="px-4 py-3">{t("上次结果")}</th>
-                <th className="px-4 py-3 text-right">{t("操作")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-              {tasks.map((task) => (
-                <tr key={task.id} className="hover:bg-sky-50/40 dark:hover:bg-sky-500/[0.04]">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2"><Switch checked={task.enabled} loading={busy === task.id} size="small" onChange={() => void toggle(task)} /><span className="font-semibold">{task.name}</span></div>
-                    <div className="mt-1 text-xs text-gray-400">{task.notify ? t("完成后推送通知") : t("不推送通知")} · {task.revertProfile !== false ? t("完成后切回原卡") : t("保持当前卡")} · {t("失败重试 {count} 次").replace("{count}", String(task.retryCount))}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div>{deviceByID.get(task.deviceId)?.name || task.deviceId}</div>
-                    <div className="mt-1 font-mono text-xs text-gray-400">…{task.profileIccid.slice(-8)}</div>
-                  </td>
-                  <td className="px-4 py-3">{taskTypeLabel(task.taskType)}</td>
-                  <td className="px-4 py-3"><Tag type={task.environment === "vowifi" ? "primary" : "warning"}>{environmentLabel(task.environment)}</Tag></td>
-                  <td className="px-4 py-3">{t("每 {days} 天").replace("{days}", String(task.intervalDays))} · {task.runTime}</td>
-                  <td className="px-4 py-3 text-xs">{formatDateTime(task.nextRunAt)}</td>
-                  <td className="px-4 py-3">
-                    {task.lastStatus ? <Tag type={task.lastStatus === "success" ? "success" : "danger"}>{task.lastStatus === "success" ? t("成功") : t("失败")}</Tag> : <span className="text-gray-400">--</span>}
-                    {task.lastError ? <div className="mt-1 max-w-[220px] truncate text-xs text-red-500" title={task.lastError}>{task.lastError}</div> : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <Button size="small" icon={<PlayRegular />} loading={busy === task.id} onClick={() => void runNow(task)}>{t("立即执行")}</Button>
-                      <Button size="small" icon={<EditRegular />} onClick={() => edit(task)}>{t("编辑")}</Button>
-                      <Button size="small" variant="danger" plain icon={<DeleteRegular />} loading={busy === task.id} onClick={() => void remove(task)}>{t("删除")}</Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!loading && !tasks.length ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-gray-400">
-            <SendClockRegular className="mb-3 text-4xl" />
-            <div className="text-sm">{t("暂无自动任务")}</div>
-            <div className="mt-1 text-xs">{t("添加任务后，系统会按设备排队并在执行前校验目标 SIM / Profile")}</div>
-          </div>
-        ) : null}
-        {loading ? <div className="px-6 py-16 text-center text-sm text-gray-400">{t("加载中...")}</div> : null}
-      </div>
-
-      <div className="ui-card mt-5 overflow-hidden">
-        <div className="border-b border-gray-100 px-5 py-4 dark:border-white/10"><h3 className="font-bold">{t("最近执行记录")}</h3></div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left text-sm">
-            <thead className="bg-gray-50/70 text-xs text-gray-500 dark:bg-white/[0.025]"><tr><th className="px-4 py-3">{t("任务")}</th><th className="px-4 py-3">{t("设备")}</th><th className="px-4 py-3">{t("状态")}</th><th className="px-4 py-3">{t("排队时间")}</th><th className="px-4 py-3">{t("尝试次数")}</th><th className="px-4 py-3">{t("结果")}</th></tr></thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-white/10">
-              {runs.map((run) => (
-                <tr key={run.id}><td className="px-4 py-3 font-medium">{taskByID.get(run.taskId)?.name || `#${run.taskId}`}</td><td className="px-4 py-3">{deviceByID.get(run.deviceId)?.name || run.deviceId}</td><td className="px-4 py-3"><Tag type={run.status === "success" ? "success" : run.status === "failed" ? "danger" : run.status === "running" ? "warning" : "info"}>{({ queued: t("排队中"), running: t("执行中"), success: t("成功"), failed: t("失败") })[run.status]}</Tag></td><td className="px-4 py-3 text-xs">{formatDateTime(run.scheduledAt)}</td><td className="px-4 py-3">{run.attempts}</td><td className="px-4 py-3"><div className={run.error ? "max-w-md text-red-500" : "max-w-md text-gray-600 dark:text-gray-300"}>{run.error || run.output || "--"}</div></td></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-		{!runs.length ? <div className="p-8 text-center text-sm text-gray-400">{t("暂无执行记录")}</div> : null}
-		{runsTotal > 0 ? (
-          <div className="border-t border-gray-100 px-5 py-3 dark:border-white/10">
-            <Pagination
-              page={runsPage}
-              pageSize={runsPageSize}
-              total={runsTotal}
-              onPageChange={changeRunsPage}
-              onPageSizeChange={changeRunsPageSize}
+      <ListSection header={t("最近执行记录")} className="mt-2">
+        {runs.length ? runs.map((run) => {
+          const status = runStatus(run.status);
+          return (
+            <ListRow
+              key={run.id}
+              multiline
+              title={taskByID.get(run.taskId)?.name || `#${run.taskId}`}
+              subtitle={
+                <>
+                  {deviceByID.get(run.deviceId)?.name || run.deviceId} · {formatDateTime(run.scheduledAt)} · {t("尝试 {count} 次").replace("{count}", String(run.attempts))}
+                  {run.error || run.output ? <span className={run.error ? "block text-sys-red" : "block"}>{run.error || run.output}</span> : null}
+                </>
+              }
+              detail={<span className={status.className}>{status.label}</span>}
             />
-          </div>
-        ) : null}
-      </div>
+          );
+        }) : (
+          <div className="px-4 py-6 text-center ios-subhead text-label-2">{t("暂无执行记录")}</div>
+        )}
+      </ListSection>
+      {runsTotal > runsPageSize ? (
+        <div className="mb-6 px-1">
+          <Pagination page={runsPage} pageSize={runsPageSize} total={runsTotal} onPageChange={changeRunsPage} onPageSizeChange={changeRunsPageSize} />
+        </div>
+      ) : null}
 
       <Modal
         open={open}
@@ -570,6 +608,6 @@ export default function AutomaticTasksPage() {
           <div className="md:col-span-2 flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-white/10"><div><div className="text-sm font-semibold">{t("任务完成后切回原卡")}</div><div className="text-xs text-gray-400">{t("若执行前活跃卡与任务卡不同，任务完成后自动切回执行前的 SIM / Profile 并恢复其网络策略")}</div></div><Switch checked={form.revertProfile} onChange={(revertProfile) => setForm({ ...form, revertProfile })} /></div>
         </div>
       </Modal>
-    </PageFrame>
+    </Page>
   );
 }
