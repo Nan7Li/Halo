@@ -192,7 +192,7 @@ export default function WireGuardPage() {
                       </span>
                     ) : null}
                     {tunnel.autostart && !tunnel.external ? (
-                      <span className="rounded-full bg-[var(--color-primary-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-primary)]">
+                      <span className="rounded-full bg-[var(--color-primary-soft)] px-2 py-0.5 text-[11px] font-medium text-accent">
                         {t("开机启动")}
                       </span>
                     ) : null}

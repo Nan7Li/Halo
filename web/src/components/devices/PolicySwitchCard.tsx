@@ -25,7 +25,7 @@ export function PolicySwitchCard({ title, subtitle, checked, disabled, pending, 
 
   if (compact) {
     return (
-      <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 dark:bg-[var(--color-input)] dark:ring-1 dark:ring-[var(--color-border)]">
+      <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 dark:bg-[var(--color-input)] dark:ring-1 dark:ring-separator">
         <span className="text-sm text-gray-700 dark:text-gray-200">{title}</span>
         {status}
       </div>

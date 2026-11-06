@@ -31,7 +31,7 @@ function UsageBar({ label, percent, detail }: { label: string; percent: number; 
           <span className={cx("text-xs font-bold tabular-nums", textColor(clamped))}>{percentText(clamped)}</span>
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[rgba(180,140,100,0.14)] dark:bg-white/10">
+      <div className="h-2 overflow-hidden rounded-full bg-[rgba(0,0,0,0.14)] dark:bg-white/10">
         <div
           className={cx("h-full w-full origin-left rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]", barColor(clamped))}
           style={{ transform: `scaleX(${clamped / 100})` }}
@@ -47,8 +47,8 @@ export function HostPerfCard({ perf }: { perf?: DashboardHostPerf | null }) {
   return (
     <div className="ui-card p-4">
       <div className="mb-3 flex items-center gap-2">
-        <GaugeRegular className="h-4 w-4 text-[var(--color-primary)]" />
-        <h3 className="text-[18px] font-semibold tracking-tight text-black dark:text-[var(--color-text)]">{t("性能信息")}</h3>
+        <GaugeRegular className="h-4 w-4 text-accent" />
+        <h3 className="text-[18px] font-semibold tracking-tight text-black dark:text-label">{t("性能信息")}</h3>
       </div>
       <div className="space-y-2.5">
         <UsageBar label={t("CPU 使用率")} percent={perf?.cpuPercent ?? 0} />

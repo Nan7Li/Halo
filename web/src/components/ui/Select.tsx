@@ -97,26 +97,26 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
         disabled={disabled}
         onClick={toggleOpen}
         className={cx(
-          "halo-select-trigger flex w-full items-center justify-between gap-2 rounded-[12px] border border-[#E8D9C8] bg-white px-3 text-left text-sm text-[#2C2C2C] outline-none",
+          "halo-select-trigger flex w-full items-center justify-between gap-2 rounded-[12px] border border-separator bg-white px-3 text-left text-sm text-label outline-none",
           "transition-[border-color,box-shadow,transform] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
-          "hover:border-[#D9C6B0] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20",
+          "hover:border-separator focus:border-accent focus:ring-2 focus:ring-accent/20",
           "active:scale-[0.99]",
-          "dark:border-[var(--color-border)] dark:bg-[var(--color-input)] dark:text-[var(--color-text)] dark:hover:border-[var(--color-border-hover)]",
+          "dark:border-separator dark:bg-[var(--color-input)] dark:text-label dark:hover:border-[var(--color-border-hover)]",
           "disabled:cursor-not-allowed disabled:opacity-60 dark:disabled:opacity-100",
           size === "large" ? "h-10" : "h-8",
         )}
       >
-        <span className={cx("truncate", !selected && "text-[#A08B7A] dark:text-[var(--color-text-weak)]")}>
+        <span className={cx("truncate", !selected && "text-label-3 dark:text-label-3")}>
           {selected ? selected.label : ph}
         </span>
-        <ChevronDownRegular className={cx("shrink-0 text-[#8A7A6A] transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]", open && "rotate-180")} />
+        <ChevronDownRegular className={cx("shrink-0 text-label-2 transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]", open && "rotate-180")} />
       </button>
       {open &&
         createPortal(
           <div
             ref={menuRef}
             style={menuStyle}
-            className="halo-select-menu ui-pop overflow-auto rounded-[12px] border border-[#E8D9C8] bg-white p-1 shadow-[0_10px_32px_rgba(180,140,100,0.14)] dark:border-[var(--color-border)] dark:bg-[var(--color-card)]"
+            className="halo-select-menu ui-pop overflow-auto rounded-[12px] border border-separator bg-white p-1 shadow-[0_10px_32px_rgba(0,0,0,0.14)] dark:border-separator dark:bg-grouped-2"
           >
           {options.length === 0 && <div className="px-3 py-2 text-sm text-gray-400">{t("暂无数据")}</div>}
           {options.map((option) => {
@@ -134,8 +134,8 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
                   "flex w-full items-center justify-between gap-2 rounded-[10px] px-3 py-1.5 text-left text-sm",
                   "transition-[background-color,color,transform] duration-[160ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]",
                   active
-                    ? "font-semibold text-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                    : "text-[#3A3A3A] hover:bg-[#FDF6F0] dark:text-[var(--color-text-body)] dark:hover:bg-[var(--color-card-2)]",
+                    ? "font-semibold text-accent bg-[var(--color-primary-soft)]"
+                    : "text-label hover:bg-bg-2 dark:text-label/85 dark:hover:bg-grouped-3",
                   option.disabled && "cursor-not-allowed opacity-50",
                 )}
               >

@@ -40,6 +40,60 @@ export default {
         ],
       },
       colors: {
+        // iOS 27 semantic colors (styles/tokens.css). Channel variables keep
+        // Tailwind alpha modifiers working: bg-grouped-2/80.
+        label: {
+          DEFAULT: "rgb(var(--ios-label) / <alpha-value>)",
+          2: "rgb(var(--ios-label-2) / <alpha-value>)",
+          3: "rgb(var(--ios-label-3) / <alpha-value>)",
+          4: "rgb(var(--ios-label-4) / <alpha-value>)",
+        },
+        bg: {
+          DEFAULT: "rgb(var(--ios-bg) / <alpha-value>)",
+          2: "rgb(var(--ios-bg-2) / <alpha-value>)",
+          3: "rgb(var(--ios-bg-3) / <alpha-value>)",
+        },
+        grouped: {
+          DEFAULT: "rgb(var(--ios-grouped) / <alpha-value>)",
+          2: "rgb(var(--ios-grouped-2) / <alpha-value>)",
+          3: "rgb(var(--ios-grouped-3) / <alpha-value>)",
+        },
+        elevated: "rgb(var(--ios-elevated) / <alpha-value>)",
+        separator: "rgb(var(--ios-separator) / <alpha-value>)",
+        fill: {
+          DEFAULT: "var(--ios-fill)",
+          2: "var(--ios-fill-2)",
+          3: "var(--ios-fill-3)",
+          4: "var(--ios-fill-4)",
+        },
+        accent: "rgb(var(--color-primary-rgb) / <alpha-value>)",
+        "sys-red": "rgb(var(--ios-red) / <alpha-value>)",
+        "sys-orange": "rgb(var(--ios-orange) / <alpha-value>)",
+        "sys-yellow": "rgb(var(--ios-yellow) / <alpha-value>)",
+        "sys-green": "rgb(var(--ios-green) / <alpha-value>)",
+        "sys-mint": "rgb(var(--ios-mint) / <alpha-value>)",
+        "sys-teal": "rgb(var(--ios-teal) / <alpha-value>)",
+        "sys-cyan": "rgb(var(--ios-cyan) / <alpha-value>)",
+        "sys-blue": "rgb(var(--ios-blue) / <alpha-value>)",
+        "sys-indigo": "rgb(var(--ios-indigo) / <alpha-value>)",
+        "sys-purple": "rgb(var(--ios-purple) / <alpha-value>)",
+        "sys-pink": "rgb(var(--ios-pink) / <alpha-value>)",
+        "sys-brown": "rgb(var(--ios-brown) / <alpha-value>)",
+        "sys-gray": "rgb(var(--ios-gray) / <alpha-value>)",
+        // Neutral iOS system grays replace Tailwind's cool slate.
+        gray: {
+          50: "#F2F2F7",
+          100: "#E5E5EA",
+          200: "#D1D1D6",
+          300: "#C7C7CC",
+          400: "#AEAEB2",
+          500: "#8E8E93",
+          600: "#636366",
+          700: "#48484A",
+          800: "#2C2C2E",
+          900: "#1C1C1E",
+          950: "#000000",
+        },
         brand: {
           DEFAULT: "rgb(var(--color-primary-rgb) / 1)",
           dark: "var(--color-primary-hover)",
@@ -47,12 +101,12 @@ export default {
         apple: {
           blue: "var(--color-primary)",
           "blue-dark": "var(--color-primary-hover)",
-          green: "#34C759",
-          red: "#FF3B30",
-          orange: "var(--color-primary)",
-          gray: "#8A7A6A",
-          grouped: "#F7F4EF",
-          "grouped-dark": "#1A1610",
+          green: "rgb(var(--ios-green) / <alpha-value>)",
+          red: "rgb(var(--ios-red) / <alpha-value>)",
+          orange: "rgb(var(--ios-orange) / <alpha-value>)",
+          gray: "rgb(var(--ios-label-2) / <alpha-value>)",
+          grouped: "rgb(var(--ios-grouped) / <alpha-value>)",
+          "grouped-dark": "rgb(var(--ios-grouped) / <alpha-value>)",
         },
         // Old indigo/sky brand classes follow the live accent.
         indigo: {
@@ -80,6 +134,16 @@ export default {
           800: "var(--color-primary-ink)",
           900: "var(--color-primary-ink)",
         },
+      },
+      borderRadius: {
+        ios: "var(--radius-md)",
+        "ios-lg": "var(--radius-lg)",
+        "ios-xl": "var(--radius-xl)",
+      },
+      transitionTimingFunction: {
+        spring: "var(--spring-smooth)",
+        "spring-snappy": "var(--spring-snappy)",
+        "spring-bouncy": "var(--spring-bouncy)",
       },
       keyframes: {
         // VoHive overrides the default pulse to a slow scale+fade (glow blobs)

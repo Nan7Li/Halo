@@ -121,11 +121,11 @@ export function ThreadPanel(props: ThreadPanelProps) {
                 {t("返回")}
               </Button>
             ) : null}
-            <div className="truncate text-sm font-semibold text-gray-900 dark:text-[var(--color-text)]">
+            <div className="truncate text-sm font-semibold text-gray-900 dark:text-label">
               {activeThread?.displayName || activeThread?.peer || t("请选择会话")}
             </div>
           </div>
-          <div className="mt-1 text-xs text-gray-400 dark:text-[var(--color-text-muted)]">{activeThread?.displayName && activeThread.displayName !== activeThread.peer ? activeThread.peer : subtitle}</div>
+          <div className="mt-1 text-xs text-gray-400 dark:text-label-2">{activeThread?.displayName && activeThread.displayName !== activeThread.peer ? activeThread.peer : subtitle}</div>
         </div>
         {activeThread ? (
           <div className="flex items-center gap-2">
@@ -191,8 +191,8 @@ export function ThreadPanel(props: ThreadPanelProps) {
   className={cx(
     "rounded-2xl border px-5 py-4 text-sm leading-[1.75] shadow-sm",
     outbound
-      ? "border-transparent bg-[var(--color-primary-soft)] text-gray-800 dark:text-[var(--color-text)]"
-      : "border-gray-100 bg-white/90 text-gray-700 dark:border-[var(--color-border)] dark:bg-[var(--color-card-2)] dark:text-[var(--color-text-body)]",
+      ? "border-transparent bg-[var(--color-primary-soft)] text-gray-800 dark:text-label"
+      : "border-gray-100 bg-white/90 text-gray-700 dark:border-separator dark:bg-grouped-3 dark:text-label/85",
   )}
 >
   {m.decodeError ? (

@@ -97,8 +97,8 @@ html, body {
   margin: 0;
 }
 body {
-  background: #F7F4EF;
-  color: #2C2C2C;
+  background: rgb(var(--ios-grouped));
+  color: rgb(var(--ios-label));
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -146,9 +146,9 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #F7F4EF;
+  background: rgb(var(--ios-grouped));
 }
-.dark .vocat-boot-loader { background: #17140F; }
+.dark .vocat-boot-loader { background: rgb(var(--ios-grouped)); }
 .vocat-boot-logo {
   display: block;
   width: clamp(88px, 16vw, 128px);
@@ -189,103 +189,74 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
 
 /* ---- Design tokens (warm Sophie / soft UI) ---- */
 :root {
-  --ease-out-apple: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-fast: 160ms;
-  --dur-med: 340ms;
-  --dur-slow: 480ms;
+  --ease-out-apple: var(--spring-smooth);
+  --ease-spring: var(--spring-smooth);
+  --dur-fast: 180ms;
+  --dur-med: 380ms;
+  --dur-slow: 520ms;
 
-  --el-color-primary: #F15A3B;
-  --el-color-primary-light-3: #FF6949;
-  --el-color-primary-light-5: #F3A08B;
-  --el-color-primary-light-7: #F7C4B6;
-  --el-color-primary-light-8: #FBE0D8;
-  --el-color-primary-light-9: #FDF1EC;
-  --el-color-primary-dark-2: #D94D31;
+  --el-color-primary: #007AFF;
+  --el-color-primary-light-3: #4DA2FF;
+  --el-color-primary-light-5: #80BDFF;
+  --el-color-primary-light-7: #B3D7FF;
+  --el-color-primary-light-8: #CCE4FF;
+  --el-color-primary-light-9: #E6F2FF;
+  --el-color-primary-dark-2: #0066D6;
 
-  --color-primary: #F15A3B;
-  --color-primary-hover: #FF6949;
-  --color-primary-active: #D94D31;
-  --color-primary-ink: #D94D31;
-  --color-primary-soft: rgba(241, 90, 59, 0.16);
-  --color-primary-faint: rgba(241, 90, 59, 0.08);
-  --color-primary-border: rgba(241, 90, 59, 0.32);
-  --color-primary-rgb: 241 90 59;
-  --color-success: #28C98A;
-  --color-warning: #E9A21B;
-  --color-danger: #D9534F;
-  --color-page: #F7F4EF;
-  --color-card: #FFFFFF;
-  --color-card-2: #FDF6F0;
-  --color-input: #FDF8F2;
-  --color-border-hover: #D9C6B0;
-  --color-text: #2C2C2C;
-  --color-text-body: #3A3A3A;
-  --color-text-muted: #8A7A6A;
-  --color-text-weak: #A08B7A;
-  --color-text-disabled: #B8A99A;
-  --color-btn-secondary-text: #2C2C2C;
-  --color-btn-disabled-bg: #F3EDE6;
-  --color-btn-disabled-border: #E8D9C8;
-  --color-on-primary: #FFFFFF;
-  --color-surface: #FFFFFF;
-  --color-border: #E8D9C8;
-  --color-label: #2C2C2C;
-  --color-secondary-label: #8A7A6A;
-  --color-grouped: #F7F4EF;
-  --color-fill: rgba(180, 140, 100, 0.08);
+  --color-primary: #007AFF;
+  --color-primary-hover: #1A87FF;
+  --color-primary-active: #0066D6;
+  --color-primary-ink: #0060C7;
+  --color-primary-soft: rgba(0, 122, 255, 0.15);
+  --color-primary-faint: rgba(0, 122, 255, 0.08);
+  --color-primary-border: rgba(0, 122, 255, 0.3);
+  --color-primary-rgb: 0 122 255;
+  --color-on-primary: rgb(var(--ios-grouped-2));
 
-  --ui-surface: #FDF8F2;
-  --ui-surface-strong: #FFFFFF;
-  --ui-surface-muted: #FDF6F0;
-  --ui-border: rgba(232, 217, 200, 0.9);
-  --ui-border-muted: rgba(232, 217, 200, 0.55);
+  /* Legacy names, now aliases of the iOS semantic tokens. */
+  --color-success: rgb(var(--ios-green));
+  --color-warning: rgb(var(--ios-orange));
+  --color-danger: rgb(var(--ios-red));
+  --color-page: rgb(var(--ios-grouped));
+  --color-card: rgb(var(--ios-grouped-2));
+  --color-card-2: rgb(var(--ios-grouped-3));
+  --color-input: var(--ios-fill-3);
+  --color-border-hover: rgb(var(--ios-label-3));
+  --color-text: rgb(var(--ios-label));
+  --color-text-body: rgb(var(--ios-label) / 0.85);
+  --color-text-muted: rgb(var(--ios-label-2));
+  --color-text-weak: rgb(var(--ios-label-3));
+  --color-text-disabled: rgb(var(--ios-label-4));
+  --color-btn-secondary-text: rgb(var(--ios-label));
+  --color-btn-disabled-bg: var(--ios-fill-3);
+  --color-btn-disabled-border: transparent;
+  --color-surface: rgb(var(--ios-grouped-2));
+  --color-border: rgb(var(--ios-separator));
+  --color-label: rgb(var(--ios-label));
+  --color-secondary-label: rgb(var(--ios-label-2));
+  --color-grouped: rgb(var(--ios-grouped));
+  --color-fill: var(--ios-fill-3);
+
+  --ui-surface: rgb(var(--ios-grouped-2));
+  --ui-surface-strong: rgb(var(--ios-grouped-2));
+  --ui-surface-muted: rgb(var(--ios-grouped-3));
+  --ui-border: rgb(var(--ios-separator) / 0.6);
+  --ui-border-muted: rgb(var(--ios-separator) / 0.4);
   --ui-backdrop: none;
-  --ui-radius-sm: 12px;
+  --ui-radius-sm: 10px;
   --ui-radius-md: 14px;
-  --ui-radius-lg: 14px;
-  --ui-radius-xl: 16px;
-  --ui-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.04);
-  --ui-shadow-md: 0 4px 20px rgba(180, 140, 100, 0.08);
-  --ui-shadow-lg: 0 10px 32px rgba(180, 140, 100, 0.12);
+  --ui-radius-lg: 18px;
+  --ui-radius-xl: 22px;
+  --ui-shadow-sm: none;
+  --ui-shadow-md: none;
+  --ui-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.08);
   --ui-btn-shadow: none;
-  --ui-btn-shadow-hover: 0 4px 14px rgb(var(--color-primary-rgb) / 0.18);
-  --ui-btn-primary-shadow: 0 6px 16px rgb(var(--color-primary-rgb) / 0.22);
-  --ui-btn-primary-shadow-hover: 0 8px 20px rgb(var(--color-primary-rgb) / 0.28);
+  --ui-btn-shadow-hover: none;
+  --ui-btn-primary-shadow: none;
+  --ui-btn-primary-shadow-hover: none;
 }
 html.dark {
-  --color-page: #17140F;
-  --color-card: #211D18;
-  --color-card-2: #29241E;
-  --color-input: #25211C;
-  --color-border-hover: #554C42;
-  --color-text: #F4F0E8;
-  --color-text-body: #B7B0A7;
-  --color-text-muted: #817A71;
-  --color-text-weak: #716A61;
-  --color-text-disabled: #5D5750;
-  --color-btn-secondary-text: #DAD4CC;
-  --color-btn-disabled-bg: #24211D;
-  --color-btn-disabled-border: #38332D;
-  --color-success: #28C98A;
-  --color-warning: #E9A21B;
-  --color-danger: #D9534F;
-
-  --color-surface: #211D18;
-  --color-border: #403A32;
-  --color-label: #F4F0E8;
-  --color-secondary-label: #B7B0A7;
-  --color-grouped: #17140F;
-  --color-fill: #29241E;
-
-  --ui-surface: #211D18;
-  --ui-surface-strong: #29241E;
-  --ui-surface-muted: #29241E;
-  --ui-border: #403A32;
-  --ui-border-muted: #403A32;
-  --ui-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.28);
-  --ui-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32);
-  --ui-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.4);
+  --ui-shadow-lg: 0 14px 36px rgb(0 0 0 / 0.5);
 }
 
 /* ---- Surfaces ---- */
@@ -305,7 +276,7 @@ html.dark {
 }
 .ui-glass { border-color: transparent; }
 .ui-card {
-  background: linear-gradient(180deg, #FDF6F0 0%, #FFFFFF 42%);
+  background: rgb(var(--ios-grouped-2));
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-xl);
   box-shadow: var(--ui-shadow-md);
@@ -328,7 +299,7 @@ html.dark .ui-card:hover {
   }
 }
 .ui-panel {
-  background: #FFFFFF;
+  background: rgb(var(--ios-grouped-2));
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-sm);
@@ -385,7 +356,7 @@ html.dark .vocat-app-shell::before {
   width: 248px;
   overflow: hidden;
   border-radius: 20px;
-  background: #FDF8F2;
+  background: rgb(var(--ios-grouped-2));
   border: 1px solid var(--ui-border);
   box-shadow: var(--ui-shadow-md);
   animation: ios-shell var(--dur-med) var(--ease-spring) backwards;
@@ -426,7 +397,7 @@ html.dark .vocat-sidebar::before {
   justify-content: space-between;
   padding: 0 14px;
   border-radius: 18px;
-  background: #FFFFFF;
+  background: rgb(var(--ios-grouped-2));
   border: 1px solid var(--ui-border);
   box-shadow: var(--ui-shadow-sm);
   animation: ios-shell var(--dur-med) var(--ease-spring) backwards;
@@ -449,14 +420,14 @@ html.dark .vocat-toolbar {
   min-width: 34px;
   padding: 0 8px;
   border-radius: 999px;
-  color: #8A7A6A;
-  background: rgba(180, 140, 100, 0.1);
+  color: rgb(var(--ios-label-2));
+  background: rgba(120, 120, 128, 0.1);
   border: 0;
   transition: background var(--dur-fast) var(--ease-out-apple), color var(--dur-fast) var(--ease-out-apple), transform var(--dur-fast) var(--ease-spring);
 }
 .vocat-glass-btn:hover {
-  background: rgba(180, 140, 100, 0.16);
-  color: #2C2C2C;
+  background: rgba(120, 120, 128, 0.16);
+  color: rgb(var(--ios-label));
   transform: scale(1.04);
 }
 .vocat-glass-btn:active {
@@ -467,7 +438,7 @@ html.dark .vocat-glass-btn {
   background: var(--color-card-2);
 }
 html.dark .vocat-glass-btn:hover {
-  background: #322C26;
+  background: rgb(var(--ios-grouped-3));
   color: var(--color-text);
 }
 .vocat-main {
@@ -502,7 +473,7 @@ html.dark .vocat-glass-btn:hover {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(180, 140, 100, 0.14);
+  background: rgba(120, 120, 128, 0.14);
 }
 .ui-progress > span {
   display: block;
@@ -533,16 +504,16 @@ html.dark .vocat-glass-btn:hover {
 /* ---- Sidebar ---- */
 .sidebar-shell {
   font-family: inherit;
-  --sidebar-menu-text: #3A3A3A;
+  --sidebar-menu-text: rgb(var(--ios-label) / 0.85);
   --sidebar-menu-hover-bg: var(--color-primary-faint);
   --sidebar-menu-active-bg: var(--color-primary-soft);
   --sidebar-menu-active-color: var(--color-primary);
   --sidebar-menu-active-ring: transparent;
 }
 html.dark .sidebar-shell {
-  --sidebar-menu-text: #B7B0A7;
-  --sidebar-menu-hover-bg: rgba(241, 90, 59, 0.08);
-  --sidebar-menu-active-bg: #3A241C;
+  --sidebar-menu-text: rgb(var(--ios-label-2));
+  --sidebar-menu-hover-bg: var(--color-primary-faint);
+  --sidebar-menu-active-bg: var(--color-primary-soft);
   --sidebar-menu-active-color: var(--color-primary);
   --sidebar-menu-active-ring: transparent;
 }
@@ -577,7 +548,7 @@ html.dark .sidebar-shell {
   display: flex;
   align-items: center;
   min-height: 1.75rem;
-  color: #000;
+  color: rgb(var(--ios-label));
   white-space: nowrap;
   padding-right: 4px;
 }
@@ -667,7 +638,7 @@ html.dark .sidebar-shell .sidebar-menu .vocat-menu-item:not(.is-active) { color:
 .halo-drawer-overlay {
   position: absolute;
   inset: 0;
-  background: rgb(44 44 44 / 0.2);
+  background: rgb(0 0 0 / 0.2);
   opacity: 0;
   transition: opacity var(--dur-med) var(--ease-out-apple);
 }
@@ -679,7 +650,7 @@ html.dark .sidebar-shell .sidebar-menu .vocat-menu-item:not(.is-active) { color:
   left: 8px;
   overflow: hidden;
   border-radius: 20px;
-  box-shadow: 0 4px 20px rgba(180, 140, 100, 0.16);
+  box-shadow: 0 4px 20px rgba(120, 120, 128, 0.16);
   transform: translate3d(calc(-100% - 16px), 0, 0);
   transition: transform var(--dur-med) var(--ease-spring);
 }
@@ -712,12 +683,12 @@ html.dark .sidebar-shell .sidebar-menu .vocat-menu-item:not(.is-active) { color:
   border: 0;
   padding: 0;
   margin: 0;
-  background: rgba(44, 36, 28, 0.28);
+  background: rgb(0 0 0 / 0.28);
   cursor: default;
   animation: overlay-in var(--dur-fast) var(--ease-out-apple) backwards;
 }
 html.dark .halo-modal-backdrop {
-  background: rgba(10, 8, 6, 0.46);
+  background: rgb(0 0 0 / 0.5);
 }
 .halo-modal-panel {
   position: relative;
@@ -732,17 +703,17 @@ html.dark .halo-modal-backdrop {
   box-sizing: border-box;
 }
 .halo-modal-panel > .halo-modal-footer {
-  border-top: 1px solid #E8D9C8;
-  background: #FDF8F2;
+  border-top: 1px solid rgb(var(--ios-separator));
+  background: rgb(var(--ios-grouped-2));
 }
 html.dark .halo-modal-panel > .halo-modal-footer {
   border-top-color: var(--color-border);
   background: var(--color-card-2);
 }
 .glass-modal {
-  background: #FFFFFF;
-  border: 1px solid #E8D9C8;
-  box-shadow: 0 16px 48px rgba(180, 140, 100, 0.16);
+  background: rgb(var(--ios-grouped-2));
+  border: 1px solid rgb(var(--ios-separator));
+  box-shadow: 0 16px 48px rgba(120, 120, 128, 0.16);
 }
 html.dark .glass-modal {
   background: var(--color-card);
@@ -751,7 +722,7 @@ html.dark .glass-modal {
 }
 
 .halo-login-field {
-  border: 1px solid rgba(168, 140, 112, 0.28);
+  border: 1px solid rgba(120, 120, 128, 0.28);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.42);
   box-shadow: none;
@@ -760,7 +731,7 @@ html.dark .glass-modal {
     box-shadow 180ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 .halo-login-field:hover {
-  border-color: rgba(168, 140, 112, 0.42);
+  border-color: rgba(120, 120, 128, 0.42);
   background: rgba(255, 255, 255, 0.62);
 }
 .halo-login-field:focus-within {
@@ -771,8 +742,8 @@ html.dark .glass-modal {
 .halo-login-field input:-webkit-autofill,
 .halo-login-field input:-webkit-autofill:hover,
 .halo-login-field input:-webkit-autofill:focus {
-  -webkit-text-fill-color: #2c2c2c;
-  caret-color: #2c2c2c;
+  -webkit-text-fill-color: rgb(var(--ios-label));
+  caret-color: rgb(var(--ios-label));
   box-shadow: 0 0 0 1000px transparent inset;
   transition: background-color 99999s ease-out 0s;
 }

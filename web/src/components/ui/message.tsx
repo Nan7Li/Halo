@@ -57,10 +57,10 @@ const ICONS: Record<MessageKind, typeof CheckmarkCircleFilled> = {
 };
 
 const TONE: Record<MessageKind, string> = {
-  success: "text-green-500",
-  error: "text-red-500",
-  warning: "text-amber-500",
-  info: "text-indigo-500",
+  success: "text-sys-green",
+  error: "text-sys-red",
+  warning: "text-sys-orange",
+  info: "text-accent",
 };
 
 export function MessageHost() {
@@ -74,16 +74,14 @@ export function MessageHost() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed left-1/2 top-4 z-[10000] flex w-full max-w-md -translate-x-1/2 flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none fixed left-1/2 top-[max(10px,env(safe-area-inset-top))] z-[10000] flex w-full max-w-md -translate-x-1/2 flex-col items-center gap-2 px-4">
       {current.map((item) => {
         const Icon = ICONS[item.kind];
         return (
           <div
             key={item.id}
             className={cx(
-              "pointer-events-auto flex items-center gap-2 rounded-full border px-4 py-2.5 text-[13px] font-medium",
-              "border-[#E8D9C8] bg-white text-[#2C2C2C] shadow-[0_4px_20px_rgba(180,140,100,0.12)]",
-              "dark:border-white/10 dark:bg-[#241F1A] dark:text-[#F3EADF]",
+              "glass-thick pointer-events-auto flex items-center gap-2.5 rounded-full px-5 py-3 text-[15px] font-semibold tracking-[-0.01em] text-label",
               item.leaving ? "ui-toast-out" : "ui-toast-in",
             )}
             role="status"

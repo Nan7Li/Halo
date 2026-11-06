@@ -60,7 +60,7 @@ export function EsimDownloadForm(props: EsimDownloadFormProps) {
             <div
               className={cx(
                 "h-full w-full origin-left rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
-                props.downloadErr ? "bg-red-500" : props.downloadPct >= 100 ? "bg-green-500" : "bg-[var(--color-primary)]",
+                props.downloadErr ? "bg-red-500" : props.downloadPct >= 100 ? "bg-green-500" : "bg-accent",
               )}
               style={{ transform: `scaleX(${Math.max(0, Math.min(100, props.downloadPct)) / 100})` }}
             />

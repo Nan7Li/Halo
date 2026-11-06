@@ -48,7 +48,7 @@ function levelColor(level: string): string {
     case "debug":
       return "text-purple-500";
     case "info":
-      return "text-[var(--color-primary)]";
+      return "text-accent";
     case "warn":
       return "text-yellow-500";
     case "error":

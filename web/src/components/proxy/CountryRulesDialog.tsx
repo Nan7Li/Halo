@@ -89,7 +89,7 @@ export function CountryRulesDialog(props: CountryRulesDialogProps) {
         <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-white/10">
           <div className="max-h-[55vh] overflow-auto">
             <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-[#202027]">
+              <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500 dark:bg-grouped-2">
                 <tr>
                   <th className="px-4 py-3">{t("国家 / 地区")}</th>
                   <th className="px-4 py-3">MCC</th>

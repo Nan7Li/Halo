@@ -163,7 +163,7 @@ export function AuthenticatedShell({
   function userCard() {
     return (
       <div className="ui-panel-muted flex items-center gap-3 p-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-accent">
           <SettingsRegular className="h-[18px] w-[18px]" />
         </div>
         <div className="min-w-0 flex-1">
@@ -201,7 +201,7 @@ export function AuthenticatedShell({
       )}
 
       <Drawer open={isMobile && mobileOpen} onClose={() => setMobileOpen(false)} className="mobile-drawer">
-        <div className="sidebar-shell relative h-full bg-[#FDF8F2] dark:bg-[#211D18]">
+        <div className="sidebar-shell relative h-full bg-bg-2 dark:bg-grouped-2">
           <div className="flex h-16 items-center px-4">
             <BrandLogo className="sidebar-brand-logo" />
             <div className="ml-3">

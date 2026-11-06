@@ -1,0 +1,140 @@
+/*
+ * iOS 27 semantic colors, materials and motion tokens.
+ *
+ * Colors are RGB channels so Tailwind alpha modifiers work
+ * (`bg-grouped-2/80`). Values follow UIKit's dynamic system colors; the
+ * label tiers are flattened over their usual background so text stays
+ * legible on top of glass.
+ */
+:root {
+  color-scheme: light;
+
+  --ios-bg: 255 255 255;
+  --ios-bg-2: 242 242 247;
+  --ios-bg-3: 255 255 255;
+  --ios-grouped: 242 242 247;
+  --ios-grouped-2: 255 255 255;
+  --ios-grouped-3: 242 242 247;
+  --ios-elevated: 255 255 255;
+
+  --ios-label: 0 0 0;
+  --ios-label-2: 110 110 115;
+  --ios-label-3: 160 160 166;
+  --ios-label-4: 196 196 198;
+  --ios-separator: 198 198 200;
+  --ios-separator-soft: 60 60 67;
+
+  --ios-fill: rgba(120, 120, 128, 0.2);
+  --ios-fill-2: rgba(120, 120, 128, 0.16);
+  --ios-fill-3: rgba(118, 118, 128, 0.12);
+  --ios-fill-4: rgba(116, 116, 128, 0.08);
+
+  --ios-red: 255 59 48;
+  --ios-orange: 255 149 0;
+  --ios-yellow: 255 204 0;
+  --ios-green: 52 199 89;
+  --ios-mint: 0 199 190;
+  --ios-teal: 48 176 199;
+  --ios-cyan: 50 173 230;
+  --ios-blue: 0 122 255;
+  --ios-indigo: 88 86 214;
+  --ios-purple: 175 82 222;
+  --ios-pink: 255 45 85;
+  --ios-brown: 162 132 94;
+  --ios-gray: 142 142 147;
+
+  /* Motion. Springs are sampled from damped-spring solutions (see
+     lib/motion.ts); browsers without linear() fall back to the bezier. */
+  --spring-smooth: cubic-bezier(0.32, 0.72, 0, 1);
+  --spring-snappy: cubic-bezier(0.3, 0.9, 0.2, 1.02);
+  --spring-bouncy: cubic-bezier(0.34, 1.4, 0.5, 1);
+  --dur-spring-smooth: 620ms;
+  --dur-spring-snappy: 490ms;
+  --dur-spring-bouncy: 740ms;
+  --motion-scale: 1;
+
+  /* Corner radii follow concentric iOS shapes. */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring-smooth: linear(0, 0.0229, 0.0788, 0.1531, 0.236, 0.3206, 0.4028, 0.48, 0.5507, 0.6144, 0.6709, 0.7205, 0.7636, 0.8008, 0.8327, 0.86, 0.8831, 0.9026, 0.9191, 0.9329, 0.9444, 0.954, 0.9621, 0.9687, 0.9743, 0.9789, 0.9826, 0.9858, 0.9883, 0.9905, 0.9922, 0.9936, 0.9948, 0.9958, 0.9965, 0.9972, 0.9977, 0.9981, 0.9985, 0.9988, 1);
+    --spring-snappy: linear(0, 0.0206, 0.0733, 0.1464, 0.2311, 0.3205, 0.4097, 0.4954, 0.5753, 0.6479, 0.7127, 0.7693, 0.8181, 0.8594, 0.894, 0.9223, 0.9453, 0.9635, 0.9778, 0.9886, 0.9967, 1.0025, 1.0065, 1.009, 1.0104, 1.011, 1.011, 1.0106, 1.0099, 1.009, 1.008, 1.007, 1.006, 1.0051, 1.0043, 1.0035, 1.0028, 1.0023, 1.0018, 1.0013, 1);
+    --spring-bouncy: linear(0, 0.0298, 0.1052, 0.2086, 0.3258, 0.4461, 0.5618, 0.6678, 0.7611, 0.84, 0.9045, 0.9553, 0.9935, 1.0207, 1.0387, 1.0491, 1.0537, 1.0539, 1.051, 1.0461, 1.0401, 1.0336, 1.0271, 1.0211, 1.0156, 1.0109, 1.007, 1.0038, 1.0014, 0.9996, 0.9984, 0.9976, 0.9972, 0.9971, 0.9971, 0.9973, 0.9976, 0.998, 0.9983, 0.9987, 1);
+  }
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --ios-bg: 0 0 0;
+  --ios-bg-2: 28 28 30;
+  --ios-bg-3: 44 44 46;
+  --ios-grouped: 0 0 0;
+  --ios-grouped-2: 28 28 30;
+  --ios-grouped-3: 44 44 46;
+  --ios-elevated: 36 36 38;
+
+  --ios-label: 255 255 255;
+  --ios-label-2: 152 152 159;
+  --ios-label-3: 108 108 113;
+  --ios-label-4: 72 72 76;
+  --ios-separator: 56 56 58;
+  --ios-separator-soft: 84 84 88;
+
+  --ios-fill: rgba(120, 120, 128, 0.36);
+  --ios-fill-2: rgba(120, 120, 128, 0.32);
+  --ios-fill-3: rgba(118, 118, 128, 0.24);
+  --ios-fill-4: rgba(118, 118, 128, 0.18);
+
+  --ios-red: 255 69 58;
+  --ios-orange: 255 159 10;
+  --ios-yellow: 255 214 10;
+  --ios-green: 48 209 88;
+  --ios-mint: 99 230 226;
+  --ios-teal: 64 200 224;
+  --ios-cyan: 100 210 255;
+  --ios-blue: 10 132 255;
+  --ios-indigo: 94 92 230;
+  --ios-purple: 191 90 242;
+  --ios-pink: 255 55 95;
+  --ios-brown: 172 142 104;
+  --ios-gray: 142 142 147;
+}
+
+/* Increase Contrast: darker secondary text and visible separators. */
+html[data-contrast="high"] {
+  --ios-label-2: 72 72 76;
+  --ios-label-3: 110 110 115;
+  --ios-separator: 150 150 155;
+}
+html.dark[data-contrast="high"] {
+  --ios-label-2: 200 200 206;
+  --ios-label-3: 160 160 166;
+  --ios-separator: 110 110 115;
+}
+
+/* Motion preference. "reduced" keeps fades but drops movement and bounce;
+   "off" removes animation entirely. The OS setting implies "reduced". */
+html[data-motion="reduced"] {
+  --spring-bouncy: var(--spring-smooth);
+  --spring-snappy: var(--spring-smooth);
+  --motion-scale: 0;
+}
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+html[data-motion="off"]::view-transition-old(*),
+html[data-motion="off"]::view-transition-new(*),
+html[data-motion="off"]::view-transition-group(*) {
+  animation: none !important;
+}

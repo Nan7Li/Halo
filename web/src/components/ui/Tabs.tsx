@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { cx } from "../../lib/utils";
+import { useSlidingIndicator } from "../ios/core";
 
 export interface TabItem {
   key: string;
@@ -7,7 +8,7 @@ export interface TabItem {
   disabled?: boolean;
 }
 
-// el-tabs equivalent: top nav with sliding active bar.
+/** Horizontally scrolling capsule tabs with a spring-animated selection. */
 export function Tabs({
   tabs,
   value,
@@ -19,34 +20,39 @@ export function Tabs({
   onChange: (key: string) => void;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const active = tabs.findIndex((tab) => tab.key === value);
+  const lens = useSlidingIndicator(ref, active);
   return (
     <div className={cx("relative", className)}>
-      <div className="relative flex items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-gray-200/70 [-ms-overflow-style:none] [scrollbar-width:none] dark:border-white/10 [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={ref}
+        role="tablist"
+        className="relative flex w-max max-w-full items-center gap-0.5 overflow-x-auto rounded-full bg-fill-3 p-[3px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <span
+          aria-hidden
+          className="absolute bottom-[3px] left-0 top-[3px] rounded-full bg-white shadow-[0_3px_8px_rgb(0_0_0/0.12),0_0_0_0.5px_rgb(0_0_0/0.04)] transition-[transform,width] duration-[var(--dur-spring-snappy)] ease-spring-snappy dark:bg-[#636366]"
+          style={lens}
+        />
         {tabs.map((tab) => {
-          const active = tab.key === value;
+          const selected = tab.key === value;
           return (
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              data-indicator-item
+              aria-selected={selected}
               disabled={tab.disabled}
               onClick={() => onChange(tab.key)}
               className={cx(
-                "relative shrink-0 whitespace-nowrap px-3 py-2 text-[13px] font-medium outline-none sm:px-4 sm:py-2.5 sm:text-sm",
-                "transition-[color,transform] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
-                "disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97]",
-                active
-                  ? "text-[var(--color-primary)]"
-                  : "text-[#8A7A6A] hover:text-[#2C2C2C] dark:text-gray-400 dark:hover:text-gray-200",
+                "relative z-[1] h-8 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] outline-none ios-press",
+                "disabled:cursor-not-allowed disabled:opacity-40",
+                selected ? "font-semibold text-label" : "font-medium text-label-2 hover:text-label",
               )}
             >
               {tab.label}
-              <span
-                className={cx(
-                  "absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]",
-                  "transition-[opacity,transform] duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
-                  active ? "scale-x-100 opacity-100" : "scale-x-50 opacity-0",
-                )}
-              />
             </button>
           );
         })}

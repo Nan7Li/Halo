@@ -660,7 +660,7 @@ export default function SmsPage() {
       <div className="relative flex-1 overflow-hidden ui-card">
         {contactsLoading && contacts.length === 0 ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-sm dark:bg-black/20">
-            <Spinner className="h-7 w-7 text-[var(--color-primary)]" />
+            <Spinner className="h-7 w-7 text-accent" />
           </div>
         ) : null}
         <div className="sms-main-layout">

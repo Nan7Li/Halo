@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { WarningFilled } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
-import { Button } from "./Button";
 import { tl, useI18n } from "../../lib/i18n";
 
 export interface ConfirmOptions {
@@ -45,33 +44,28 @@ export function ConfirmHost() {
   if (!state) return null;
   const danger = state.type === "danger" || state.confirmVariant === "danger";
 
+  // UIAlertController: compact glass card, centered text, button row.
   return (
-    <div className="halo-modal-root" style={{ zIndex: 4500 }}>
-      <button type="button" className="halo-modal-backdrop" aria-label={t("取消")} onClick={() => close(false)} />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        className="halo-modal-panel glass-modal ui-pop w-full max-w-sm px-6 py-5"
-      >
-        <div className="flex items-start gap-3">
-          <div
-            className={cx(
-              "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center",
-              danger ? "text-red-500" : "text-amber-500",
-            )}
-          >
-            <WarningFilled className="text-[22px]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[17px] font-semibold tracking-tight text-[#2C2C2C] dark:text-white">{state.title}</div>
-            <div className="mt-2 text-[14px] leading-relaxed text-[#6B5C4F] dark:text-white/65">{state.message}</div>
-          </div>
+    <div className="ios-sheet-root !items-center" style={{ zIndex: 4500 }}>
+      <button type="button" className="ios-sheet-scrim glass-scrim" aria-label={t("取消")} onClick={() => close(false)} />
+      <div role="alertdialog" aria-modal="true" className="glass-thick relative z-[1] w-[300px] overflow-hidden rounded-[28px] [animation:ios-scale-in_380ms_var(--spring-bouncy)_backwards]">
+        <div className="px-5 pb-4 pt-5 text-center">
+          {danger ? <WarningFilled className="mx-auto mb-1 block text-[28px] text-sys-red" /> : null}
+          <div className="ios-headline text-label">{state.title}</div>
+          <div className="mt-1 ios-footnote text-label">{state.message}</div>
         </div>
-        <div className="mt-5 flex items-center justify-end gap-2.5">
-          <Button onClick={() => close(false)}>{state.cancelText ?? t("取消")}</Button>
-          <Button variant={danger ? "danger" : "primary"} onClick={() => close(true)} autoFocus>
+        <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+          <button type="button" className="h-11 rounded-full bg-fill-3 ios-body font-medium text-label ios-press" onClick={() => close(false)}>
+            {state.cancelText ?? t("取消")}
+          </button>
+          <button
+            type="button"
+            autoFocus
+            className={cx("h-11 rounded-full ios-body font-semibold text-white ios-press", danger ? "bg-sys-red" : "bg-accent")}
+            onClick={() => close(true)}
+          >
             {state.confirmText ?? t("确定")}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

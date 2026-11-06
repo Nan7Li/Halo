@@ -102,17 +102,17 @@ function CallSessionView({
   const ringClass =
     phase === "incoming" ? "bg-[var(--color-success)]/20 text-[var(--color-success)]" :
     phase === "active" ? "bg-[var(--color-success)]/15 text-[var(--color-success)]" :
-    "bg-[var(--color-primary)]/18 text-[var(--color-primary)]";
+    "bg-accent/18 text-accent";
 
   return (
     <div className="mx-auto flex w-full max-w-[320px] flex-col items-center py-2">
       <div className={cx("flex h-20 w-20 items-center justify-center rounded-full", ringClass, (phase === "incoming" || phase === "dialing") && "animate-pulse")}>
         <CallRegular className="h-10 w-10" />
       </div>
-      <div className="mt-4 text-[13px] font-semibold tracking-wide text-[var(--color-primary)] dark:text-[var(--color-primary)]">
+      <div className="mt-4 text-[13px] font-semibold tracking-wide text-accent dark:text-accent">
         {title}
       </div>
-      <div className="mt-2 break-all text-center text-[26px] font-semibold tracking-tight text-[#2C2C2C] dark:text-[var(--color-text)]">
+      <div className="mt-2 break-all text-center text-[26px] font-semibold tracking-tight text-label dark:text-label">
         {call.number || t("未知号码")}
       </div>
       {phase === "active" || phase === "connecting" ? (
@@ -120,7 +120,7 @@ function CallSessionView({
           {formatElapsed(call.answeredAt || call.startedAt)}
         </div>
       ) : null}
-      <div className="mt-2 text-center text-xs text-gray-500 dark:text-[var(--color-text-muted)]">{hint}</div>
+      <div className="mt-2 text-center text-xs text-gray-500 dark:text-label-2">{hint}</div>
       <div className="mt-6 flex w-full items-center justify-center gap-4">
         {phase === "incoming" ? (
           <Button className="min-w-[120px]" size="large" variant="success" onClick={onAnswer} disabled={busy} icon={<CallRegular />}>
@@ -319,10 +319,10 @@ export function BrowserSoftphone({ deviceId, deviceName, ready, reason, layout =
             onPointerUp={() => endKey(key)}
             onPointerLeave={clearLongPress}
             onPointerCancel={clearLongPress}
-            className="phone-key flex h-16 w-16 flex-col items-center justify-center rounded-full bg-white text-[#2C2C2C] shadow-[0_1px_0_rgba(180,140,100,0.12)] ring-1 ring-[#E8D9C8]/80 transition-[transform,background-color] duration-150 active:scale-95 dark:bg-[var(--color-card-2)] dark:text-[var(--color-text)] dark:ring-[var(--color-border)]"
+            className="phone-key flex h-16 w-16 flex-col items-center justify-center rounded-full bg-white text-label shadow-[0_1px_0_rgba(0,0,0,0.12)] ring-1 ring-separator/80 transition-[transform,background-color] duration-150 active:scale-95 dark:bg-grouped-3 dark:text-label dark:ring-separator"
           >
             <span className="text-[26px] font-medium leading-none tracking-tight">{key.value}</span>
-            {key.letters ? <span className="mt-0.5 text-[9px] font-semibold tracking-[0.14em] text-[#8A7A6A] dark:text-white/45">{key.letters}</span> : <span className="mt-0.5 h-[11px]" />}
+            {key.letters ? <span className="mt-0.5 text-[9px] font-semibold tracking-[0.14em] text-label-2 dark:text-white/45">{key.letters}</span> : <span className="mt-0.5 h-[11px]" />}
           </button>
         ))}
       </div>
@@ -334,7 +334,7 @@ export function BrowserSoftphone({ deviceId, deviceName, ready, reason, layout =
           onClick={() => void action("dial")}
           aria-label={t("拨号")}
           title={!ready ? (reason || t("IMS 尚未注册，请先在设备页开启 VoWiFi 并等待注册完成。")) : t("拨号")}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[0_8px_18px_rgb(var(--color-primary-rgb)/0.35)] transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:shadow-none"
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white shadow-[0_8px_18px_rgb(var(--color-primary-rgb)/0.35)] transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:shadow-none"
         >
           <CallRegular className="h-8 w-8" />
         </button>
@@ -346,7 +346,7 @@ export function BrowserSoftphone({ deviceId, deviceName, ready, reason, layout =
           aria-label={t("退格")}
           title={t("长按或右键清空")}
           className={cx(
-            "flex h-14 w-14 items-center justify-center rounded-full text-[#8A7A6A] transition-colors dark:text-white/50",
+            "flex h-14 w-14 items-center justify-center rounded-full text-label-2 transition-colors dark:text-white/50",
             number ? "hover:bg-black/5 dark:hover:bg-white/10" : "invisible",
           )}
         >
@@ -396,7 +396,7 @@ export function BrowserSoftphone({ deviceId, deviceName, ready, reason, layout =
               autoComplete="tel"
               aria-label={t("电话号码")}
               onKeyDown={(event) => { if (event.key === "Enter" && canDial) void action("dial"); }}
-              className="w-full rounded-[12px] border border-[#E8D9C8] bg-[#FDF8F2] px-3 py-2 text-center text-[28px] font-semibold tracking-[0.04em] text-[#2C2C2C] outline-none placeholder:text-[#716A61] placeholder:tracking-normal dark:border-[var(--color-border)] dark:bg-[var(--color-input)] dark:text-[var(--color-text)] dark:placeholder:text-[var(--color-text-weak)]"
+              className="w-full rounded-[12px] border border-separator bg-bg-2 px-3 py-2 text-center text-[28px] font-semibold tracking-[0.04em] text-label outline-none placeholder:text-label-2 placeholder:tracking-normal dark:border-separator dark:bg-[var(--color-input)] dark:text-label dark:placeholder:text-label-3"
             />
           </div>
 
@@ -410,7 +410,7 @@ export function BrowserSoftphone({ deviceId, deviceName, ready, reason, layout =
                 disabled={!canDial}
                 onClick={() => void action("dial")}
                 aria-label={t("拨号")}
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary)] text-white shadow-[0_6px_14px_rgb(var(--color-primary-rgb)/0.32)] transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:shadow-none"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-white shadow-[0_6px_14px_rgb(var(--color-primary-rgb)/0.32)] transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 <CallRegular className="h-6 w-6" />
               </button>

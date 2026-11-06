@@ -89,7 +89,7 @@ function PkiInfo({ eid }: { eid: EsimEid }) {
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[var(--color-primary)]"
+            className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-accent"
           >
             {open ? t("收起芯片详情") : t("芯片详情")}
             <ChevronDownRegular className={cx("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />

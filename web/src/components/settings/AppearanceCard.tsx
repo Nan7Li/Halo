@@ -36,7 +36,7 @@ export function AppearanceCard() {
         <CardTitle title={t("外观")} subtitle={t("主色可自定义，默认是柔和杏橙色")} />
       </div>
       <div className="mb-5">
-        <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-[var(--color-text-muted)]">{t("显示模式")}</div>
+        <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-label-2">{t("显示模式")}</div>
         <div className="flex flex-wrap items-center gap-3">
           {themes.map((item) => {
             const active = theme === item.id;
@@ -47,7 +47,7 @@ export function AppearanceCard() {
                 type="button"
                 onClick={() => withViewTransition(() => writeThemePreference(item.id))}
                 aria-pressed={active}
-                className="flex items-center gap-2 rounded-full border border-[#E8D9C8] bg-white px-3 py-1.5 text-[13px] font-medium tracking-tight transition-[transform,background-color,border-color,color] duration-[180ms] active:scale-[0.97] dark:border-[var(--color-border)] dark:bg-[var(--color-input)] dark:text-[var(--color-text)]"
+                className="flex items-center gap-2 rounded-full border border-separator bg-white px-3 py-1.5 text-[13px] font-medium tracking-tight transition-[transform,background-color,border-color,color] duration-[180ms] active:scale-[0.97] dark:border-separator dark:bg-[var(--color-input)] dark:text-label"
                 style={active ? { borderColor: "var(--color-primary)", background: "var(--color-primary-soft)", color: "var(--color-primary)" } : undefined}
               >
                 <Icon className="h-4 w-4" />
@@ -57,7 +57,7 @@ export function AppearanceCard() {
           })}
         </div>
       </div>
-      <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-[var(--color-text-muted)]">{t("主色调")}</div>
+      <div className="mb-2 text-xs font-semibold text-gray-500 dark:text-label-2">{t("主色调")}</div>
       <div className="flex flex-wrap items-center gap-3">
         {ACCENT_PRESETS.map((preset) => {
           const active = accent.toUpperCase() === preset.hex.toUpperCase();
@@ -66,7 +66,7 @@ export function AppearanceCard() {
               key={preset.id}
               type="button"
               onClick={() => withViewTransition(() => setAccent(preset.hex))}
-              className="flex items-center gap-2 rounded-full border border-[#E8D9C8] bg-white px-3 py-1.5 text-[13px] font-medium tracking-tight transition-[transform,background-color,border-color,color] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] dark:border-[var(--color-border)] dark:bg-[var(--color-input)] dark:text-[var(--color-text)]"
+              className="flex items-center gap-2 rounded-full border border-separator bg-white px-3 py-1.5 text-[13px] font-medium tracking-tight transition-[transform,background-color,border-color,color] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] dark:border-separator dark:bg-[var(--color-input)] dark:text-label"
               style={active ? { borderColor: preset.hex, background: "var(--color-primary-soft)", color: "var(--color-primary)" } : undefined}
             >
               <span className="h-4 w-4 rounded-full ring-2 ring-white/70 dark:ring-black/40" style={{ background: preset.hex }} />
@@ -74,7 +74,7 @@ export function AppearanceCard() {
             </button>
           );
         })}
-        <label className="flex items-center gap-2 rounded-full border border-black/8 bg-black/[0.03] px-3 py-1.5 text-[13px] font-medium tracking-tight dark:border-[var(--color-border)] dark:bg-[var(--color-input)] dark:text-[var(--color-text)]">
+        <label className="flex items-center gap-2 rounded-full border border-black/8 bg-black/[0.03] px-3 py-1.5 text-[13px] font-medium tracking-tight dark:border-separator dark:bg-[var(--color-input)] dark:text-label">
           <input
             type="color"
             value={normalizeHex(accent) || accent}

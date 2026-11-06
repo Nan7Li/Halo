@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 
 export const ACCENT_KEY = "halo.accent";
-export const DEFAULT_ACCENT = "#F15A3B";
+export const DEFAULT_ACCENT = "#007AFF";
 
 export const ACCENT_PRESETS = [
-  { id: "apricot", label: "杏橙", hex: "#F15A3B" },
-  { id: "grok", label: "Grok 金", hex: "#C9A46A" },
-  { id: "cream", label: "奶油", hex: "#E4D2B0" },
-  { id: "copper", label: "赤铜", hex: "#C47A4A" },
-  { id: "graphite", label: "石墨", hex: "#8E8A82" },
-  { id: "ios", label: "系统蓝", hex: "#007AFF" },
+  { id: "blue", label: "系统蓝", hex: "#007AFF" },
+  { id: "indigo", label: "靛蓝", hex: "#5856D6" },
+  { id: "purple", label: "紫色", hex: "#AF52DE" },
+  { id: "pink", label: "粉色", hex: "#FF2D55" },
+  { id: "apricot", label: "Halo 杏橙", hex: "#F15A3B" },
+  { id: "orange", label: "橙色", hex: "#FF9500" },
+  { id: "green", label: "绿色", hex: "#34C759" },
+  { id: "teal", label: "青色", hex: "#30B0C7" },
+  { id: "graphite", label: "石墨", hex: "#8E8E93" },
 ] as const;
 
 type RGB = { r: number; g: number; b: number };
@@ -78,7 +81,7 @@ export function applyAccent(hex: string, persist = true) {
   root.style.setProperty("--color-primary-faint", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`);
   root.style.setProperty("--color-primary-border", `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.32)`);
   root.style.setProperty("--color-primary-rgb", `${rgb.r} ${rgb.g} ${rgb.b}`);
-  root.style.setProperty("--color-on-primary", luminance(rgb) > 0.45 ? "#2C2C2C" : "#FFFFFF");
+  root.style.setProperty("--color-on-primary", luminance(rgb) > 0.45 ? "#1C1C1E" : "#FFFFFF");
   root.style.setProperty("--el-color-primary", value);
   root.style.setProperty("--el-color-primary-dark-2", hover);
   root.style.setProperty("--el-color-primary-light-3", toHex(mix(rgb, { r: 255, g: 255, b: 255 }, 0.28)));
@@ -86,9 +89,7 @@ export function applyAccent(hex: string, persist = true) {
   root.style.setProperty("--el-color-primary-light-7", toHex(mix(rgb, { r: 255, g: 255, b: 255 }, 0.62)));
   root.style.setProperty("--el-color-primary-light-8", toHex(mix(rgb, { r: 255, g: 255, b: 255 }, 0.78)));
   root.style.setProperty("--el-color-primary-light-9", toHex(mix(rgb, { r: 255, g: 255, b: 255 }, 0.9)));
-  root.style.setProperty("--ui-btn-primary-shadow", `0 6px 18px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.28)`);
-  root.style.setProperty("--ui-btn-primary-shadow-hover", `0 8px 22px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.36)`);
-  if (persist) {
+      if (persist) {
     try {
       localStorage.setItem(ACCENT_KEY, value);
     } catch {

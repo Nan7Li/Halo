@@ -23,8 +23,8 @@ export function DeviceListItemCard({ device, selected, statusText, onSelect }: D
           "transition-[background-color,border-color,box-shadow,transform] duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
           "active:scale-[0.985]",
           selected
-            ? "border-[var(--color-primary)]/25 bg-[var(--color-primary-soft)] shadow-[0_4px_20px_rgba(180,140,100,0.08)]"
-            : "border-[#E8D9C8] hover:bg-[#FDF6F0] dark:border-white/10 dark:hover:bg-white/5",
+            ? "border-accent/25 bg-[var(--color-primary-soft)] shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+            : "border-separator hover:bg-bg-2 dark:border-white/10 dark:hover:bg-white/5",
         )}
       >
         <div className="flex items-start justify-between gap-2">

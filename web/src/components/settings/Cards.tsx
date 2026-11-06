@@ -44,8 +44,8 @@ function CardIcon({ children, small }: { children: ReactNode; small?: boolean })
     <div
       className={
         small
-          ? "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-          : "flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+          ? "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-accent"
+          : "flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-accent"
       }
     >
       {children}
@@ -290,7 +290,7 @@ export function SystemInfoCard({
                 {upstream.releaseNotes || t("暂无更新说明")}
               </div>
               {upstream.htmlUrl ? (
-                <a className="mb-3 block text-[12px] text-[var(--color-primary)] underline-offset-2 hover:underline" href={upstream.htmlUrl} target="_blank" rel="noreferrer">
+                <a className="mb-3 block text-[12px] text-accent underline-offset-2 hover:underline" href={upstream.htmlUrl} target="_blank" rel="noreferrer">
                   {upstream.repository}
                 </a>
               ) : null}
@@ -307,7 +307,7 @@ export function SystemInfoCard({
           {t("Halo 是基于 VoCat 的个人界面与发行版。模组、IMS、WiFi Calling 等核心能力来自原项目。")}
           {" "}
           <a
-            className="text-[var(--color-primary)] underline-offset-2 hover:underline"
+            className="text-accent underline-offset-2 hover:underline"
             href="https://github.com/MengMengCode/VoCat"
             target="_blank"
             rel="noreferrer"

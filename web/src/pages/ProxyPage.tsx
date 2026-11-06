@@ -337,7 +337,7 @@ export default function ProxyPage() {
             <iframe
               title={contribution.label}
               src={pluginAssetURL(plugin, contribution)}
-              className="h-[640px] w-full border-0 bg-white dark:bg-[#15151a]"
+              className="h-[640px] w-full border-0 bg-white dark:bg-grouped"
               sandbox="allow-scripts allow-forms allow-same-origin"
             />
           </section>

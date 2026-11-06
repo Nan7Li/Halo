@@ -42,7 +42,7 @@ export function EpdgStatusCard({ device, onRefreshed }: { device: DeviceDetail; 
   const checked = probe?.checkedAt ? new Date(probe.checkedAt).toLocaleString() : "--";
 
   const portRow = (port: number, okFlag?: boolean, rtt?: number) => (
-    <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-1.5 text-xs dark:border-[var(--color-border)]">
+    <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-1.5 text-xs dark:border-separator">
       <span className="font-mono text-gray-500">UDP/{port}</span>
       <span className={cx("flex items-center gap-1 font-semibold", okFlag ? "text-[var(--color-success)]" : "text-[var(--color-danger)]")}>
         {okFlag ? <CheckmarkCircleRegular className="h-3.5 w-3.5" /> : <DismissCircleRegular className="h-3.5 w-3.5" />}
@@ -55,7 +55,7 @@ export function EpdgStatusCard({ device, onRefreshed }: { device: DeviceDetail; 
   return (
     <div className="ui-panel-muted p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[var(--color-text-muted)]">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-label-2">
           <Wifi1Regular className="h-3.5 w-3.5" />
           {t("ePDG 健康检查")}
         </div>
@@ -72,19 +72,19 @@ export function EpdgStatusCard({ device, onRefreshed }: { device: DeviceDetail; 
       </div>
 
       {!probe ? (
-        <div className="text-xs text-gray-400 dark:text-[var(--color-text-muted)]">
+        <div className="text-xs text-gray-400 dark:text-label-2">
           {t("尚无探测记录。点「立即检测」会按当前 SIM 推导 ePDG，走已绑定的 SOCKS5 或本机默认路由发送 IKE_SA_INIT，探测 UDP/500 与 UDP/4500。")}
         </div>
       ) : (
         <>
           <div className="space-y-1.5">
             <div className="flex items-start justify-between gap-3 text-xs">
-              <span className="shrink-0 text-gray-500 dark:text-[var(--color-text-muted)]">{t("ePDG 主机")}</span>
-              <span className="min-w-0 break-all text-right font-mono text-gray-700 dark:text-[var(--color-text)]">{probe.epdg || "--"}</span>
+              <span className="shrink-0 text-gray-500 dark:text-label-2">{t("ePDG 主机")}</span>
+              <span className="min-w-0 break-all text-right font-mono text-gray-700 dark:text-label">{probe.epdg || "--"}</span>
             </div>
             <div className="flex items-start justify-between gap-3 text-xs">
-              <span className="shrink-0 text-gray-500 dark:text-[var(--color-text-muted)]">{t("检查时间")}</span>
-              <span className="min-w-0 break-all text-right text-gray-700 dark:text-[var(--color-text)]">{checked}</span>
+              <span className="shrink-0 text-gray-500 dark:text-label-2">{t("检查时间")}</span>
+              <span className="min-w-0 break-all text-right text-gray-700 dark:text-label">{checked}</span>
             </div>
             {portRow(500, probe.port500Ok, probe.rtt500Ms)}
             {portRow(4500, probe.port4500Ok, probe.rtt4500Ms)}

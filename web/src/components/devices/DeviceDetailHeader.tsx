@@ -62,7 +62,7 @@ function RadioTriadButton({
         "flex h-8 min-w-0 flex-1 items-center justify-center gap-1 rounded-[12px] border px-2 text-[11px] font-semibold transition-colors sm:h-9 sm:flex-none sm:gap-1.5 sm:px-3 sm:text-[12px]",
         active
           ? cx("border-transparent", activeClass)
-          : "border-[#E8D9C8] bg-white/60 text-gray-600 hover:bg-white dark:border-[var(--color-border)] dark:bg-[var(--color-card-2)] dark:text-[var(--color-btn-secondary-text)] dark:hover:border-[var(--color-border-hover)] dark:hover:bg-[#322C26]",
+          : "border-separator bg-white/60 text-gray-600 hover:bg-white dark:border-separator dark:bg-grouped-3 dark:text-[var(--color-btn-secondary-text)] dark:hover:border-[var(--color-border-hover)] dark:hover:bg-grouped-3",
         locked && "cursor-not-allowed opacity-90",
         disabled && "cursor-not-allowed opacity-50",
       )}
@@ -99,19 +99,19 @@ export function DeviceDetailHeader(props: DeviceDetailHeaderProps) {
         <div className="flex min-w-0 items-center gap-3">
           <img src={deviceTypeImage(device.deviceType)} alt="" className="h-11 w-11 flex-shrink-0 object-contain" />
           <div className="min-w-0">
-            <div className="truncate text-lg font-bold text-gray-900 dark:text-[var(--color-text)] sm:text-xl">{device.name || device.id}</div>
-            <div className="mt-0.5 truncate text-xs text-gray-500 dark:text-[var(--color-text-muted)]">
+            <div className="truncate text-lg font-bold text-gray-900 dark:text-label sm:text-xl">{device.name || device.id}</div>
+            <div className="mt-0.5 truncate text-xs text-gray-500 dark:text-label-2">
               <span className="cursor-pointer font-mono hover:underline" onClick={() => props.onCopyText(device.id)}>
                 {device.id}
               </span>
             </div>
-            <div className="mt-1 text-[11px] font-semibold text-[var(--color-primary)]">{t("当前射频模式")}：{modeLabel}</div>
+            <div className="mt-1 text-[11px] font-semibold text-accent">{t("当前射频模式")}：{modeLabel}</div>
           </div>
         </div>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-[var(--color-text-muted)]">{t("状态")}</div>
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-label-2">{t("状态")}</div>
             <div className="flex flex-wrap items-center gap-1.5">
               <RadioTriadButton
                 active={networkEnabled}
@@ -133,17 +133,17 @@ export function DeviceDetailHeader(props: DeviceDetailHeaderProps) {
                 title={t("VoWiFi 开关（独立于飞行模式）")}
                 activeClass="bg-[var(--color-success)] text-white hover:bg-[#23b57c]"
               />
-              <span className="inline-flex h-8 items-center rounded-full border border-[#E8D9C8] px-2.5 text-[11px] font-semibold text-gray-600 dark:border-[var(--color-border)] dark:bg-[var(--color-card-2)] dark:text-[var(--color-text-body)] sm:h-9">
+              <span className="inline-flex h-8 items-center rounded-full border border-separator px-2.5 text-[11px] font-semibold text-gray-600 dark:border-separator dark:bg-grouped-3 dark:text-label/85 sm:h-9">
                 {simLabel}
               </span>
-              <span className="inline-flex h-8 items-center rounded-full bg-[var(--color-primary-soft)] px-2.5 text-[11px] font-semibold text-[var(--color-primary)] sm:h-9">
+              <span className="inline-flex h-8 items-center rounded-full bg-[var(--color-primary-soft)] px-2.5 text-[11px] font-semibold text-accent sm:h-9">
                 {modeLabel}
               </span>
             </div>
           </div>
 
           <div className="min-w-0">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-[var(--color-text-muted)]">{t("操作")}</div>
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-label-2">{t("操作")}</div>
             <div className="flex flex-wrap items-center gap-2">
               <RadioTriadButton
                 active={airplaneActive}
@@ -154,7 +154,7 @@ export function DeviceDetailHeader(props: DeviceDetailHeaderProps) {
                 icon={<AirplaneRegular className="h-4 w-4" />}
                 label={airplaneLocked ? t("飞行·锁") : t("飞行")}
                 title={airplaneLocked ? t("VoWiFi 需要射频关闭，飞行模式由系统锁定；关闭 VoWiFi 后可手动切换。") : t("飞行模式开关（独立于 VoWiFi，不会联动）")}
-                activeClass="bg-[var(--color-warning)] hover:bg-[#d49418] text-[#17140F]"
+                activeClass="bg-[var(--color-warning)] hover:bg-[#d49418] text-grouped"
               />
               {vowifiInUse ? (
                 <Button loading={props.reconnectingVoWiFi} onClick={props.onReconnectVowifi} className="flex-1 sm:flex-none" icon={<ArrowSyncRegular />}>

@@ -149,11 +149,11 @@ export function Disclaimer({
   }
 
   return (
-    <div className="disclaimer-overlay fixed inset-0 z-[9999] flex items-center justify-center bg-[#2C2C2C]/35">
-      <div className="disclaimer-dialog relative mx-4 w-full max-w-lg overflow-hidden rounded-[20px] border border-[#E8D9C8] bg-white p-8 shadow-[0_10px_32px_rgba(180,140,100,0.16)] dark:border-white/10 dark:bg-[#241F1A]">
+    <div className="disclaimer-overlay fixed inset-0 z-[9999] flex items-center justify-center bg-label/35">
+      <div className="disclaimer-dialog relative mx-4 w-full max-w-lg overflow-hidden rounded-[20px] border border-separator bg-white p-8 shadow-[0_10px_32px_rgba(0,0,0,0.16)] dark:border-white/10 dark:bg-grouped-3">
         <div className="pointer-events-none absolute left-0 top-0 h-32 w-full bg-gradient-to-b from-white/40 to-transparent dark:from-white/5" />
         <div className="disclaimer-dialog-content relative z-10 flex min-h-0 flex-col">
-          <div className="disclaimer-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-[var(--color-on-primary)] shadow-lg">
+          <div className="disclaimer-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-[var(--color-on-primary)] shadow-lg">
             <WarningGlyph />
           </div>
           <h2 className="disclaimer-title mb-5 text-center text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
@@ -204,7 +204,7 @@ export function Disclaimer({
                 className={cx(
                   "flex-[1.5] rounded-xl px-4 py-3 text-sm font-bold tracking-wide transition-all duration-300",
                   canAgree
-                    ? "cursor-pointer bg-[var(--color-primary)] text-[var(--color-on-primary)] shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                    ? "cursor-pointer bg-accent text-[var(--color-on-primary)] shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                     : "cursor-not-allowed border border-gray-300 bg-gray-200 text-gray-400 opacity-60 shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500",
                 )}
               >

@@ -24,13 +24,13 @@ export function UpcomingTasksCard({ tasks }: { tasks: DashboardUpcomingTask[] })
     <div className="ui-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CalendarClockRegular className="h-4 w-4 text-[var(--color-primary)]" />
-          <h3 className="text-[18px] font-semibold tracking-tight text-black dark:text-[var(--color-text)]">{t("将要执行的定时任务")}</h3>
+          <CalendarClockRegular className="h-4 w-4 text-accent" />
+          <h3 className="text-[18px] font-semibold tracking-tight text-black dark:text-label">{t("将要执行的定时任务")}</h3>
         </div>
         <button
           type="button"
           onClick={() => navigate("/automatic-tasks")}
-          className="text-xs font-medium text-[var(--color-primary)] transition-colors hover:text-[var(--color-primary-hover)]"
+          className="text-xs font-medium text-accent transition-colors hover:text-[var(--color-primary-hover)]"
         >
           {t("查看全部")}
         </button>

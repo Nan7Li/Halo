@@ -38,7 +38,7 @@ export default function ExtensionPage() {
       <iframe
         title={label}
         src={pluginAssetURL(selected.plugin, selected.contribution)}
-        className="h-[calc(100vh-10rem)] min-h-[560px] w-full rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-[#15151a]"
+        className="h-[calc(100vh-10rem)] min-h-[560px] w-full rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-grouped"
         sandbox="allow-scripts allow-forms allow-same-origin"
 		allow="microphone; autoplay"
       />

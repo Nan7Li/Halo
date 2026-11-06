@@ -19,15 +19,15 @@ export function HostInfoCard({ info }: { info?: DashboardHostInfo | null }) {
   return (
     <div className="ui-card p-4">
       <div className="mb-3 flex items-center gap-2">
-        <ServerRegular className="h-4 w-4 text-[var(--color-primary)]" />
-        <h3 className="text-[18px] font-semibold tracking-tight text-black dark:text-[var(--color-text)]">{t("宿主机信息")}</h3>
+        <ServerRegular className="h-4 w-4 text-accent" />
+        <h3 className="text-[18px] font-semibold tracking-tight text-black dark:text-label">{t("宿主机信息")}</h3>
       </div>
       <div className="space-y-2.5">
         {rows.map((row) => (
           <div key={row.label} className="flex items-baseline justify-between gap-3">
-            <span className="flex-shrink-0 text-xs text-gray-400 dark:text-[var(--color-text-muted)]">{row.label}</span>
+            <span className="flex-shrink-0 text-xs text-gray-400 dark:text-label-2">{row.label}</span>
             <span
-              className="min-w-0 flex-1 truncate text-right text-xs font-medium text-gray-700 dark:text-[var(--color-text)]"
+              className="min-w-0 flex-1 truncate text-right text-xs font-medium text-gray-700 dark:text-label"
               title={row.value || undefined}
             >
               {row.value || "—"}

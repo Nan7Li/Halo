@@ -1,15 +1,18 @@
+// Runs before first paint: theme, accent and Liquid Glass appearance, so the
+// page never flashes the wrong colors. Keep in sync with lib/theme.ts,
+// lib/accent.ts and lib/appearanceModel.ts.
 try {
   var theme = localStorage.getItem("theme");
   var followsSystem = !theme || theme === "system";
   var dark = theme === "dark" || (followsSystem && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
   var root = document.documentElement;
   root.classList.toggle("dark", dark);
-  root.style.background = dark ? "#1A1610" : "#F7F4EF";
+  root.style.background = dark ? "#000000" : "#F2F2F7";
 
-  var stored = localStorage.getItem("halo.accent") || "#E85D3C";
+  var stored = localStorage.getItem("halo.accent") || "#007AFF";
   var raw = String(stored).replace("#", "");
   if (/^[0-9a-fA-F]{3}$/.test(raw)) raw = raw.split("").map(function (ch) { return ch + ch; }).join("");
-  if (!/^[0-9a-fA-F]{6}$/.test(raw)) raw = "E85D3C";
+  if (!/^[0-9a-fA-F]{6}$/.test(raw)) raw = "007AFF";
   var n = parseInt(raw, 16);
   var r = (n >> 16) & 255;
   var g = (n >> 8) & 255;
@@ -34,7 +37,22 @@ try {
   root.style.setProperty("--color-primary-faint", "rgba(" + r + ", " + g + ", " + b + ", 0.08)");
   root.style.setProperty("--color-primary-border", "rgba(" + r + ", " + g + ", " + b + ", 0.32)");
   root.style.setProperty("--color-primary-rgb", r + " " + g + " " + b);
-  root.style.setProperty("--color-on-primary", lum > 0.45 ? "#2C2C2C" : "#FFFFFF");
+  root.style.setProperty("--color-on-primary", lum > 0.45 ? "#1C1C1E" : "#FFFFFF");
   root.style.setProperty("--el-color-primary", hex);
   root.style.setProperty("--el-color-primary-dark-2", mix(0.16));
+
+  var appearance = {};
+  try { appearance = JSON.parse(localStorage.getItem("halo.appearance") || "{}") || {}; } catch (e) { appearance = {}; }
+  var clarity = Number(appearance.clarity);
+  if (appearance.clarity === undefined || !isFinite(clarity)) clarity = 0.35;
+  clarity = Math.round(Math.min(1, Math.max(0, clarity)) * 100) / 100;
+  var motion = appearance.motion;
+  if (motion !== "full" && motion !== "reduced" && motion !== "off") {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    motion = reduce ? "reduced" : "full";
+  }
+  root.style.setProperty("--glass-clarity", String(clarity));
+  root.setAttribute("data-motion", motion);
+  root.setAttribute("data-highlight", appearance.dynamicHighlight === false ? "static" : "dynamic");
+  root.setAttribute("data-contrast", appearance.increaseContrast === true ? "high" : "normal");
 } catch (e) {}
