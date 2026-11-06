@@ -1,5 +1,5 @@
 import { cx } from "../../lib/utils";
-import { Tag } from "../ui";
+import { CheckmarkRegular } from "@fluentui/react-icons";
 import type { DiscoveredDevice } from "../../types";
 import { useI18n } from "../../lib/i18n";
 
@@ -35,25 +35,27 @@ export function DiscoveredDeviceRow({
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={selected}
       aria-disabled={degraded}
       onClick={() => onSelect(device)}
-      className={cx(
-        "w-full rounded-xl border p-3 text-left",
-        degraded && "cursor-not-allowed border-amber-200 bg-amber-50 opacity-85",
-        !degraded && selected && "border-indigo-300 bg-indigo-50",
-        !degraded && !selected && "border-gray-200 hover:bg-gray-50",
-      )}
+      className={cx("ios-select-row flex w-full items-center gap-3 px-4 text-left", degraded && "cursor-not-allowed")}
     >
-      <div className="flex items-center gap-2 font-bold text-gray-800">
-        <span>{displayName}</span>
-        <Tag type={isQmi ? "success" : "warning"}>{modeLabel}</Tag>
-      </div>
-      <div className="mt-0.5 truncate text-xs text-gray-500">
-        {device.hardwareKind === "pcsc"
-          ? `USB: ${device.usbPath || "--"} · VID:PID ${device.vendorId.toString(16).padStart(4, "0")}:${device.productId.toString(16).padStart(4, "0")}`
-          : `${device.controlPath} · AT: ${device.atPort || "--"} · IMEI: ${device.imei || "--"} · USB: ${device.usbPath || "--"}`}
-      </div>
-      {degraded ? <div className="mt-1 text-xs text-amber-700">{discoveryMessage || t("未找到可用的 AT 端口（串口可能仍在枚举），系统会自动重试；也可点击重新扫描。")}</div> : null}
+      <span className="ios-select-row-body flex min-w-0 flex-1 items-center gap-3 py-2.5">
+        <span className="min-w-0 flex-1">
+          <span className="flex min-w-0 items-center gap-2">
+            <span className={cx("truncate ios-body font-medium", degraded ? "text-label-2" : "text-label")}>{displayName}</span>
+            <span className={cx("shrink-0 ios-footnote", isQmi ? "text-sys-green" : "text-sys-orange")}>{modeLabel}</span>
+          </span>
+          <span className="mt-0.5 block truncate font-mono ios-footnote text-label-2">
+            {device.hardwareKind === "pcsc"
+              ? `USB ${device.usbPath || "--"} · VID:PID ${device.vendorId.toString(16).padStart(4, "0")}:${device.productId.toString(16).padStart(4, "0")}`
+              : `${device.controlPath} · AT ${device.atPort || "--"} · IMEI ${device.imei || "--"} · USB ${device.usbPath || "--"}`}
+          </span>
+          {degraded ? <span className="mt-1 block ios-footnote text-sys-orange">{discoveryMessage || t("未找到可用的 AT 端口（串口可能仍在枚举），系统会自动重试；也可点击重新扫描。")}</span> : null}
+        </span>
+        <span className="flex w-5 shrink-0 justify-center text-accent [&_svg]:h-5 [&_svg]:w-5">{selected && !degraded ? <CheckmarkRegular /> : null}</span>
+      </span>
     </button>
   );
 }

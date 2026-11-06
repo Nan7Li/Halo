@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, apiMessage } from "../../api";
-import { Button, Input, Modal } from "../ui";
+import { Button, Input, Modal, Switch } from "../ui";
 import { useI18n } from "../../lib/i18n";
 
 export interface E911Carrier {
@@ -118,57 +118,58 @@ export function E911SetupDialog({ open, deviceId, onClose, onDone }: {
   const close = () => { if (busy !== "submit") onClose(); };
   return (
     <Modal open={open} onClose={close} closeOnOverlay={busy !== "submit"} showClose={busy !== "submit"} title={t("E911地址设置")}>
-      <div className="space-y-4 text-sm">
-        {busy === "start" ? <div role="status" className="py-10 text-center text-gray-500">{t("正在识别运营商并读取E911状态...")}</div> : null}
-        {session ? <div className="ui-panel-muted rounded-xl p-3">
-          <div className="font-medium">{session.carrier.name || t("美国运营商")}</div>
-          <p className="mt-1 text-xs text-gray-500">{direct ? t("通过SIM鉴权向运营商登记，提交后读取运营商结果。") : websheet ? t("使用当前SIM向运营商获取E911登记页面，填写地址后返回此处查询结果。") : session.carrier.method === "phone" ? t("此运营商需要在兼容手机的Wi-Fi Calling设置中登记地址。") : session.carrier.method === "account" ? t("此运营商通过账户门户登记E911地址，请登录对应线路完成设置。") : t("尚未适配此运营商的地址登记接口，请联系运营商确认开通方式。")}</p>
-          {session.carrier.verified === false ? <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{t("此线路的自动登记已接入，尚未完成实卡验证。")}</p> : null}
-          {session.status ? <div className="mt-2 text-xs text-gray-500">{t("运营商当前状态")}: {session.status.confirmed ? session.status.confirmation === "carrier_status" ? t("运营商已确认E911登记状态，Wi-Fi Calling已开通。") : t("地址已验证，Wi-Fi Calling已开通") : session.status.addressStatus === "NotRequired" && session.status.wifiCalling ? t("运营商未要求地址登记，Wi-Fi Calling已开通。") : t("地址或Wi-Fi Calling尚未完成开通")}</div> : null}
+      <div className="space-y-4 ios-body">
+        {busy === "start" ? <div role="status" className="py-10 text-center ios-subhead text-label-2">{t("正在识别运营商并读取E911状态...")}</div> : null}
+        {session ? <div className="rounded-[var(--radius-lg)] bg-grouped-2 px-4 py-3">
+          <div className="font-semibold">{session.carrier.name || t("美国运营商")}</div>
+          <p className="mt-1 ios-footnote text-label-2">{direct ? t("通过SIM鉴权向运营商登记，提交后读取运营商结果。") : websheet ? t("使用当前SIM向运营商获取E911登记页面，填写地址后返回此处查询结果。") : session.carrier.method === "phone" ? t("此运营商需要在兼容手机的Wi-Fi Calling设置中登记地址。") : session.carrier.method === "account" ? t("此运营商通过账户门户登记E911地址，请登录对应线路完成设置。") : t("尚未适配此运营商的地址登记接口，请联系运营商确认开通方式。")}</p>
+          {session.carrier.verified === false ? <p className="mt-2 ios-footnote text-sys-orange">{t("此线路的自动登记已接入，尚未完成实卡验证。")}</p> : null}
+          {session.status ? <div className="mt-2 ios-footnote text-label-2">{t("运营商当前状态")}: {session.status.confirmed ? session.status.confirmation === "carrier_status" ? t("运营商已确认E911登记状态，Wi-Fi Calling已开通。") : t("地址已验证，Wi-Fi Calling已开通") : session.status.addressStatus === "NotRequired" && session.status.wifiCalling ? t("运营商未要求地址登记，Wi-Fi Calling已开通。") : t("地址或Wi-Fi Calling尚未完成开通")}</div> : null}
         </div> : null}
         {websheet && session?.id ? <div className="space-y-3">
           {session.portalAvailable ? <>
-            <p className="text-xs text-gray-500">{t("在运营商页面填写真实地址并接受其条款。保存后返回此弹窗，点击刷新运营商状态。")}</p>
-            <a className="inline-flex min-h-9 items-center rounded-lg bg-sky-600 px-4 font-medium text-white hover:bg-sky-700" href={`/api/devices/${encodeURIComponent(deviceId)}/vowifi/e911/${encodeURIComponent(session.id)}/portal`} target="_blank" rel="noopener noreferrer">{t("打开运营商E911登记页")}</a>
-          </> : <p className="text-xs text-gray-500">{session.status?.confirmed ? t("运营商已确认E911登记状态，Wi-Fi Calling已开通。") : t("运营商未返回可用的E911登记页面，可通过下方账户入口或官方说明完成设置。")}</p>}
+            <p className="px-1 ios-footnote text-label-2">{t("在运营商页面填写真实地址并接受其条款。保存后返回此弹窗，点击刷新运营商状态。")}</p>
+            <a className="flex h-11 w-full items-center justify-center rounded-full bg-accent px-5 font-semibold text-white active:opacity-80" href={`/api/devices/${encodeURIComponent(deviceId)}/vowifi/e911/${encodeURIComponent(session.id)}/portal`} target="_blank" rel="noopener noreferrer">{t("打开运营商E911登记页")}</a>
+          </> : <p className="px-1 ios-footnote text-label-2">{session.status?.confirmed ? t("运营商已确认E911登记状态，Wi-Fi Calling已开通。") : t("运营商未返回可用的E911登记页面，可通过下方账户入口或官方说明完成设置。")}</p>}
           <Button onClick={() => void submit(true)} loading={busy === "refresh"} disabled={!!busy}>{t("刷新运营商状态")}</Button>
         </div> : null}
         {session && (!direct || !session.id) ? <div className="flex flex-wrap gap-3">
-          {session.carrier.portalUrl ? <a className="text-sky-600 hover:underline" href={session.carrier.portalUrl} target="_blank" rel="noopener noreferrer">{t("打开运营商账户")}</a> : null}
-          {session.carrier.helpUrl ? <a className="text-sky-600 hover:underline" href={session.carrier.helpUrl} target="_blank" rel="noopener noreferrer">{t("查看官方设置说明")}</a> : null}
+          {session.carrier.portalUrl ? <a className="text-accent" href={session.carrier.portalUrl} target="_blank" rel="noopener noreferrer">{t("打开运营商账户")}</a> : null}
+          {session.carrier.helpUrl ? <a className="text-accent" href={session.carrier.helpUrl} target="_blank" rel="noopener noreferrer">{t("查看官方设置说明")}</a> : null}
         </div> : null}
         {direct && session?.id && outcome !== "confirmed" ? <>
-          <form onSubmit={event => { event.preventDefault(); void verify(); }} className="space-y-3">
-            <div className="text-xs text-gray-500">{t("填写用于紧急呼叫定位的真实美国地址。")}</div>
-            <label className="block space-y-1"><span>{t("街道及门牌号")}</span><Input autoComplete="address-line1" value={address.street} onChange={e => change("street", e.target.value)} maxLength={128} required disabled={!!busy} /></label>
-            <label className="block space-y-1"><span>{t("公寓、房间号（可选）")}</span><Input autoComplete="address-line2" value={address.unit} onChange={e => change("unit", e.target.value)} maxLength={64} disabled={!!busy} /></label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <label className="block space-y-1"><span>{t("城市")}</span><Input autoComplete="address-level2" value={address.city} onChange={e => change("city", e.target.value)} maxLength={64} required disabled={!!busy} /></label>
-              <label className="block space-y-1"><span>{t("州")}</span><select autoComplete="address-level1" aria-label={t("州")} value={address.state} onChange={e => change("state", e.target.value)} required disabled={!!busy} className="h-[34px] w-full rounded-lg border border-gray-300 bg-white px-2 dark:border-white/15 dark:bg-gray-900"><option value="">{t("请选择")}</option>{US_STATES.map(state => <option key={state}>{state}</option>)}</select></label>
-              <label className="block space-y-1"><span>{t("邮编")}</span><Input autoComplete="postal-code" value={address.zip} onChange={e => change("zip", e.target.value)} maxLength={10} pattern="[0-9]{5}(-[0-9]{4})?" required disabled={!!busy} /></label>
+          <form onSubmit={event => { event.preventDefault(); void verify(); }}>
+            <div className="px-4 pb-1.5 ios-footnote uppercase text-label-2">{t("紧急地址")}</div>
+            <div className="rounded-[var(--radius-lg)] bg-grouped-2 px-4">
+              <div className="ios-form-row"><label className="ios-form-label">{t("街道")}</label><div className="ios-form-control"><Input autoComplete="address-line1" value={address.street} onChange={e => change("street", e.target.value)} maxLength={128} required disabled={!!busy} placeholder={t("街道及门牌号")} /></div></div>
+              <div className="ios-form-row"><label className="ios-form-label">{t("单元")}</label><div className="ios-form-control"><Input autoComplete="address-line2" value={address.unit} onChange={e => change("unit", e.target.value)} maxLength={64} disabled={!!busy} placeholder={t("可选")} /></div></div>
+              <div className="ios-form-row"><label className="ios-form-label">{t("城市")}</label><div className="ios-form-control"><Input autoComplete="address-level2" value={address.city} onChange={e => change("city", e.target.value)} maxLength={64} required disabled={!!busy} /></div></div>
+              <div className="ios-form-row"><label className="ios-form-label">{t("州")}</label><div className="ios-form-control"><select autoComplete="address-level1" aria-label={t("州")} value={address.state} onChange={e => change("state", e.target.value)} required disabled={!!busy}><option value="">{t("请选择")}</option>{US_STATES.map(state => <option key={state}>{state}</option>)}</select></div></div>
+              <div className="ios-form-row"><label className="ios-form-label">{t("邮编")}</label><div className="ios-form-control"><Input autoComplete="postal-code" inputMode="numeric" value={address.zip} onChange={e => change("zip", e.target.value)} maxLength={10} pattern="[0-9]{5}(-[0-9]{4})?" required disabled={!!busy} /></div></div>
             </div>
-            <Button type="submit" loading={busy === "verify"} disabled={!valid || !!busy}>{t("校验地址")}</Button>
+            <p className="px-4 pt-1.5 ios-footnote text-label-2">{t("填写用于紧急呼叫定位的真实美国地址。")}</p>
+            <Button type="submit" className="mt-3 w-full" loading={busy === "verify"} disabled={!valid || !!busy}>{t("校验地址")}</Button>
           </form>
-          {candidates.length ? <fieldset className="space-y-2 rounded-xl border border-gray-200 p-3 dark:border-white/15">
-            <legend className="px-1 font-medium">{t("选择运营商规范化后的地址")}</legend>
-            {candidates.map((candidate, index) => <label key={index} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5">
-              <input type="radio" name="e911-address" checked={selected === index} onChange={() => setSelected(index)} disabled={!!busy} className="mt-1" />
-              <span>{formatAddress(candidate.address)}</span>
+          {candidates.length ? <fieldset>
+            <legend className="px-4 pb-1.5 ios-footnote uppercase text-label-2">{t("选择运营商规范化后的地址")}</legend>
+            {candidates.map((candidate, index) => <label key={index} className="ios-select-row flex cursor-pointer items-center gap-3 bg-grouped-2 px-4 py-3 first-of-type:rounded-t-[var(--radius-lg)] last:rounded-b-[var(--radius-lg)]">
+              <input type="radio" name="e911-address" checked={selected === index} onChange={() => setSelected(index)} disabled={!!busy} className="ios-radio" />
+              <span className="min-w-0 flex-1">{formatAddress(candidate.address)}</span>
             </label>)}
           </fieldset> : null}
-          <details className="rounded-xl border border-gray-200 p-3 dark:border-white/15"><summary className="cursor-pointer">{t("运营商Wi-Fi Calling条款")}</summary><p className="mt-3 max-h-48 overflow-y-auto whitespace-pre-line text-xs leading-5 text-gray-500">{session?.terms}</p></details>
-          <label className="flex items-start gap-2"><input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} disabled={!!busy} className="mt-1" /><span>{t("我已阅读并同意运营商Wi-Fi Calling条款，确认地址准确。")}</span></label>
+          <details className="ios-disclosure rounded-[var(--radius-lg)] bg-grouped-2 px-4 py-3"><summary className="cursor-pointer text-accent">{t("运营商Wi-Fi Calling条款")}</summary><p className="mt-3 max-h-48 overflow-y-auto whitespace-pre-line ios-footnote text-label-2">{session?.terms}</p></details>
+          <label className="flex items-center justify-between gap-3 rounded-[var(--radius-lg)] bg-grouped-2 px-4 py-3"><span className="min-w-0 flex-1 ios-subhead">{t("我已阅读并同意运营商Wi-Fi Calling条款，确认地址准确。")}</span><Switch checked={accepted} onChange={setAccepted} disabled={!!busy} ariaLabel={t("同意条款")} /></label>
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" onClick={() => void submit()} loading={busy === "submit"} disabled={!candidates.length || !accepted || !!busy}>{t("提交给运营商")}</Button>
             <Button onClick={() => void submit(true)} loading={busy === "refresh"} disabled={!!busy}>{t("刷新运营商状态")}</Button>
           </div>
         </> : null}
-        {outcome ? <div role="status" className={outcome === "confirmed" ? "rounded-xl bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "rounded-xl bg-amber-50 p-3 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"}>
+        {outcome ? <div role="status" className={outcome === "confirmed" ? "rounded-[var(--radius-md)] bg-sys-green/15 px-4 py-3 text-sys-green" : "rounded-[var(--radius-md)] bg-sys-orange/15 px-4 py-3 text-sys-orange"}>
           {outcome === "confirmed" ? session?.status?.confirmation === "carrier_status" ? t("运营商已确认E911登记状态，Wi-Fi Calling已开通。") : t("运营商已确认E911地址，Wi-Fi Calling已开通。") : t("运营商尚未确认完成，请稍后刷新状态。")}
-          {outcome === "confirmed" && session?.status?.address ? <div className="mt-1 font-mono text-xs">{formatAddress(session.status.address)}</div> : null}
-          {session?.reconnectScheduled ? <div className="mt-1 text-xs">{t("已安排VoWiFi重连。")}</div> : null}
+          {outcome === "confirmed" && session?.status?.address ? <div className="mt-1 font-mono ios-footnote">{formatAddress(session.status.address)}</div> : null}
+          {session?.reconnectScheduled ? <div className="mt-1 ios-footnote">{t("已安排VoWiFi重连。")}</div> : null}
         </div> : null}
-        {error ? <div role="alert" className="rounded-xl bg-red-50 p-3 text-red-600 dark:bg-red-950/40 dark:text-red-300">{error}</div> : null}
+        {error ? <div role="alert" className="rounded-[var(--radius-md)] bg-sys-red/10 px-4 py-3 text-sys-red">{error}</div> : null}
         {!busy && !session ? <Button onClick={() => setGeneration(value => value + 1)}>{t("重试")}</Button> : null}
         {!busy && error && session ? <Button onClick={() => setGeneration(value => value + 1)}>{t("重新开始登记")}</Button> : null}
       </div>

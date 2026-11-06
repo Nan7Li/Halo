@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api, apiMessage } from "../../api";
 import { cx } from "../../lib/utils";
-import { Button, Modal, message } from "../ui";
+import { Modal, Spinner, Switch, message } from "../ui";
+import { ListSection } from "../ios";
 import { readEventStream } from "./shared";
 import { CandidateRow } from "./CandidateRow";
 import type { OperatorCandidate } from "./types";
@@ -201,77 +202,71 @@ export function OperatorSelectionDialog({ open, deviceId, scanBlockedReason = ""
   }, []);
   return (
     <Modal open={open} onClose={onClose} title={t("运营商网络选择")}>
-      <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-        <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-4 dark:border-white/5 dark:bg-white/5">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="font-medium text-gray-700 dark:text-gray-200">{t("当前模式")}</span>
-            <span
-              className={cx(
-                "rounded px-2 py-0.5 text-xs font-medium",
-                current?.mode === "automatic"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300"
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
-              )}
-            >
-              {current?.mode === "automatic" ? t("自动") : t("手动锁定")}
-            </span>
+      <div className="pt-1">
+        <ListSection
+          footer={current?.mode === "manual" ? t("关闭“自动”后，模组只会注册到下方选中的网络。") : undefined}
+          bodyClassName="px-4"
+        >
+          <div className="ios-form-row items-center">
+            <span className="min-w-0 flex-1 ios-body text-label">{t("自动")}</span>
+            <Switch
+              ariaLabel={t("恢复自动选网")}
+              checked={current?.mode === "automatic"}
+              disabled={busy || current?.mode === "automatic"}
+              onChange={(on) => { if (on) void restoreAuto(); }}
+            />
           </div>
           {current?.mode === "manual" ? (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500">{t("已锁定 PLMN")}</span>
-              <span className="font-mono text-gray-900 dark:text-white">{current.plmn || "--"}</span>
+            <div className="ios-form-row items-center">
+              <span className="min-w-0 flex-1 ios-body text-label">{t("已锁定 PLMN")}</span>
+              <span className="shrink-0 font-mono ios-body text-label-2">{current.plmn || "--"}</span>
             </div>
           ) : null}
-        </div>
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Button variant="primary" plain onClick={startStream} loading={scanning} disabled={busy || !!scanBlockedReason} className="flex-1">
-            {scanning ? t("扫描中...") : t("扫描可用网络")}
-          </Button>
-          <Button onClick={reRegister} disabled={busy} className="flex-1">
-            {t("重新驻网")}
-          </Button>
-          <Button onClick={restoreAuto} disabled={busy || current?.mode === "automatic"} className="flex-1">
-            {t("恢复自动选网")}
-          </Button>
-        </div>
-        <div className="mb-4 text-xs leading-5 text-gray-500 dark:text-gray-400">
-          {t("扫描结果只代表模组在当前位置实际收到的运营商信号，不代表模组支持的全部运营商；禁用网络表示当前 SIM 不允许注册。")}
-        </div>
+        </ListSection>
+
         {registering ? (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300">
-            <span className="flex items-center gap-2">
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
-              {registering}
+          <div className="mb-7 flex items-center justify-between gap-3 rounded-[var(--radius-lg)] bg-grouped-2 px-4 py-3 ios-subhead text-label">
+            <span className="flex min-w-0 items-center gap-2">
+              <Spinner className="h-4 w-4 shrink-0" />
+              <span className="min-w-0">{registering}</span>
             </span>
-            <button type="button" onClick={cancelRegister} className="shrink-0 rounded px-2 py-0.5 font-medium text-indigo-700 hover:bg-indigo-100 dark:text-indigo-300 dark:hover:bg-indigo-500/20">
-              {t("取消")}
-            </button>
-          </div>
-        ) : scanning || scanMessage || errorText ? (
-          <div
-            className={cx(
-              "mb-4 rounded-lg border px-3 py-2 text-xs",
-              errorText
-                ? "border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"
-                : retryable
-                  ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300"
-                : "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300",
-            )}
-          >
-            {errorText || scanMessage}
+            <button type="button" onClick={cancelRegister} className="shrink-0 font-medium text-accent">{t("取消")}</button>
           </div>
         ) : null}
-        {candidates.length > 0 ? (
-          <div className={cx("max-h-[min(55vh,440px)] divide-y divide-gray-200 overflow-y-auto rounded-lg border border-gray-200 dark:divide-white/10 dark:border-white/10", (!!registering || busy) && "pointer-events-none opacity-60")}>
-            {candidates.map((c) => (
-              <CandidateRow key={`${c.plmn}-${ratsText(c)}`} candidate={c} onLock={lock} />
-            ))}
-          </div>
-        ) : scanning ? (
-          <div className="flex flex-col items-center justify-center space-y-3 py-8 text-center text-gray-500">
-            <span>{t("正在搜索周围网络，这可能需要 1-3 分钟...")}</span>
-          </div>
-        ) : null}
+
+        <ListSection
+          header={
+            <span className="flex items-end justify-between gap-3">
+              <span>{t("网络")}</span>
+              <button type="button" className="ios-subhead font-medium text-accent disabled:opacity-40" onClick={startStream} disabled={busy || scanning || !!scanBlockedReason}>
+                {scanning ? t("扫描中...") : t("扫描可用网络")}
+              </button>
+            </span>
+          }
+          footer={
+            <>
+              {!registering && (errorText || scanMessage) ? (
+                <span className={cx("block", errorText ? "text-sys-red" : retryable ? "text-sys-orange" : "")}>{errorText || scanMessage}</span>
+              ) : null}
+              <span className="block">{t("扫描结果只代表模组在当前位置实际收到的运营商信号，不代表模组支持的全部运营商；禁用网络表示当前 SIM 不允许注册。")}</span>
+            </>
+          }
+          bodyClassName={cx("max-h-[min(50vh,420px)] overflow-y-auto", (!!registering || busy) && "pointer-events-none opacity-60")}
+        >
+          {candidates.length > 0 ? (
+            candidates.map((c) => <CandidateRow key={`${c.plmn}-${ratsText(c)}`} candidate={c} onLock={lock} />)
+          ) : (
+            <div className="flex items-center justify-center gap-2 px-4 py-5 text-center ios-subhead text-label-2">
+              {scanning ? <><Spinner className="h-4 w-4 shrink-0" />{t("正在搜索周围网络，这可能需要 1-3 分钟...")}</> : t("点击“扫描可用网络”查看附近的运营商")}
+            </div>
+          )}
+        </ListSection>
+
+        <ListSection className="!mb-1">
+          <button type="button" onClick={reRegister} disabled={busy} className="ios-select-row flex w-full items-center px-4 text-left ios-body text-accent disabled:opacity-40">
+            {t("重新驻网")}
+          </button>
+        </ListSection>
       </div>
     </Modal>
   );

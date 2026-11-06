@@ -18,14 +18,13 @@ export interface UpstreamDialogProps {
 type ProbeState = "ok" | "fail" | "pending";
 
 function ProbeRow({ state, label, detail }: { state: ProbeState; label: string; detail?: string }) {
-  const dot = state === "ok" ? "bg-green-500" : state === "fail" ? "bg-red-500" : "bg-gray-300 dark:bg-gray-600";
-  const text =
-    state === "ok" ? "text-green-600 dark:text-green-400" : state === "fail" ? "text-red-600 dark:text-red-400" : "text-gray-400";
+  const dot = state === "ok" ? "bg-sys-green" : state === "fail" ? "bg-sys-red" : "bg-label-3";
+  const text = state === "ok" ? "text-sys-green" : state === "fail" ? "text-sys-red" : "text-label-3";
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="ios-form-row items-center">
       <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
-      <span className={`shrink-0 font-medium ${text}`}>{label}</span>
-      {detail ? <span className="truncate text-gray-400">{detail}</span> : null}
+      <span className="min-w-0 flex-1 ios-body text-label">{label}</span>
+      {detail ? <span className={`shrink-0 truncate ios-subhead ${text}`}>{detail}</span> : null}
     </div>
   );
 }
@@ -46,7 +45,7 @@ function ProbeResultPanel({ probe }: { probe: UpstreamProbeResult }) {
   const associateState: ProbeState = !handshakeOk ? "pending" : associateOk ? "ok" : "fail";
   const udpState: ProbeState = !associateOk ? "pending" : udpOk ? "ok" : "fail";
   return (
-    <div className="ui-panel-muted space-y-2 rounded-lg p-3">
+    <div className="rounded-[var(--radius-lg)] bg-grouped-2 px-4 pb-2">
       <ProbeRow state={reachable ? "ok" : "fail"} label={t("TCP 连接")} detail={reachable ? t("可连通") : t("无法连接")} />
       <ProbeRow state={handshakeState} label={t("SOCKS5 握手")} detail={handshakeOk ? authMethodLabel(probe.authMethod) : undefined} />
       <ProbeRow
@@ -60,17 +59,17 @@ function ProbeResultPanel({ probe }: { probe: UpstreamProbeResult }) {
         detail={udpState === "pending" ? undefined : udpOk ? `${probe.roundTripMs || 0} ms` : t("无返回")}
       />
       {probe.relayAddr ? (
-        <div className="text-[11px] text-gray-400">
+        <div className="pt-2 ios-footnote text-label-2">
           {t("UDP 中继地址：")}<span className="font-mono">{probe.relayAddr}</span>
         </div>
       ) : null}
       {probe.dnsName && probe.dnsServer ? (
-        <div className="text-[11px] text-gray-400">
+        <div className="pt-1 ios-footnote text-label-2">
           {t("UDP 测试：")}<span className="font-mono">{probe.dnsName} @ {probe.dnsServer}</span>
         </div>
       ) : null}
-      {probe.hint ? <div className="text-[11px] text-gray-500 dark:text-gray-400">{probe.hint}</div> : null}
-      {probe.error ? <div className="break-all text-[11px] text-red-500">{probe.error}</div> : null}
+      {probe.hint ? <div className="pt-1 ios-footnote text-label-2">{probe.hint}</div> : null}
+      {probe.error ? <div className="break-all pt-1 ios-footnote text-sys-red">{probe.error}</div> : null}
     </div>
   );
 }
@@ -97,7 +96,7 @@ export function UpstreamDialog({ open, editing, form, testing, probe, onPatch, o
       <div className="space-y-6 pb-6">
         <div className="space-y-4">
           <SectionHeader tone="indigo" title={t("代理信息")} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <Field label={t("代理 ID")}>
               <Input value={form.id} disabled={editing} placeholder={t("唯一标识，如 jp-proxy-01")} onChange={(e) => onPatch({ id: e.target.value })} />
             </Field>
@@ -111,7 +110,7 @@ export function UpstreamDialog({ open, editing, form, testing, probe, onPatch, o
               placeholder={t("host:port，例如 1.2.3.4:1080 或 [2001:db8::1]:1080")}
               onChange={(e) => onPatch({ addr: e.target.value })}
             />
-            <div className="mt-1 text-xs text-gray-400">
+            <div className="ios-form-hint">
               {t("VoWiFi 通过此 Socks5 代理连接运营商，实现跨区域本地 VoWiFi。")}
               {ipv6Hint()}
               {t("。点下方「检测连通性」可在保存前验证 Socks5 握手与 UDP Associate。")}
@@ -126,13 +125,13 @@ export function UpstreamDialog({ open, editing, form, testing, probe, onPatch, o
         </div>
         <div className="space-y-4">
           <SectionHeader tone="amber" title={t("鉴权设置（可选）")} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <Field label={t("用户名")}>
               <Input value={form.username} placeholder={t("留空则免鉴权")} onChange={(e) => onPatch({ username: e.target.value })} />
             </Field>
             <Field label={t("密码")}>
               <Input type="password" value={form.password} placeholder={t("留空则免鉴权")} onChange={(e) => onPatch({ password: e.target.value })} />
-              <div className="mt-1 text-xs text-gray-400">{t("编辑已有代理时留空会保持原密码不变。")}</div>
+              <div className="ios-form-hint">{t("编辑已有代理时留空会保持原密码不变。")}</div>
             </Field>
           </div>
         </div>

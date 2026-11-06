@@ -2,7 +2,9 @@ import { useState } from "react";
 import type { CellLockTarget } from "../../types";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
-import { Button, Input, Modal, Tag } from "../ui";
+import { CheckmarkRegular } from "@fluentui/react-icons";
+import { Button, Input, Modal } from "../ui";
+import { ListSection } from "../ios";
 import type { DeviceCellLockView } from "./useDeviceCellLock";
 
 function cellTargetText(cell: CellLockTarget) {
@@ -37,115 +39,128 @@ export function CellLockDialog({ cellLock }: { cellLock: DeviceCellLockView }) {
       title={t("小区锁定")}
       showClose={!busy}
     >
-      <div className="mt-1 space-y-4 text-sm text-gray-700 dark:text-gray-200">
-        <section className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-white/10 dark:bg-white/5" aria-labelledby="cell-lock-status-title">
-          <h3 id="cell-lock-status-title" className="font-semibold text-gray-900 dark:text-white">{t("硬件锁定配置")}</h3>
-          <div className={cx("mt-1", status ? (status.target ? "text-amber-700 dark:text-amber-300" : "text-emerald-700 dark:text-emerald-300") : "text-gray-500 dark:text-gray-400")}>
-            {renderStatus()}
+      <div className="pt-1">
+        <ListSection
+          header={t("硬件锁定配置")}
+          footer={
+            <>
+              {busy ? <span className="block">{t("正在等待硬件确认，请勿断开设备。")}</span> : null}
+              <span className="block">{t("仅确认锁定配置，不保证已生效或驻网；部分固件需手动设置 LTE-only 或重启，操作可能中断联网。")}</span>
+            </>
+          }
+          bodyClassName="px-4"
+        >
+          <div className="ios-form-row items-center">
+            <span className="min-w-0 flex-1 ios-body text-label">{t("状态")}</span>
+            <span className={cx("shrink-0 ios-body", status ? (status.target ? "text-sys-orange" : "text-sys-green") : "text-label-2")}>{renderStatus()}</span>
           </div>
           {status && status.target ? (
-            <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium">{t("已配置目标")}: </span><span className="font-mono">{cellTargetText(status.target)}</span>
+            <div className="ios-form-row items-center">
+              <span className="min-w-0 flex-1 ios-body text-label">{t("已配置目标")}</span>
+              <span className="shrink-0 font-mono ios-subhead text-label-2">{cellTargetText(status.target)}</span>
             </div>
           ) : null}
-          {busy ? <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{t("正在等待硬件确认，请勿断开设备。")}</p> : null}
-          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{t("仅确认锁定配置，不保证已生效或驻网；部分固件需手动设置 LTE-only 或重启，操作可能中断联网。")}</p>
-          {lockError ? (
-            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-200" role="alert">
-              <p className="whitespace-pre-wrap break-words">{lockError}</p>
-            </div>
-          ) : null}
-        </section>
-
-        <section aria-labelledby="cell-list-title">
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h3 id="cell-list-title" className="font-semibold text-gray-900 dark:text-white">{t("小区列表")}</h3>
-            <Button onClick={cellLock.readCells} loading={readingCells} disabled={busy}>{t("刷新小区列表")}</Button>
+        </ListSection>
+        {lockError ? (
+          <div className="-mt-4 mb-7 rounded-[var(--radius-md)] bg-sys-red/10 px-4 py-3 ios-subhead text-sys-red" role="alert">
+            <p className="whitespace-pre-wrap break-words">{lockError}</p>
           </div>
-          {cells ? <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{cells.neighborsStatus === "available" ? t("服务小区与邻区") : t("服务小区")}</p> : null}
+        ) : null}
+
+        <ListSection
+          header={
+            <span className="flex items-end justify-between gap-3">
+              <span>{cells ? (cells.neighborsStatus === "available" ? t("服务小区与邻区") : t("服务小区")) : t("小区列表")}</span>
+              <button type="button" className="ios-subhead font-medium text-accent disabled:opacity-40" onClick={cellLock.readCells} disabled={busy || readingCells}>
+                {readingCells ? t("正在读取…") : t("刷新")}
+              </button>
+            </span>
+          }
+          footer={
+            <>
+              {cellsError ? <span className="block text-sys-orange" role="status">{cellsError}</span> : null}
+              {cells && cells.neighborsStatus !== "available" ? (
+                <span className="block">{cells.neighborsStatus === "unsupported" ? t("邻区查询不受此模组或固件支持") : t("本次邻区查询不可用")}</span>
+              ) : null}
+            </>
+          }
+        >
           {!busy && cells?.items.length ? (
-            <div className="space-y-2">
-              {cells.items.map((cell, index) => {
-                const selected = target?.earfcn === cell.earfcn && target?.pci === cell.pci;
-                const configured = status?.target?.earfcn === cell.earfcn && status?.target?.pci === cell.pci;
-                return (
-                  <button
-                    key={`${cell.source}-${cell.earfcn}-${cell.pci}-${index}`}
-                    type="button"
-                    onClick={() => editDraft({ earfcn: String(cell.earfcn), pci: String(cell.pci) })}
-                    aria-pressed={selected}
-                    className={cx(
-                      "w-full rounded-lg border px-3 py-2.5 text-left transition-colors",
-                      selected ? "border-sky-400 bg-sky-50 dark:border-sky-500/50 dark:bg-sky-500/10" : "border-gray-200 hover:border-sky-300 hover:bg-sky-50/60 dark:border-white/10 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/5",
-                    )}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                      <span className="font-mono font-semibold text-gray-900 dark:text-white">{cellTargetText(cell)}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{cell.plmn || "--"} · LTE</span>
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                      <span>{cell.source === "serving" ? t("服务小区") : t("邻区")}</span>
-                      {configured ? <Tag type="warning">{t("已配置锁定")}</Tag> : null}
-                      <span>{[
-                        cell.rsrp !== undefined ? `RSRP ${cell.rsrp} dBm` : null,
-                        cell.rsrq !== undefined ? `RSRQ ${cell.rsrq} dB` : null,
-                        cell.rssi !== undefined ? `RSSI ${cell.rssi} dBm` : null,
-                        cell.sinr !== undefined ? `SINR ${cell.sinr} dB` : null,
-                      ].filter(Boolean).join(" · ") || t("没有可用的信号测量值")}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            cells.items.map((cell, index) => {
+              const selected = target?.earfcn === cell.earfcn && target?.pci === cell.pci;
+              const configured = status?.target?.earfcn === cell.earfcn && status?.target?.pci === cell.pci;
+              return (
+                <button
+                  key={`${cell.source}-${cell.earfcn}-${cell.pci}-${index}`}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => editDraft({ earfcn: String(cell.earfcn), pci: String(cell.pci) })}
+                  className="ios-select-row flex w-full items-center gap-3 pl-4 pr-4 text-left"
+                >
+                  <span className="ios-select-row-body flex min-w-0 flex-1 items-center gap-3 py-2.5">
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-2">
+                        <span className="font-mono ios-body font-medium text-label">{cellTargetText(cell)}</span>
+                        {configured ? <span className="ios-footnote text-sys-orange">{t("已配置锁定")}</span> : null}
+                      </span>
+                      <span className="mt-0.5 block ios-footnote text-label-2">
+                        {cell.source === "serving" ? t("服务小区") : t("邻区")} · {cell.plmn || "--"} · LTE
+                        {" · "}
+                        {[
+                          cell.rsrp !== undefined ? `RSRP ${cell.rsrp} dBm` : null,
+                          cell.rsrq !== undefined ? `RSRQ ${cell.rsrq} dB` : null,
+                          cell.rssi !== undefined ? `RSSI ${cell.rssi} dBm` : null,
+                          cell.sinr !== undefined ? `SINR ${cell.sinr} dB` : null,
+                        ].filter(Boolean).join(" · ") || t("没有可用的信号测量值")}
+                      </span>
+                    </span>
+                    <span className="flex w-5 shrink-0 justify-center text-accent [&_svg]:h-5 [&_svg]:w-5">{selected ? <CheckmarkRegular /> : null}</span>
+                  </span>
+                </button>
+              );
+            })
           ) : (
-            <div className="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500 dark:border-white/15 dark:text-gray-400">
+            <div className="px-4 py-4 text-center ios-subhead text-label-2">
               {busy ? t("配置变更中，小区列表暂不显示。")
                 : cells ? t("读取成功，但没有发现可用小区；仍可在下方手动输入目标。")
                 : readingCells ? t("正在读取小区列表...")
                 : t("小区列表不可用；仍可在下方手动输入目标。")}
             </div>
           )}
-          {cellsError ? (
-            <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200" role="status">
-              <span>{cellsError}</span>
+        </ListSection>
+
+        <ListSection
+          header={t("手动输入 EARFCN / PCI")}
+          footer={
+            ((earfcn.length > 0 && !earfcnValid) || (pci.length > 0 && !pciValid))
+              ? <span className="text-sys-red">{t("请输入 0 到 262143 的整数 EARFCN，以及 0 到 503 的整数 PCI。")}</span>
+              : t("EARFCN 为 0 到 262143，PCI 为 0 到 503；实际是否支持由模组固件决定。")
+          }
+          bodyClassName="px-4"
+        >
+          <div className="ios-form-row">
+            <label className="ios-form-label" htmlFor="cell-lock-earfcn">EARFCN</label>
+            <div className="ios-form-control">
+              <Input id="cell-lock-earfcn" type="text" inputMode="numeric" autoComplete="off" value={earfcn} onChange={(event) => editDraft({ earfcn: event.target.value })} placeholder={t("输入 EARFCN")} disabled={busy} aria-invalid={earfcn.length > 0 && !earfcnValid} />
             </div>
-          ) : null}
-          {cells && cells.neighborsStatus !== "available" ? (
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {cells.neighborsStatus === "unsupported"
-                ? t("邻区查询不受此模组或固件支持")
-                : t("本次邻区查询不可用")}
-            </p>
-          ) : null}
-        </section>
-
-        <section className="space-y-3" aria-labelledby="manual-target-title">
-          <h3 id="manual-target-title" className="font-semibold text-gray-900 dark:text-white">{t("手动输入 EARFCN / PCI")}</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="space-y-1.5 text-xs font-medium">
-              <span>EARFCN</span>
-              <Input type="text" inputMode="numeric" autoComplete="off" value={earfcn} onChange={(event) => editDraft({ earfcn: event.target.value })} placeholder={t("输入 EARFCN")} disabled={busy} aria-invalid={earfcn.length > 0 && !earfcnValid} />
-              <span className="block font-normal text-gray-500 dark:text-gray-400">{t("请输入 0 到 262143 的整数；实际是否支持由模组固件决定。")}</span>
-            </label>
-            <label className="space-y-1.5 text-xs font-medium">
-              <span>PCI</span>
-              <Input type="text" inputMode="numeric" autoComplete="off" value={pci} onChange={(event) => editDraft({ pci: event.target.value })} placeholder={t("输入 PCI")} disabled={busy} aria-invalid={pci.length > 0 && !pciValid} />
-              <span className="block font-normal text-gray-500 dark:text-gray-400">{t("请输入 0 到 503 的整数。")}</span>
-            </label>
           </div>
-          {((earfcn.length > 0 && !earfcnValid) || (pci.length > 0 && !pciValid)) ? (
-            <p className="text-xs text-red-600 dark:text-red-300">{t("请输入 0 到 262143 的整数 EARFCN，以及 0 到 503 的整数 PCI。")}</p>
-          ) : null}
-
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="danger" plain onClick={() => { editDraft({}); void cellLock.setCellLock(null); }} loading={operation === "unlocking"} disabled={busy || status?.target === null}>
-              {t("解除锁定")}
-            </Button>
-            <Button variant="primary" onClick={() => { if (target) { editDraft({}); void cellLock.setCellLock(target); } }} loading={operation === "locking"} disabled={busy || !target}>
-              {t("锁定此小区")}
-            </Button>
+          <div className="ios-form-row">
+            <label className="ios-form-label" htmlFor="cell-lock-pci">PCI</label>
+            <div className="ios-form-control">
+              <Input id="cell-lock-pci" type="text" inputMode="numeric" autoComplete="off" value={pci} onChange={(event) => editDraft({ pci: event.target.value })} placeholder={t("输入 PCI")} disabled={busy} aria-invalid={pci.length > 0 && !pciValid} />
+            </div>
           </div>
-        </section>
+        </ListSection>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Button variant="danger" plain onClick={() => { editDraft({}); void cellLock.setCellLock(null); }} loading={operation === "unlocking"} disabled={busy || status?.target === null}>
+            {t("解除锁定")}
+          </Button>
+          <Button variant="primary" onClick={() => { if (target) { editDraft({}); void cellLock.setCellLock(target); } }} loading={operation === "locking"} disabled={busy || !target}>
+            {t("锁定此小区")}
+          </Button>
+        </div>
       </div>
     </Modal>
   );

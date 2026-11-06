@@ -1002,3 +1002,38 @@ html[data-idiom="mac"] .ios-minus-button::before { left: 4px; right: 4px; height
 /* ios.css loads after Tailwind, so the row's flex-start would beat the
    utility; let rows opt into vertical centering (switch rows, buttons). */
 .ios-form-row.items-center { align-items: center; }
+
+/* ---- Legacy web patterns inside the app, mapped to iOS idioms ----
+   Older device/settings components still use web "eyebrow" labels,
+   10px text and grey bordered boxes. Rather than leaving them looking
+   like a web admin panel, map them here:
+   - iOS never goes below 11pt (Caption 2);
+   - (section labels: see the uppercase rule near .device-detail-tabs);
+   - grouped content sits on a fill, not inside a 1px grey border. */
+.ios-app .text-\[10px\],
+.ios-app .text-\[9px\] { font-size: 11px; line-height: 13px; }
+.ios-app :is(.rounded-lg, .rounded-xl, .rounded-md)[class*="border-gray-"]:not(input):not(textarea):not(select):not(button):not(.ios-keep-border) {
+  border-color: transparent;
+  background-color: var(--ios-fill-4);
+}
+.ios-app :is(.rounded-lg, .rounded-xl)[class*="border-dashed"][class*="border-gray-"] {
+  border-color: rgb(var(--ios-separator));
+  background-color: transparent;
+}
+/* Native radio drawn as the iOS selection circle (keeps form semantics). */
+.ios-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px rgb(var(--ios-label-3));
+  transition: box-shadow 160ms ease, background-color 160ms ease;
+}
+.ios-radio:checked {
+  background: rgb(var(--color-primary-rgb)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l2.9 2.9 6.1-6.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat;
+  box-shadow: none;
+}
+.ios-radio:focus-visible { outline: 2px solid rgb(var(--color-primary-rgb) / 0.5); outline-offset: 2px; }
