@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { AddRegular, DeleteRegular, EditRegular, ShieldLockRegular } from "@fluentui/react-icons";
+import { AddRegular, DeleteRegular, EditRegular, MoreHorizontalRegular, ShieldLockRegular } from "@fluentui/react-icons";
+import { ContextMenu, ListRow, ListSection } from "../components/ios";
 import { api, apiMessage } from "../api";
 import type { WireGuardSnapshot, WireGuardTunnel } from "../types";
 import {
   Button,
   EmptyState,
+  ListSkeleton,
   Input,
   Modal,
   PageFrame, PageHeader,
-  StatusDot,
   Switch,
   Textarea,
   confirmDialog,
@@ -40,6 +41,8 @@ export default function WireGuardPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState("");
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const menuTunnel = snapshot.tunnels.find((tunnel) => tunnel.id === menu?.id);
 
   const load = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -154,90 +157,87 @@ export default function WireGuardPage() {
       />
 
       {!snapshot.available ? (
-        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
+        <div className="mb-6 rounded-[var(--radius-lg)] bg-sys-orange/15 px-4 py-3 ios-subhead text-sys-orange">
           {snapshot.hint || t("当前主机未安装 WireGuard。Linux 上安装 kmod-wireguard、wg 和 ip 后即可连接。")}
         </div>
       ) : null}
 
       {loading ? (
-        <div className="ui-card p-8 text-sm text-black/40 dark:text-white/45">{t("正在加载隧道…")}</div>
+        <ListSkeleton rows={2} />
       ) : error ? (
-        <div className="ui-card p-8 text-sm text-red-600">{error}</div>
+        <div className="rounded-[var(--radius-lg)] bg-sys-red/10 px-4 py-3 ios-subhead text-sys-red">{error}</div>
       ) : snapshot.tunnels.length === 0 ? (
         <EmptyState
           icon={<ShieldLockRegular className="text-[22px]" />}
           title={t("还没有 WG 隧道")}
           subtitle={t("粘贴一份标准 wg-quick 配置即可保存，之后可一键连接或开机自动启动。")}
-          actions={
-            <Button variant="primary" icon={<AddRegular />} onClick={openCreate} className="!border-0">
-              {t("添加隧道")}
-            </Button>
-          }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <ListSection header={t("隧道")}>
           {snapshot.tunnels.map((tunnel) => (
-            <div key={tunnel.id} className="ui-card p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusDot tone={tunnel.running ? "success" : "neutral"} animated={tunnel.running} />
-                    <h3 className="text-[17px] font-semibold tracking-tight">{tunnel.name}</h3>
-                    <span className="rounded-full bg-black/5 px-2 py-0.5 font-mono text-[11px] text-black/50 dark:bg-white/10 dark:text-white/50">
-                      {tunnel.interface}
+            <ListRow
+              key={tunnel.id}
+              icon={<ShieldLockRegular />}
+              iconColor={tunnel.running ? "green" : "gray"}
+              chevron={false}
+              multiline
+              onClick={tunnel.external ? undefined : () => openEdit(tunnel)}
+              swipeActions={tunnel.external ? undefined : [{ label: t("删除"), color: "rgb(var(--ios-red))", onAction: () => void onDelete(tunnel) }]}
+              onContextMenu={tunnel.external ? undefined : (event) => { event.preventDefault(); setMenu({ id: tunnel.id, x: event.clientX, y: event.clientY }); }}
+              title={
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-semibold">{tunnel.name}</span>
+                  <span className="shrink-0 font-mono ios-footnote text-label-2">{tunnel.interface}</span>
+                </span>
+              }
+              subtitle={
+                <>
+                  <span className={tunnel.running ? "text-sys-green" : undefined}>{tunnel.running ? t("已连接") : t("未连接")}</span>
+                  {tunnel.external ? ` · ${t("系统隧道")}` : tunnel.autostart ? ` · ${t("开机启动")}` : ""}
+                  {tunnel.endpoint ? <> · <span className="font-mono">{tunnel.endpoint}</span></> : null}
+                  {tunnel.running ? (
+                    <span className="block">
+                      {t("流量")} {formatBytes(tunnel.transferRx)} ↓ / {formatBytes(tunnel.transferTx)} ↑{tunnel.peers ? ` · ${tunnel.peers} peer` : ""}
                     </span>
-                    {tunnel.external ? (
-                      <span className="rounded-full bg-black/5 px-2 py-0.5 text-[11px] font-medium text-black/50 dark:bg-white/10 dark:text-white/50">
-                        {t("系统隧道")}
-                      </span>
-                    ) : null}
-                    {tunnel.autostart && !tunnel.external ? (
-                      <span className="rounded-full bg-[var(--color-primary-soft)] px-2 py-0.5 text-[11px] font-medium text-accent">
-                        {t("开机启动")}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-2 space-y-1 text-[13px] text-black/45 dark:text-white/45">
-                    <div>{tunnel.running ? t("已连接") : t("未连接")}</div>
-                    {tunnel.endpoint ? <div>Endpoint {tunnel.endpoint}</div> : null}
-                    {tunnel.publicKey ? <div className="break-all font-mono text-[11px]">{tunnel.publicKey}</div> : null}
-                    {tunnel.running ? (
-                      <div>
-                        {t("流量")} {formatBytes(tunnel.transferRx)} ↓ / {formatBytes(tunnel.transferTx)} ↑
-                        {tunnel.peers ? ` · ${tunnel.peers} peer` : ""}
-                      </div>
-                    ) : null}
-                    {tunnel.error ? <div className="text-red-600 dark:text-red-400">{tunnel.error}</div> : null}
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {tunnel.external ? (
-                    <span className="text-[12px] text-black/40 dark:text-white/40">{t("由路由器网络配置管理")}</span>
-                  ) : (
-                    <>
-                      <Button
-                        size="small"
-                        variant={tunnel.running ? "default" : "primary"}
-                        loading={busy === tunnel.id}
-                        disabled={!snapshot.available && !tunnel.running}
-                        onClick={() => void onToggle(tunnel)}
-                      >
-                        {tunnel.running ? t("断开") : t("连接")}
-                      </Button>
-                      <Button size="small" icon={<EditRegular />} onClick={() => openEdit(tunnel)}>
-                        {t("修改")}
-                      </Button>
-                      <Button size="small" icon={<DeleteRegular />} disabled={busy === tunnel.id} onClick={() => void onDelete(tunnel)}>
-                        {t("删除")}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+                  ) : null}
+                  {tunnel.external ? <span className="block">{t("由路由器网络配置管理")}</span> : null}
+                  {tunnel.error ? <span className="block text-sys-red">{tunnel.error}</span> : null}
+                </>
+              }
+              accessory={tunnel.external ? undefined : (
+                <span className="flex shrink-0 items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                  <button
+                    type="button"
+                    aria-label={t("更多操作")}
+                    title={t("更多操作")}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full text-accent hover:bg-fill-4 [&_svg]:h-5 [&_svg]:w-5"
+                    onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setMenu({ id: tunnel.id, x: rect.right, y: rect.bottom }); }}
+                  >
+                    <MoreHorizontalRegular />
+                  </button>
+                  <Switch
+                    checked={tunnel.running}
+                    loading={busy === tunnel.id}
+                    disabled={!snapshot.available && !tunnel.running}
+                    onChange={() => void onToggle(tunnel)}
+                    ariaLabel={tunnel.running ? t("断开") : t("连接")}
+                  />
+                </span>
+              )}
+            />
           ))}
-        </div>
+        </ListSection>
       )}
+      <ContextMenu
+        open={Boolean(menuTunnel)}
+        anchor={menu}
+        onClose={() => setMenu(null)}
+        title={menuTunnel?.name}
+        items={menuTunnel ? [
+          { label: t("修改"), icon: <EditRegular />, onSelect: () => openEdit(menuTunnel) },
+          { label: t("删除"), icon: <DeleteRegular />, destructive: true, onSelect: () => void onDelete(menuTunnel) },
+        ] : []}
+      />
 
       <Modal
         open={open}

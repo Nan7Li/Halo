@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckmarkRegular, HistoryRegular } from "@fluentui/react-icons";
+import { HistoryRegular } from "@fluentui/react-icons";
 import { apiMessage, getLoggingSettings, updateLoggingSettings } from "../../api";
 import type { LoggingSettings } from "../../types";
+import { ListSection } from "../ios";
 import { useI18n } from "../../lib/i18n";
-import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Select } from "../ui/Select";
 import { message } from "../ui/message";
@@ -71,17 +71,30 @@ export function LogRetentionCard({ refreshKey = 0 }: { refreshKey?: number }) {
     setter(Number.isNaN(parsed) ? 0 : parsed);
   };
 
+  const row = (label: string, control: React.ReactNode) => (
+    <div className="ios-form-row">
+      <label className="ios-form-label">{label}</label>
+      <div className="ios-form-control">{control}</div>
+    </div>
+  );
   return (
-    <div className="ui-card p-4 mb-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-          <HistoryRegular className="text-gray-400" />
-          {t("日志保留")}
-        </div>
+    <ListSection
+      className="mt-6"
+      header={
+        <span className="flex items-end justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5"><HistoryRegular className="h-4 w-4" />{t("日志保留")}</span>
+          <button type="button" className="ios-subhead font-medium text-accent disabled:opacity-40" disabled={loading || saving} onClick={save}>
+            {saving ? t("保存中…") : t("保存")}
+          </button>
+        </span>
+      }
+      footer={<>{t("当前已存储")} {storedLogs} / {maxLogs} {t("条")} · {t("达到上限后自动删除最旧日志")}</>}
+      bodyClassName="px-4"
+    >
+      {row(t("保留方式"), (
         <Select
           value={mode}
           onChange={(value) => setMode(value as RetentionMode)}
-          className="w-32"
           disabled={loading}
           options={[
             { value: "unlimited", label: t("最多 10000 条") },
@@ -89,65 +102,26 @@ export function LogRetentionCard({ refreshKey = 0 }: { refreshKey?: number }) {
             { value: "days", label: t("按天数") },
           ]}
         />
-        {mode === "count" ? (
-          <label className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={1}
-              max={maxLogs}
-              value={count === 0 ? "" : count}
-              onChange={onNumber(setCount)}
-              disabled={loading}
-              className="w-28"
-            />
-            <span className="text-sm text-gray-500 dark:text-gray-400">{t("条")}</span>
-          </label>
-        ) : null}
-        {mode === "days" ? (
-          <label className="flex items-center gap-2">
-            <Input
-              type="number"
-              min={1}
-              value={days === 0 ? "" : days}
-              onChange={onNumber(setDays)}
-              disabled={loading}
-              className="w-28"
-            />
-            <span className="text-sm text-gray-500 dark:text-gray-400">{t("天")}</span>
-          </label>
-        ) : null}
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400">{t("类型保留")}</span>
-          <Select
-            value={level}
-            onChange={(value) => setLevel(value as RetentionLevel)}
-            className="w-44"
-            disabled={loading}
-            options={[
-              { value: "debug", label: t("DEBUG 及以上") },
-              { value: "info", label: t("INFO 及以上") },
-              { value: "warn", label: t("WARN 及以上") },
-              { value: "error", label: t("ERROR (仅严重报错)") },
-            ]}
-          />
-        </div>
-        <span className="text-sm text-gray-400">
-          {t("当前已存储")} {storedLogs} / {maxLogs} {t("条")}
-        </span>
-        <span className="text-xs text-gray-400">{t("达到上限后自动删除最旧日志")}</span>
-        <div className="flex-1" />
-        <Button
-          size="small"
-          variant="primary"
-          className="!border-0"
-          loading={saving}
+      ))}
+      {mode === "count" ? row(t("条数"), (
+        <Input type="number" inputMode="numeric" min={1} max={maxLogs} value={count === 0 ? "" : count} onChange={onNumber(setCount)} disabled={loading} />
+      )) : null}
+      {mode === "days" ? row(t("天数"), (
+        <Input type="number" inputMode="numeric" min={1} value={days === 0 ? "" : days} onChange={onNumber(setDays)} disabled={loading} />
+      )) : null}
+      {row(t("类型保留"), (
+        <Select
+          value={level}
+          onChange={(value) => setLevel(value as RetentionLevel)}
           disabled={loading}
-          onClick={save}
-          icon={<CheckmarkRegular />}
-        >
-          {t("保存")}
-        </Button>
-      </div>
-    </div>
+          options={[
+            { value: "debug", label: t("DEBUG 及以上") },
+            { value: "info", label: t("INFO 及以上") },
+            { value: "warn", label: t("WARN 及以上") },
+            { value: "error", label: t("ERROR (仅严重报错)") },
+          ]}
+        />
+      ))}
+    </ListSection>
   );
 }

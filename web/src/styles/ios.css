@@ -1039,3 +1039,8 @@ html[data-idiom="mac"] .ios-minus-button::before { left: 4px; right: 4px; height
 .ios-radio:focus-visible { outline: 2px solid rgb(var(--color-primary-rgb) / 0.5); outline-offset: 2px; }
 /* Long URLs and tokens in hints wrap instead of running off the row. */
 .ios-form-hint, .ios-list-footer { overflow-wrap: anywhere; }
+/* Tinted callouts (warning/error/success) are borderless on iOS; the
+   tint alone carries the meaning. */
+.ios-app :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl):is([class*="border-amber-"], [class*="border-red-"], [class*="border-emerald-"], [class*="border-green-"], [class*="border-sky-"], [class*="border-indigo-"], [class*="border-orange-"], [class*="border-yellow-"]):not(input):not(button):not(textarea) {
+  border-color: transparent;
+}
