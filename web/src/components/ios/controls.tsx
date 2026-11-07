@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from "react";
 import { SearchRegular, DismissCircleFilled } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
-import { useSlidingIndicator } from "./core";
+import { useLift, useSlidingIndicator } from "./core";
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -31,12 +31,13 @@ export function SegmentedControl<T extends string>({
   const ref = useRef<HTMLDivElement>(null);
   const active = options.findIndex((option) => option.value === value);
   const thumb = useSlidingIndicator(ref, active);
+  const moving = useLift(active);
   return (
     <div
       ref={ref}
       role="tablist"
       aria-label={ariaLabel}
-      className={cx("ios-segmented", pill && "is-pill", block && "grid w-full", className)}
+      className={cx("ios-segmented", moving && "is-moving", pill && "is-pill", block && "grid w-full", className)}
     >
       <span className="ios-segment-thumb" style={thumb} aria-hidden />
       {options.map((option) => (
@@ -70,6 +71,7 @@ export function IOSSwitch({
   small?: boolean;
   ariaLabel?: string;
 }) {
+  const moving = useLift(checked);
   return (
     <button
       type="button"
@@ -84,6 +86,7 @@ export function IOSSwitch({
       className={cx(
         "ios-switch outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-grouped-2",
         checked && "is-on",
+        moving && "is-moving",
         small && "is-small",
         disabled && "cursor-not-allowed opacity-50",
       )}

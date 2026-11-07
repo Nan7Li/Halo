@@ -130,11 +130,6 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 420ms;
-  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
-}
 .ui-overlay {
   animation: overlay-in var(--dur-fast) var(--ease-out-apple) backwards;
 }
@@ -457,28 +452,8 @@ html.dark .vocat-glass-btn:hover {
   overflow: auto;
   padding: 8px 6px 18px;
 }
-.vocat-page {
-  animation: ios-page 360ms var(--ease-spring) backwards;
-}
-.vocat-enter {
-  animation: ios-rise 420ms var(--ease-spring) backwards;
-}
-.vocat-enter-1 { animation-delay: 30ms; }
-.vocat-enter-2 { animation-delay: 70ms; }
-.vocat-enter-3 { animation-delay: 110ms; }
-.vocat-enter-4 { animation-delay: 150ms; }
-.vocat-enter-5 { animation-delay: 190ms; }
-.vocat-stagger > * {
-  animation: ios-rise 380ms var(--ease-spring) backwards;
-}
-.vocat-stagger > *:nth-child(1) { animation-delay: 20ms; }
-.vocat-stagger > *:nth-child(2) { animation-delay: 50ms; }
-.vocat-stagger > *:nth-child(3) { animation-delay: 80ms; }
-.vocat-stagger > *:nth-child(4) { animation-delay: 110ms; }
-.vocat-stagger > *:nth-child(5) { animation-delay: 140ms; }
-.vocat-stagger > *:nth-child(6) { animation-delay: 170ms; }
-.vocat-stagger > *:nth-child(n+7) { animation-delay: 190ms; }
-.ui-card-hover:active { transform: scale(0.985) translate3d(0, 0, 0); }
+/* Pages and their content appear with the screen, without a rise or a
+   stagger (see styles/motion.css). */
 .ui-progress {
   height: 8px;
   overflow: hidden;

@@ -1,0 +1,202 @@
+/*
+ * Motion, after Apple's own documentation rather than impressions:
+ *
+ * - HIG Motion: motion is brief, precise and purposeful; no motion for
+ *   frequent interactions; people can cancel it; Reduce Motion is honored.
+ * - SwiftUI springs (tokens.css): .smooth / .snappy / .bouncy, 0.5 s.
+ * - Liquid Glass (WWDC25 "Meet Liquid Glass", "Build a UIKit app with the
+ *   new design", HIG Materials and "Adopting Liquid Glass"):
+ *     glass "materializes in and out by gradually modulating the light
+ *     bending and lensing" instead of fading;
+ *     interactive glass "scales and bounces" and lights up under the finger;
+ *     a menu's "bubble simply pops open" out of the button that shows it,
+ *     and an action sheet "springs from the action itself";
+ *     switch and slider knobs "transform into Liquid Glass during
+ *     interaction".
+ */
+
+/* ---- Materialize ----
+   --glass-m scales the tint, blur, saturation and rim of a glass surface
+   from nothing (0) to its resting state (1). Registered so it animates. */
+@property --glass-m {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+@property --glass-spot {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.glass,
+.glass-thick,
+.glass-chrome,
+.glass-tinted {
+  background-color: rgb(var(--glass-tint) / calc(var(--glass-alpha) * var(--glass-m)));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
+}
+html[data-engine="chromium"][data-refraction="on"] .glass,
+html[data-engine="chromium"][data-refraction="on"] .glass-tinted {
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
+}
+html[data-engine="chromium"][data-refraction="on"] .glass-thick {
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens-soft) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
+  backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens-soft) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
+}
+.glass::after,
+.glass-thick::after,
+.glass-tinted::after,
+.glass::before,
+.glass-thick::before,
+.glass-tinted::before { opacity: var(--glass-m); }
+
+/* The glow under the finger fades out instead of switching off. */
+.glass-interactive {
+  transition:
+    transform var(--dur-bouncy) var(--spring-bouncy),
+    background-color 200ms linear,
+    box-shadow 200ms linear,
+    --glass-spot 450ms ease-out;
+}
+.glass-interactive.is-touched { transition-duration: calc(var(--dur-snappy) * 0.5), 200ms, 200ms, 0ms; }
+
+@keyframes glass-materialize {
+  from { --glass-m: 0; }
+}
+@keyframes glass-content-in {
+  from { opacity: 0; }
+}
+
+/* ---- Menus and popovers: the bubble pops open from its button ----
+   ContextMenu sets --origin-x / --origin-y to the anchor (the pressed
+   button or the touch point), so the menu grows out of it and collapses
+   back into it. Scale rides the .bouncy spring; the material
+   materializes with .smooth; the items appear as the bubble opens. */
+@keyframes ios-menu-open {
+  from { transform: scale(0.18); --glass-m: 0; }
+}
+.ios-menu {
+  transform-origin: var(--origin-x, 100%) var(--origin-y, 0%);
+  animation:
+    ios-menu-open calc(var(--dur-bouncy) * 0.8) var(--spring-bouncy) backwards;
+  will-change: transform;
+}
+.ios-menu > * { animation: glass-content-in 160ms linear 70ms backwards; }
+.ios-menu.is-closing {
+  transform: scale(0.18);
+  --glass-m: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform calc(var(--dur-smooth) * 0.5) var(--spring-smooth),
+    --glass-m calc(var(--dur-smooth) * 0.5) var(--spring-smooth),
+    opacity 120ms linear 100ms;
+}
+.ios-menu.is-closing > * { opacity: 0; transition: opacity 90ms linear; }
+
+/* Select popovers use the same pop from their field. */
+.ui-pop {
+  transform-origin: top center;
+  animation: ios-menu-open calc(var(--dur-bouncy) * 0.8) var(--spring-bouncy) backwards;
+}
+.ui-pop > * { animation: glass-content-in 160ms linear 70ms backwards; }
+
+/* ---- Alerts ----
+   UIAlertController still appears in place: it settles from slightly
+   larger while the material materializes; it leaves with a dissolve. */
+@keyframes ios-alert-in {
+  from { transform: scale(1.12); opacity: 0; --glass-m: 0; }
+}
+.ios-alert { animation: ios-alert-in calc(var(--dur-smooth) * 0.7) var(--spring-smooth) backwards; }
+
+/* ---- Incoming call banner and toasts ----
+   On iPhone 17 Pro a call or a system notice grows out of the Dynamic
+   Island at the top center, with a little bounce, and shrinks back. */
+@keyframes ios-island-in {
+  0% { transform: translate3d(0, -6px, 0) scale(0.28, 0.16); opacity: 0; --glass-m: 0; }
+  12% { opacity: 1; }
+}
+@keyframes ios-island-out {
+  to { transform: translate3d(0, -6px, 0) scale(0.28, 0.16); opacity: 0; --glass-m: 0; }
+}
+.ios-banner {
+  transform-origin: 50% 0;
+  animation: ios-island-in var(--dur-bouncy) var(--spring-bouncy) backwards;
+}
+.ios-banner > * { animation: glass-content-in 200ms linear 120ms backwards; }
+.ui-toast-in {
+  transform-origin: 50% 0;
+  animation: ios-island-in var(--dur-bouncy) var(--spring-bouncy) both;
+}
+.ui-toast-out {
+  transform-origin: 50% 0;
+  animation: ios-island-out calc(var(--dur-smooth) * 0.5) var(--spring-smooth) both;
+}
+
+/* ---- Pressed switch / slider knob ----
+   The knob lifts quickly when touched (.snappy, a quarter second) and
+   settles back with .bouncy. */
+.ios-switch:active .ios-switch-knob,
+.ios-switch.is-moving .ios-switch-knob {
+  transition-duration: calc(var(--dur-snappy) * 0.7), 200ms, calc(var(--dur-snappy) * 0.5), 160ms, 160ms;
+}
+.ios-segmented:has(.ios-segment:active) .ios-segment-thumb,
+.ios-segmented.is-moving .ios-segment-thumb {
+  transition-duration: calc(var(--dur-snappy) * 0.8), calc(var(--dur-snappy) * 0.8), calc(var(--dur-snappy) * 0.5), 160ms, 160ms;
+}
+
+/* ---- Navigation stack (lib/motion.ts navTransition) ----
+   UINavigationController: the new screen slides in from the trailing
+   edge over the old one, which shifts a third of the way out and dims;
+   pop reverses it. One .smooth spring (no bounce) drives both, and the
+   tab bar and sidebar stay put because only the scroll area takes part. */
+.ios-scroll { view-transition-name: ios-page; }
+html[data-nav]::view-transition-old(root),
+html[data-nav]::view-transition-new(root) { animation: none; }
+html[data-nav]::view-transition-group(ios-page) { animation: none; overflow: clip; }
+html[data-nav]::view-transition-image-pair(ios-page) { isolation: auto; }
+/* Bars float above the sliding pages and do not move. */
+.ios-tabbar-wrap { view-transition-name: ios-tabbar; }
+html[data-nav]::view-transition-group(ios-tabbar) { z-index: 2; animation: none; }
+html[data-nav]::view-transition-old(ios-tabbar) { display: none; }
+html[data-nav]::view-transition-new(ios-tabbar) { animation: none; }
+html[data-nav]::view-transition-old(ios-page),
+html[data-nav]::view-transition-new(ios-page) {
+  animation-duration: var(--dur-smooth);
+  animation-timing-function: var(--spring-smooth);
+  animation-fill-mode: both;
+  mix-blend-mode: normal;
+}
+@keyframes nav-push-new { from { transform: translate3d(100%, 0, 0); } }
+@keyframes nav-push-old { to { transform: translate3d(-30%, 0, 0); filter: brightness(0.92); } }
+@keyframes nav-pop-new { from { transform: translate3d(-30%, 0, 0); filter: brightness(0.92); } }
+@keyframes nav-pop-old { to { transform: translate3d(100%, 0, 0); } }
+html[data-nav="push"]::view-transition-old(ios-page) { animation-name: nav-push-old; z-index: 0; }
+html[data-nav="push"]::view-transition-new(ios-page) { animation-name: nav-push-new; z-index: 1; box-shadow: -10px 0 30px rgb(0 0 0 / 0.12); }
+html[data-nav="pop"]::view-transition-old(ios-page) { animation-name: nav-pop-old; z-index: 1; box-shadow: -10px 0 30px rgb(0 0 0 / 0.12); }
+html[data-nav="pop"]::view-transition-new(ios-page) { animation-name: nav-pop-new; z-index: 0; }
+html[data-nav="fade"]::view-transition-old(ios-page) { animation: ios-fade 200ms linear reverse both; }
+html[data-nav="fade"]::view-transition-new(ios-page) { animation: ios-fade 200ms linear both; }
+
+/* Theme, accent and language changes: a short dissolve. */
+html:not([data-nav])::view-transition-old(root),
+html:not([data-nav])::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-timing-function: linear;
+}
+
+/* ---- Reduce Motion ----
+   No scaling, sliding or bouncing; glass still materializes, which is a
+   change of light, not of position. */
+html[data-motion="reduced"] .ios-menu,
+html[data-motion="reduced"] .ui-pop,
+html[data-motion="reduced"] .ios-alert,
+html[data-motion="reduced"] .ios-banner,
+html[data-motion="reduced"] .ui-toast-in {
+  animation: glass-materialize 220ms linear backwards, ios-fade 220ms linear backwards !important;
+}
+html[data-motion="reduced"] .ui-toast-out { animation: ios-fade 180ms linear reverse both !important; }
+html[data-motion="reduced"] .ios-menu.is-closing { transform: none; }
+html[data-motion="reduced"] .glass-interactive.is-touched { transform: none; }

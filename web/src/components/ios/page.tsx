@@ -1,11 +1,30 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback } from "react";
+import { useLocation, useNavigate, type To } from "react-router-dom";
 import { ChevronLeftRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
 import { useScrolledPast } from "./core";
 import { useMediaQuery } from "../../lib/useMediaQuery";
 import { MAC_IDIOM_QUERY } from "../../lib/appearance";
+import { directionFor, navTransition, type NavDirection } from "../../lib/motion";
+
+/**
+ * navigate() with the navigation-stack slide on compact width. The
+ * direction follows path depth unless given (see lib/motion.ts).
+ */
+export function useStackNavigate() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return useCallback(
+    (to: To | number, direction?: NavDirection | null) => {
+      const target = typeof to === "number" ? null : typeof to === "string" ? to : to.pathname ?? location.pathname;
+      const dir = direction !== undefined ? direction : typeof to === "number" ? (to < 0 ? "pop" : "push") : directionFor(location.pathname, target ?? "");
+      navTransition(dir, () => (typeof to === "number" ? navigate(to) : navigate(to)));
+    },
+    [navigate, location.pathname],
+  );
+}
 
 /** macOS idiom: fine pointer on a wide window (see styles/mac.css). */
 export function useIsMac() {
@@ -103,13 +122,13 @@ export const BarButton = forwardRef<HTMLButtonElement, BarButtonProps>(function 
 
 /** Standard Back: the chevron symbol only, no "Back" text (HIG Toolbars). */
 export function BackButton({ to, label, onBack }: { to?: string; label?: ReactNode; onBack?: () => void }) {
-  const navigate = useNavigate();
+  const navigate = useStackNavigate();
   const { t } = useI18n();
   return (
     <BarButton
       icon={<ChevronLeftRegular />}
       aria-label={typeof label === "string" ? `${t("返回")} ${label}` : t("返回")}
-      onClick={() => (onBack ? onBack() : to ? navigate(to) : navigate(-1))}
+      onClick={() => (onBack ? navTransition("pop", onBack) : to ? navigate(to, "pop") : navigate(-1, "pop"))}
     />
   );
 }

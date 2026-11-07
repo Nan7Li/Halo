@@ -48,7 +48,7 @@ export function ConfirmHost() {
   return (
     <div className="ios-sheet-root !items-center" style={{ zIndex: 4500 }}>
       <button type="button" className="ios-sheet-scrim glass-scrim" aria-label={t("取消")} onClick={() => close(false)} />
-      <div role="alertdialog" aria-modal="true" className="glass-thick relative z-[1] w-[300px] overflow-hidden rounded-[28px] [animation:ios-scale-in_380ms_var(--spring-bouncy)_backwards]">
+      <div role="alertdialog" aria-modal="true" className="glass-thick relative z-[1] w-[300px] overflow-hidden rounded-[28px] ios-alert">
         <div className="px-5 pb-4 pt-5 text-center">
           {danger ? <WarningFilled className="mx-auto mb-1 block text-[28px] text-sys-red" /> : null}
           <div className="ios-headline text-label">{state.title}</div>

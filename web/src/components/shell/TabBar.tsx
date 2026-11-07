@@ -3,7 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { PanelLeftRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
-import { glassClass, useSlidingIndicator } from "../ios/core";
+import { glassClass, useLift, useSlidingIndicator } from "../ios/core";
 import { MORE_TAB, PRIMARY_NAV, isActive, type NavItem } from "./nav";
 
 /**
@@ -19,10 +19,11 @@ export function TabBar({ badges = {} }: { badges?: Record<string, number> }) {
   const active = tabs.findIndex((tab) => isActive(tab, pathname));
   const barRef = useRef<HTMLElement>(null);
   const lens = useSlidingIndicator(barRef, active);
+  const moving = useLift(active, 360);
   return (
     <div className="ios-tabbar-wrap">
       <nav ref={barRef} aria-label={t("主导航")} className={cx("ios-tabbar", glassClass("regular"))}>
-        <span className="ios-tab-lens" style={lens} aria-hidden />
+        <span className={cx("ios-tab-lens", moving && "is-moving")} style={lens} aria-hidden />
         {tabs.map((tab, index) => {
           const selected = index === active;
           // HIG: prefer filled symbols in tab bars.
@@ -58,6 +59,7 @@ export function TopTabBar({ items, onShowSidebar, badges = {} }: { items: NavIte
   const active = items.findIndex((tab) => isActive(tab, pathname));
   const barRef = useRef<HTMLElement>(null);
   const lens = useSlidingIndicator(barRef, active);
+  const moving = useLift(active, 360);
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-3">
       <div className="pointer-events-auto flex items-center gap-2">
@@ -71,7 +73,7 @@ export function TopTabBar({ items, onShowSidebar, badges = {} }: { items: NavIte
           <PanelLeftRegular />
         </button>
         <nav ref={barRef} aria-label={t("主导航")} className={cx("relative flex h-11 items-center rounded-full p-1", glassClass("regular"))}>
-          <span className="ios-tab-lens !top-1 !bottom-1" style={lens} aria-hidden />
+          <span className={cx("ios-tab-lens !top-1 !bottom-1", moving && "is-moving")} style={lens} aria-hidden />
           {items.map((tab, index) => {
             const selected = index === active;
             const Icon = tab.activeIcon ?? tab.icon;

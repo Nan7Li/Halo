@@ -7,6 +7,7 @@ import { ApiError, apiMessage } from "../api";
 import { ErrorState, confirmDialog, message } from "../components/ui";
 import { usePolling } from "../lib/usePolling";
 import { cx } from "../lib/utils";
+import { navTransition } from "../lib/motion";
 import type { DeviceListItem, SMSMessage } from "../types";
 import {
   analyzeSmsEncoding,
@@ -575,7 +576,7 @@ export default function SmsPage() {
   }, [actionTarget, closeActionSheet, deleteThreadAction, deleteMessageAction]);
 
   const onBack = useCallback(() => {
-    if (keyRef.current) clearSelection(true);
+    if (keyRef.current) navTransition("pop", () => clearSelection(true));
   }, [clearSelection]);
 
   useEffect(() => {
@@ -690,7 +691,7 @@ export default function SmsPage() {
               isUnread={isUnread}
               deletingKey={deletingThreadKey}
               canHover={canHover}
-              onSelect={(key) => void selectContact(key)}
+              onSelect={(key) => navTransition(isDesktop || key === selectedKey ? null : "push", () => void selectContact(key))}
               onDelete={(t) => void deleteThreadAction(t)}
               onRowPointerDown={onThreadPointerDown}
               onRowPointerMove={moveLongPress}

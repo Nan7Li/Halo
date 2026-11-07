@@ -8,6 +8,7 @@ import "./index.css";
 import "./vocat.css";
 import "./styles/glass.css";
 import "./styles/ios.css";
+import "./styles/motion.css";
 import "./styles/mac.css";
 import { installAppearanceRuntime } from "./lib/appearance";
 

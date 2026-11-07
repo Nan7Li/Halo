@@ -120,7 +120,35 @@ export function installAppearanceRuntime() {
     if (!frame) frame = requestAnimationFrame(flush);
   };
   document.addEventListener("pointermove", onPointer, { passive: true });
+
+  // Interactive glass "illuminates from within as a form of feedback.
+  // Starting right under your fingertips, the glow spreads throughout the
+  // element" (WWDC25, Meet Liquid Glass). Light the spot where the press
+  // landed; CSS swells touch-driven glass (glass.css .is-touched).
+  let touched: HTMLElement | null = null;
+  const release = () => {
+    touched?.classList.remove("is-touched");
+    touched = null;
+  };
+  const onDown = (event: PointerEvent) => {
+    release();
+    const target = (event.target as Element | null)?.closest?.(".glass-interactive") as HTMLElement | null;
+    if (!target || (target as HTMLButtonElement).disabled) return;
+    const rect = target.getBoundingClientRect();
+    target.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+    target.style.setProperty("--my", `${event.clientY - rect.top}px`);
+    target.classList.add("is-touched");
+    touched = target;
+  };
+  document.addEventListener("pointerdown", onDown, { passive: true });
+  document.addEventListener("pointerup", release, { passive: true });
+  document.addEventListener("pointercancel", release, { passive: true });
+  // iOS Safari only applies :active when a touch listener exists.
+  document.addEventListener("touchstart", () => {}, { passive: true });
   return () => {
+    document.removeEventListener("pointerdown", onDown);
+    document.removeEventListener("pointerup", release);
+    document.removeEventListener("pointercancel", release);
     media?.removeEventListener?.("change", onMotion);
     idiom?.removeEventListener?.("change", onIdiom);
     document.removeEventListener("pointermove", onPointer);

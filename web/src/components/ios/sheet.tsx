@@ -4,7 +4,9 @@ import { DismissRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
 
-const CLOSE_MS = 260;
+// Dismissal is a .smooth spring (ios.css); unmount once it is visually done.
+const CLOSE_MS = 420;
+const MENU_CLOSE_MS = 240;
 
 /**
  * iOS sheet: slides up from the bottom on phones (drag the grabber or the
@@ -113,7 +115,7 @@ export function Sheet({
         aria-modal="true"
         tabIndex={-1}
         className={cx("ios-sheet outline-none", solid ? "is-solid" : "glass-thick", width, className)}
-        style={drag ? { transform: `translate3d(0, ${drag}px, 0)`, transition: dragStart.current === null ? "transform 300ms var(--spring-snappy)" : "none" } : undefined}
+        style={drag ? { transform: `translate3d(0, ${drag}px, 0)`, transition: dragStart.current === null ? "transform calc(var(--dur-smooth) * 0.8) var(--spring-smooth)" : "none" } : undefined}
       >
         <div onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} className="shrink-0 touch-none">
           <div className="ios-sheet-grabber" />
@@ -168,32 +170,63 @@ export function ContextMenu({
   title?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+  const [position, setPosition] = useState<{ left: number; top: number; originX: number; originY: number } | null>(null);
+  // Stay mounted briefly after closing so the bubble can shrink back into
+  // the button it came from.
+  const [shown, setShown] = useState<{ anchor: { x: number; y: number }; items: MenuItem[]; title?: ReactNode } | null>(null);
+  const closing = !open && shown !== null;
   useLayoutEffect(() => {
-    if (!open || !anchor || !ref.current) return;
+    if (open && anchor) {
+      setShown({ anchor, items, title });
+      return;
+    }
+    if (!shown) return;
+    const timer = window.setTimeout(() => {
+      setShown(null);
+      setPosition(null);
+    }, MENU_CLOSE_MS);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, anchor, items, title]);
+  const at = shown?.anchor ?? null;
+  useLayoutEffect(() => {
+    if (!open || !at || !ref.current) return;
     const rect = ref.current.getBoundingClientRect();
-    const left = Math.min(Math.max(8, anchor.x - rect.width + 24), window.innerWidth - rect.width - 8);
-    const top = anchor.y + rect.height + 8 > window.innerHeight ? Math.max(8, anchor.y - rect.height - 8) : anchor.y + 8;
-    setPosition({ left, top });
-  }, [open, anchor]);
+    const left = Math.min(Math.max(8, at.x - rect.width + 24), window.innerWidth - rect.width - 8);
+    const top = at.y + rect.height + 8 > window.innerHeight ? Math.max(8, at.y - rect.height - 8) : at.y + 8;
+    setPosition({ left, top, originX: at.x - left, originY: at.y - top });
+  }, [open, at]);
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
-  if (!open || !anchor) return null;
+  if (!shown) return null;
+  const menuItems = open ? items : shown.items;
+  const menuTitle = open ? title : shown.title;
   return createPortal(
-    <div className="fixed inset-0 z-[4100]" onPointerDown={onClose} onContextMenu={(event) => { event.preventDefault(); onClose(); }}>
+    <div
+      className={cx("fixed inset-0 z-[4100]", closing && "pointer-events-none")}
+      onPointerDown={onClose}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+    >
       <div
         ref={ref}
         role="menu"
-        className="ios-menu glass-thick fixed"
-        style={position ?? { left: anchor.x, top: anchor.y, visibility: "hidden" }}
+        className={cx("ios-menu glass-thick fixed", closing && "is-closing")}
+        style={
+          position
+            ? ({ left: position.left, top: position.top, "--origin-x": `${position.originX}px`, "--origin-y": `${position.originY}px` } as React.CSSProperties)
+            : { left: shown.anchor.x, top: shown.anchor.y, visibility: "hidden", animation: "none" }
+        }
         onPointerDown={(event) => event.stopPropagation()}
       >
-        {title ? <div className="px-4 pb-1.5 pt-2.5 ios-footnote text-label-2">{title}</div> : null}
-        {items.map((item, index) => (
+        {menuTitle ? <div className="px-4 pb-1.5 pt-2.5 ios-footnote text-label-2">{menuTitle}</div> : null}
+        {menuItems.map((item, index) => (
           <button
             key={index}
             type="button"

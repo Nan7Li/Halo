@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowClockwiseRegular, AddRegular, RouterRegular, ScanRegular } from "@fluentui/react-icons";
 import { BackButton, BarGroup, ContentUnavailable, GroupButton, Page } from "../components/ios";
 import { cx } from "../lib/utils";
+import { navTransition } from "../lib/motion";
 import { api, apiMessage, camelize } from "../api";
 import type { CardPolicy, DeviceConfig, DeviceListItem, DiscoveredDevice } from "../types";
 import { usePolling } from "../lib/usePolling";
@@ -734,7 +735,7 @@ export default function DevicesPage() {
       onStatusFilterChange={setStatusFilter}
       onSortKeyChange={setSortKey}
       onSortDirChange={setSortDir}
-      onSelectDevice={(id) => selectDevice(id)}
+      onSelectDevice={(id) => navTransition("push", () => selectDevice(id))}
     />
   );
 

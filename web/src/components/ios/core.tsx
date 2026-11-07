@@ -121,6 +121,26 @@ export function useSlidingIndicator(containerRef: RefObject<HTMLElement | null>,
   return style;
 }
 
+/**
+ * True for a moment after `value` changes: a selection indicator or knob
+ * lifts into clear glass while it travels (iOS 26 switches, segmented
+ * controls and tab bars), then settles back with the bouncy spring.
+ */
+export function useLift(value: unknown, ms = 320) {
+  const [moving, setMoving] = useState(false);
+  const previous = useRef(value);
+  useLayoutEffect(() => {
+    if (Object.is(previous.current, value)) return;
+    previous.current = value;
+    const root = document.documentElement.dataset;
+    if (root.motion === "reduced" || root.motion === "off" || root.idiom === "mac") return;
+    setMoving(true);
+    const timer = window.setTimeout(() => setMoving(false), ms);
+    return () => window.clearTimeout(timer);
+  }, [value, ms]);
+  return moving;
+}
+
 /** Long press (touch) or context menu (mouse) handler. */
 export function useLongPress(onLongPress: (event: { clientX: number; clientY: number }) => void, delay = 480) {
   const timer = useRef<number | undefined>(undefined);

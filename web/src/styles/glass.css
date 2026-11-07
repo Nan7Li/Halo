@@ -99,22 +99,33 @@ html.dark .glass-thick {
   color: var(--color-on-primary);
 }
 
-/* Interactive glass: emphasized, droplet-like response to touch and a
-   subdued one for a trackpad or mouse (HIG Motion). */
+/* Interactive glass (UIGlassEffect.isInteractive / Glass.interactive()).
+   Apple: "When tapping the button, it scales and bounces", and the
+   material "illuminates from within ... starting right under your
+   fingertips". It swells on press and springs back with the .bouncy
+   spring on release. A trackpad or mouse gets the subdued version (HIG
+   Motion): light only, no swelling. lib/glassTouch.ts sets --mx/--my to
+   the touch point and toggles .is-touched. */
 .glass-interactive {
   transition:
-    transform calc(var(--dur-spring-bouncy) * 0.7) var(--spring-bouncy),
-    background-color 200ms var(--spring-smooth),
-    box-shadow 200ms var(--spring-smooth);
+    transform var(--dur-bouncy) var(--spring-bouncy),
+    background-color 200ms linear,
+    box-shadow 200ms linear;
 }
-.glass-interactive:active { transform: scale(0.97); transition-duration: 120ms; }
+.glass-interactive.is-touched { --glass-spot: 2.4; }
 @media (pointer: coarse) {
-  .glass-interactive:active { transform: scale(1.08, 1.04); --glass-alpha: calc(0.3 + 0.6 * var(--glass-clarity)); }
+  .glass-interactive:active,
+  .glass-interactive.is-touched {
+    transform: scale(1.12);
+    transition-duration: calc(var(--dur-snappy) * 0.5), 200ms, 200ms;
+    transition-timing-function: var(--spring-snappy), linear, linear;
+  }
 }
 @media (hover: hover) and (pointer: fine) {
   .glass-interactive:hover { --glass-alpha: calc(0.26 + 0.68 * var(--glass-clarity)); }
 }
-html[data-motion="reduced"] .glass-interactive:active { transform: none; }
+html[data-motion="reduced"] .glass-interactive:active,
+html[data-motion="reduced"] .glass-interactive.is-touched { transform: none; }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass,
@@ -207,7 +218,8 @@ html[data-engine="chromium"][data-refraction="on"] .glass-thick {
 html[data-wallpaper="vivid"] { --wp: 2.1; }
 html[data-wallpaper="off"] { --wp: 0; }
 html.dark { --wp-dark: 1.25; }
-.ios-app {
+.ios-app,
+html[data-nav] .ios-scroll {
   background:
     radial-gradient(55% 45% at 0% 0%, rgb(var(--color-primary-rgb) / calc(0.16 * var(--wp) * var(--wp-dark, 1))), transparent 72%),
     radial-gradient(45% 40% at 100% 6%, rgb(var(--ios-pink) / calc(0.11 * var(--wp) * var(--wp-dark, 1))), transparent 72%),
@@ -219,8 +231,13 @@ html.dark { --wp-dark: 1.25; }
 /* ---- Interactive glass droplets (iOS 26) ----
    Pressing lifts the control into a clear, larger droplet of glass that
    magnifies what is under it, then it settles back with a spring. */
-.ios-tab-lens { transition: transform var(--dur-spring-bouncy) var(--spring-bouncy), width var(--dur-spring-bouncy) var(--spring-bouncy), scale 360ms var(--spring-bouncy), background-color 200ms ease, box-shadow 200ms ease; }
+.ios-tab-lens { transition: transform var(--dur-bouncy) var(--spring-bouncy), width var(--dur-bouncy) var(--spring-bouncy), scale var(--dur-bouncy) var(--spring-bouncy), background-color 200ms linear, box-shadow 200ms linear; }
+/* The selection droplet lifts into clear glass while a finger is on the
+   bar and while it travels to a new tab, then settles back into the bar. */
+.ios-tab-lens.is-moving,
+.ios-tabbar:has(.ios-tab:active) .ios-tab-lens { transition-duration: var(--dur-bouncy), var(--dur-bouncy), calc(var(--dur-snappy) * 0.5), 200ms, 200ms; }
 @media (pointer: coarse) {
+  .ios-tab-lens.is-moving,
   .ios-tabbar:has(.ios-tab:active) .ios-tab-lens {
     scale: 1.14 1.22;
     background: rgb(255 255 255 / 0.18);
@@ -232,32 +249,39 @@ html.dark { --wp-dark: 1.25; }
     backdrop-filter: blur(1px) saturate(1.8) brightness(1.08);
   }
 }
+html[data-engine="chromium"][data-refraction="on"] .ios-tab-lens.is-moving,
 html[data-engine="chromium"][data-refraction="on"] .ios-tabbar:has(.ios-tab:active) .ios-tab-lens {
   backdrop-filter: url(#halo-lens) saturate(1.8) brightness(1.08);
 }
 
-.ios-switch-knob { transition: transform var(--dur-spring-snappy) var(--spring-snappy), width 200ms var(--spring-smooth), scale 320ms var(--spring-bouncy), background-color 160ms ease, box-shadow 160ms ease; }
+/* Switch (HIG: "the knob transforms into Liquid Glass during
+   interaction"): it lifts into a clear droplet while pressed and while it
+   travels, then turns solid again as it settles. */
+.ios-switch-knob { transition: transform calc(var(--dur-snappy) * 0.7) var(--spring-snappy), width 200ms linear, scale var(--dur-bouncy) var(--spring-bouncy), background-color 160ms linear, box-shadow 160ms linear; }
+.ios-switch.is-moving .ios-switch-knob,
 .ios-switch:active .ios-switch-knob {
   scale: 1.3 1.25;
-  background: rgb(255 255 255 / 0.32);
+  background: rgb(255 255 255 / 0.5);
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.85),
     inset 0 6px 8px -6px rgb(255 255 255 / 0.9),
     0 4px 12px rgb(0 0 0 / 0.18);
-  -webkit-backdrop-filter: blur(0.5px) saturate(1.8) brightness(1.1);
-  backdrop-filter: blur(0.5px) saturate(1.8) brightness(1.1);
+  -webkit-backdrop-filter: blur(0.5px) saturate(1.15) brightness(1.04);
+  backdrop-filter: blur(0.5px) saturate(1.15) brightness(1.04);
 }
 .ios-slider:active::-webkit-slider-thumb {
   transform: scale(1.35, 1.25);
   background: rgb(255 255 255 / 0.4);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), inset 0 6px 8px -6px rgb(255 255 255 / 0.9), 0 4px 12px rgb(0 0 0 / 0.2);
 }
-.ios-segment-thumb { transition: transform var(--dur-spring-snappy) var(--spring-snappy), width var(--dur-spring-snappy) var(--spring-snappy), scale 320ms var(--spring-bouncy), background-color 160ms ease; }
+.ios-segment-thumb { transition: transform calc(var(--dur-snappy) * 0.8) var(--spring-snappy), width calc(var(--dur-snappy) * 0.8) var(--spring-snappy), scale var(--dur-bouncy) var(--spring-bouncy), background-color 160ms linear, box-shadow 160ms linear; }
+.ios-segmented.is-moving .ios-segment-thumb,
 .ios-segmented:has(.ios-segment:active) .ios-segment-thumb {
   scale: 1.05 1.14;
   background: rgb(255 255 255 / 0.55);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), 0 6px 14px rgb(0 0 0 / 0.14);
 }
+html.dark .ios-segmented.is-moving .ios-segment-thumb,
 html.dark .ios-segmented:has(.ios-segment:active) .ios-segment-thumb { background: rgb(120 120 128 / 0.55); }
 /* Glass buttons swell slightly under the finger and glow on hover. */
 @media (hover: hover) and (pointer: fine) {

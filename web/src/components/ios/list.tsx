@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronRightRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { IconTile } from "./core";
+import { useStackNavigate } from "./page";
 
 /** Inset grouped section: header, rounded group, footer. */
 export function ListSection({
@@ -83,6 +84,7 @@ export function ListRow({
   multiline,
   ...events
 }: ListRowProps) {
+  const navigate = useStackNavigate();
   const interactive = Boolean(to || onClick) && !disabled;
   const showChevron = chevron ?? Boolean(to);
   const content = (
@@ -115,7 +117,16 @@ export function ListRow({
   let row: ReactNode;
   if (to && !disabled) {
     row = (
-      <Link to={to} className={rowClass} {...events}>
+      <Link
+        to={to}
+        className={rowClass}
+        {...events}
+        onClick={(event) => {
+          if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          navigate(to);
+        }}
+      >
         {content}
       </Link>
     );

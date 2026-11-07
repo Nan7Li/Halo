@@ -68,14 +68,11 @@ html[data-bold="on"] svg[fill="currentColor"] path { stroke: currentColor; strok
 }
 
 .ios-page { /* tab roots appear instantly, like UITabBarController */ }
-.ios-push { animation: ios-push-in 500ms var(--spring-smooth) backwards; }
-.ios-crossfade { animation: ios-fade 220ms ease-out backwards; }
-.ios-stagger > * { animation: ios-fade-up var(--dur-spring-smooth) var(--spring-smooth) backwards; }
-.ios-stagger > *:nth-child(2) { animation-delay: 30ms; }
-.ios-stagger > *:nth-child(3) { animation-delay: 60ms; }
-.ios-stagger > *:nth-child(4) { animation-delay: 90ms; }
-.ios-stagger > *:nth-child(5) { animation-delay: 120ms; }
-.ios-stagger > *:nth-child(n+6) { animation-delay: 150ms; }
+/* Without View Transitions the pushed page still slides in on mount. */
+html:not([data-vt]) .ios-push { animation: ios-push-in var(--dur-smooth) var(--spring-smooth) backwards; }
+.ios-crossfade { animation: ios-fade 180ms linear backwards; }
+/* Content does not animate in: the system shows a screen's content with
+   the screen itself (HIG Motion: no motion on frequent interactions). */
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -122,7 +119,7 @@ html[data-bold="on"] svg[fill="currentColor"] path { stroke: currentColor; strok
   margin: 10px 0 10px 10px;
   border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: width var(--dur-spring-snappy) var(--spring-snappy), margin var(--dur-spring-snappy) var(--spring-snappy);
+  transition: width var(--dur-smooth) var(--spring-smooth), margin var(--dur-smooth) var(--spring-smooth);
 }
 .ios-sidebar.is-collapsed { width: 72px; }
 .ios-sidebar-item {
@@ -140,10 +137,10 @@ html[data-bold="on"] svg[fill="currentColor"] path { stroke: currentColor; strok
   letter-spacing: -0.015em;
   white-space: nowrap;
   text-decoration: none;
-  transition: background-color 160ms var(--spring-smooth), color 160ms var(--spring-smooth), transform 260ms var(--spring-bouncy);
+  transition: background-color 160ms linear, color 160ms linear;
 }
 .ios-sidebar-item:hover { background: var(--ios-fill-4); }
-.ios-sidebar-item:active { transform: scale(0.97); }
+.ios-sidebar-item:active { background: var(--ios-fill-3); transition-duration: 0ms; }
 .ios-sidebar-item .ios-sidebar-icon { width: 22px; height: 22px; flex-shrink: 0; font-size: 22px; color: var(--color-primary); display: inline-flex; }
 .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb) / 0.14); color: var(--color-primary); font-weight: 600; }
 html.dark .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb) / 0.22); }
@@ -201,9 +198,7 @@ html.dark .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb)
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.01em;
-  transition: color 200ms var(--spring-smooth), transform 300ms var(--spring-bouncy);
 }
-.ios-tab:active { transform: scale(0.9); }
 .ios-tab svg { width: 24px; height: 24px; }
 .ios-tab.is-active { color: var(--color-primary); }
 .ios-tab-badge {
@@ -239,7 +234,7 @@ html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
 .ios-tabbar-wrap.is-minimized .ios-tabbar { height: 50px; }
 .ios-tabbar-wrap.is-minimized .ios-tab:not(.is-active) { flex-basis: 0; min-width: 0; opacity: 0; pointer-events: none; overflow: hidden; }
 .ios-tabbar-wrap.is-minimized .ios-tab span { display: none; }
-.ios-tab { transition: color 200ms var(--spring-smooth), transform 300ms var(--spring-bouncy), flex-basis var(--dur-spring-snappy) var(--spring-snappy), min-width var(--dur-spring-snappy) var(--spring-snappy), opacity 200ms var(--spring-smooth); }
+.ios-tab { transition: color 200ms linear, flex-basis var(--dur-spring-snappy) var(--spring-snappy), min-width var(--dur-spring-snappy) var(--spring-snappy), opacity 200ms var(--spring-smooth); }
 
 /* ---- Navigation bar ---- */
 .ios-navbar {
@@ -427,11 +422,9 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: font-weight 0ms, transform 260ms var(--spring-bouncy);
 }
 .ios-segmented.is-pill .ios-segment { height: 32px; border-radius: var(--radius-pill); font-size: 14px; }
 .ios-segment.is-active { font-weight: 600; }
-.ios-segment:active { transform: scale(0.95); }
 .ios-segment-thumb {
   position: absolute;
   z-index: 0;
@@ -455,7 +448,7 @@ html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
   height: 28px;
   border-radius: 999px;
   background: var(--ios-fill);
-  transition: background-color 260ms var(--spring-smooth);
+  transition: background-color calc(var(--dur-smooth) * 0.5) var(--spring-smooth);
 }
 .ios-switch.is-on { background: rgb(var(--ios-green)); }
 .ios-switch.is-small { width: 51px; height: 24px; }
@@ -498,9 +491,8 @@ html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
   border-radius: 999px;
   background: #fff;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.15), 0 0.5px 4px rgb(0 0 0 / 0.12);
-  transition: transform 260ms var(--spring-bouncy);
+  transition: transform calc(var(--dur-bouncy) * 0.6) var(--spring-bouncy), background-color 160ms linear, box-shadow 160ms linear;
 }
-.ios-slider:active::-webkit-slider-thumb { transform: scale(1.12); }
 .ios-slider::-moz-range-thumb {
   width: 28px;
   height: 28px;
@@ -528,7 +520,7 @@ html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
   padding: 0;
   animation: ios-fade var(--dur-spring-smooth) var(--spring-smooth) backwards;
 }
-.ios-sheet-root.is-closing .ios-sheet-scrim { opacity: 0; transition: opacity 240ms ease; }
+.ios-sheet-root.is-closing .ios-sheet-scrim { opacity: 0; transition: opacity calc(var(--dur-smooth) * 0.8) var(--spring-smooth); }
 .ios-sheet {
   position: relative;
   z-index: 1;
@@ -539,12 +531,13 @@ html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
   overflow: hidden;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   padding-bottom: env(safe-area-inset-bottom);
-  animation: ios-sheet-up var(--dur-spring-snappy) var(--spring-snappy) backwards;
+  /* UIKit presents sheets with a critically damped spring: no overshoot. */
+  animation: ios-sheet-up var(--dur-smooth) var(--spring-smooth) backwards;
   touch-action: pan-x;
 }
 .ios-sheet.is-solid { background: rgb(var(--ios-grouped)); }
 html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
-.ios-sheet-root.is-closing .ios-sheet { transform: translate3d(0, 100%, 0); transition: transform 260ms cubic-bezier(0.4, 0, 1, 1); }
+.ios-sheet-root.is-closing .ios-sheet { transform: translate3d(0, 100%, 0); transition: transform calc(var(--dur-smooth) * 0.8) var(--spring-smooth); }
 .ios-sheet-grabber {
   width: 36px;
   height: 5px;
@@ -559,10 +552,9 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
     border-radius: var(--radius-xl);
     max-height: min(88dvh, 920px);
     animation-name: ios-scale-in;
-    animation-duration: var(--dur-spring-snappy);
   }
   .ios-sheet-grabber { display: none; }
-  .ios-sheet-root.is-closing .ios-sheet { transform: scale(0.94); opacity: 0; transition: transform 200ms ease, opacity 200ms ease; }
+  .ios-sheet-root.is-closing .ios-sheet { transform: scale(0.94); opacity: 0; transition: transform calc(var(--dur-smooth) * 0.6) var(--spring-smooth), opacity 180ms linear; }
 }
 
 /* ---- Popover menu (context menu) ---- */
@@ -570,8 +562,6 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   min-width: 250px;
   overflow: hidden;
   border-radius: var(--radius-menu);
-  animation: ios-scale-in 320ms var(--spring-bouncy) backwards;
-  transform-origin: top right;
 }
 .ios-menu-item {
   display: flex;
@@ -612,9 +602,7 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
 .ios-search input::placeholder { color: rgb(var(--ios-label-2)) !important; }
 
 /* ---- Banner (incoming call / toast) ---- */
-.ios-banner {
-  animation: ios-banner-in var(--dur-spring-bouncy) var(--spring-bouncy) backwards;
-}
+
 
 /* ---- Phone keypad ---- */
 .ios-key {
@@ -627,11 +615,12 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   border-radius: 999px;
   color: rgb(var(--ios-label));
   background: var(--ios-fill-3);
-  transition: background-color 400ms ease-out, transform 260ms var(--spring-bouncy);
+  transition: background-color 400ms ease-out;
   user-select: none;
   -webkit-user-select: none;
 }
-.ios-key:active, .ios-key.is-pressed { background: var(--ios-fill); transform: scale(0.95); transition-duration: 0ms, 160ms; }
+/* Keypad keys light up under the finger and fade back; they do not move. */
+.ios-key:active, .ios-key.is-pressed { background: var(--ios-fill); transition-duration: 0ms; }
 .ios-key-digit { font-size: 36px; line-height: 40px; font-weight: 400; }
 .ios-key-letters { font-size: 10px; line-height: 12px; font-weight: 700; letter-spacing: 0.18em; color: rgb(var(--ios-label)); }
 .ios-call-btn {
@@ -642,9 +631,9 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
   justify-content: center;
   border-radius: 999px;
   color: #fff;
-  transition: transform 260ms var(--spring-bouncy), filter 160ms;
+  transition: filter 300ms ease-out;
 }
-.ios-call-btn:active { transform: scale(0.92); filter: brightness(0.9); }
+.ios-call-btn:active { filter: brightness(1.25); transition-duration: 0ms; }
 .ios-call-btn svg { width: 34px; height: 34px; }
 .ios-call-btn.is-green { background: rgb(var(--ios-green)); }
 .ios-call-btn.is-red { background: rgb(var(--ios-red)); }
@@ -719,9 +708,10 @@ html.dark .ios-avatar { background: linear-gradient(180deg, #6E7280, #555864); }
   background: rgb(var(--ios-grouped-2));
   padding: 16px;
 }
-.ios-press { transition: transform 260ms var(--spring-bouncy); }
-.ios-press:active { transform: scale(0.97); }
-html[data-motion="reduced"] .ios-press:active { transform: none; opacity: 0.75; }
+/* Content-layer buttons highlight while pressed (UIButton): they dim at
+   once and recover over a quarter second. Only glass scales. */
+.ios-press { transition: opacity 250ms ease-out, filter 250ms ease-out; }
+.ios-press:not(:disabled):active { opacity: 0.6; transition-duration: 0ms; }
 
 
 /* Reduce Motion (HIG Accessibility): no zooming, scaling or repetitive
@@ -789,7 +779,7 @@ html.dark .ios-row.is-selected { background: rgb(var(--color-primary-rgb) / 0.24
   padding: 0 6px;
   border-radius: 22px;
   background: rgb(var(--ios-grouped-2));
-  transition: background-color 240ms var(--spring-smooth), color 240ms var(--spring-smooth), transform 260ms var(--spring-bouncy);
+  transition: background-color 240ms linear, color 240ms linear;
 }
 .ios-control-tile.is-on { color: #fff; }
 .ios-control-tile-icon { display: inline-flex; height: 24px; align-items: center; }
@@ -951,9 +941,9 @@ html[data-idiom="mac"] .ios-form-row select { height: 28px; font-size: 13px; }
   border-radius: 999px;
   box-shadow: inset 0 0 0 1.5px rgb(var(--ios-label-3));
   color: #fff;
-  transition: background-color 160ms ease, box-shadow 160ms ease, transform 260ms var(--spring-bouncy);
+  transition: background-color 160ms linear, box-shadow 160ms linear;
 }
-.ios-check-circle.is-on { background: rgb(var(--color-primary-rgb)); box-shadow: none; transform: scale(1.04); }
+.ios-check-circle.is-on { background: rgb(var(--color-primary-rgb)); box-shadow: none; }
 .ios-check-circle svg { width: 14px; height: 14px; }
 html[data-idiom="mac"] .ios-select-row { min-height: 38px; }
 html[data-idiom="mac"] .ios-check-circle { width: 16px; height: 16px; }
@@ -983,7 +973,7 @@ html[data-idiom="mac"] .ios-card-list { margin: 0 -14px -14px; }
   height: 22px;
   border-radius: 999px;
   background: rgb(var(--ios-red));
-  transition: transform 200ms var(--spring-bouncy);
+  transition: opacity 250ms ease-out;
 }
 .ios-minus-button::before {
   content: "";
@@ -996,7 +986,7 @@ html[data-idiom="mac"] .ios-card-list { margin: 0 -14px -14px; }
   border-radius: 1px;
   background: #fff;
 }
-.ios-minus-button:active { transform: scale(0.88); }
+.ios-minus-button:active { opacity: 0.6; transition-duration: 0ms; }
 html[data-idiom="mac"] .ios-minus-button { width: 16px; height: 16px; }
 html[data-idiom="mac"] .ios-minus-button::before { left: 4px; right: 4px; height: 1.5px; margin-top: -0.75px; }
 /* ios.css loads after Tailwind, so the row's flex-start would beat the
