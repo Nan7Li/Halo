@@ -70,9 +70,7 @@ html[data-contrast="high"] {
   transition: opacity 240ms var(--spring-smooth);
 }
 @media (hover: hover) and (pointer: fine) {
-  html[data-highlight="dynamic"] .glass:hover,
-  html[data-highlight="dynamic"] .glass-thick:hover,
-  html[data-highlight="dynamic"] .glass-tinted:hover {
+  html[data-highlight="dynamic"] .glass-interactive:hover {
     --glass-spot: 1;
   }
 }
@@ -199,15 +197,16 @@ html.dark {
 .ios-sidebar.glass-thick { --glass-alpha: calc(0.38 + 0.5 * var(--glass-clarity)); }
 html.dark .ios-sidebar.glass-thick { --glass-alpha: calc(0.46 + 0.44 * var(--glass-clarity)); }
 
-/* Refraction (Chromium only: backdrop-filter with an SVG filter). */
-html[data-engine="chromium"][data-refraction="on"] .glass,
-html[data-engine="chromium"][data-refraction="on"] .glass-tinted {
+/* Refraction (Chromium only: backdrop-filter with an SVG filter).
+   An SVG filter inside backdrop-filter is rasterized on the CPU at device
+   resolution every time anything behind the glass moves, so it is limited
+   to small glass buttons. Large surfaces (tab bar, sidebar, navigation
+   bars, sheets, menus) keep blur, rim and thickness only; with the lens on
+   them, scrolling and page transitions fell to a few frames per second. */
+html[data-engine="chromium"][data-refraction="on"] .glass.glass-interactive,
+html[data-engine="chromium"][data-refraction="on"] .glass-tinted.glass-interactive {
   -webkit-backdrop-filter: blur(var(--glass-blur)) url(#halo-lens) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
   backdrop-filter: blur(var(--glass-blur)) url(#halo-lens) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
-}
-html[data-engine="chromium"][data-refraction="on"] .glass-thick {
-  -webkit-backdrop-filter: blur(var(--glass-blur)) url(#halo-lens-soft) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
-  backdrop-filter: blur(var(--glass-blur)) url(#halo-lens-soft) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
 }
 
 /* ---- Ambient wallpaper ----
@@ -249,10 +248,6 @@ html[data-nav] .ios-scroll {
     backdrop-filter: blur(1px) saturate(1.8) brightness(1.08);
   }
 }
-html[data-engine="chromium"][data-refraction="on"] .ios-tab-lens.is-moving,
-html[data-engine="chromium"][data-refraction="on"] .ios-tabbar:has(.ios-tab:active) .ios-tab-lens {
-  backdrop-filter: url(#halo-lens) saturate(1.8) brightness(1.08);
-}
 
 /* Switch (HIG: "the knob transforms into Liquid Glass during
    interaction"): it lifts into a clear droplet while pressed and while it
@@ -291,3 +286,14 @@ html[data-motion="reduced"] .ios-tab-lens,
 html[data-motion="reduced"] .ios-switch-knob,
 html[data-motion="reduced"] .ios-segment-thumb { scale: none !important; }
 html[data-motion="reduced"] .ios-slider:active::-webkit-slider-thumb { transform: none; }
+
+/* The floating tab bar sits over scrolling text. With regular glass at the
+   default clarity, labels under it stayed readable through the bar and
+   collided with the tab titles, so the bar is frosted more heavily. */
+.ios-tabbar.glass {
+  --glass-alpha: calc(0.6 + 0.32 * var(--glass-clarity));
+  --glass-blur: calc(18px + 12px * var(--glass-clarity));
+}
+html.dark .ios-tabbar.glass {
+  --glass-alpha: calc(0.62 + 0.3 * var(--glass-clarity));
+}

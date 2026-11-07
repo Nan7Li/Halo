@@ -16,54 +16,21 @@
  */
 
 /* ---- Materialize ----
-   --glass-m scales the tint, blur, saturation and rim of a glass surface
-   from nothing (0) to its resting state (1). Registered so it animates. */
-@property --glass-m {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 1;
-}
-@property --glass-spot {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-.glass,
-.glass-thick,
-.glass-chrome,
-.glass-tinted {
-  background-color: rgb(var(--glass-tint) / calc(var(--glass-alpha) * var(--glass-m)));
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
-  backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
-}
-html[data-engine="chromium"][data-refraction="on"] .glass,
-html[data-engine="chromium"][data-refraction="on"] .glass-tinted {
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
-  backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
-}
-html[data-engine="chromium"][data-refraction="on"] .glass-thick {
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens-soft) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
-  backdrop-filter: blur(calc(var(--glass-blur) * var(--glass-m))) url(#halo-lens-soft) saturate(calc(1 + (var(--glass-saturate) - 1) * var(--glass-m))) brightness(calc(1 + (var(--glass-brightness) - 1) * var(--glass-m)));
-}
-.glass::after,
-.glass-thick::after,
-.glass-tinted::after,
-.glass::before,
-.glass-thick::before,
-.glass-tinted::before { opacity: var(--glass-m); }
-
-/* The glow under the finger fades out instead of switching off. */
+   Glass appears by fading its layer in with the motion. Blur, tint and rim
+   are never animated: a backdrop-filter whose radius changes every frame
+   is re-rasterized on the main thread and stutters (the previous --glass-m
+   approach dropped to a few fps on phones), while opacity and transform
+   stay on the compositor. */
 .glass-interactive {
   transition:
     transform var(--dur-bouncy) var(--spring-bouncy),
     background-color 200ms linear,
-    box-shadow 200ms linear,
-    --glass-spot 450ms ease-out;
+    box-shadow 200ms linear;
 }
-.glass-interactive.is-touched { transition-duration: calc(var(--dur-snappy) * 0.5), 200ms, 200ms, 0ms; }
+.glass-interactive.is-touched { transition-duration: calc(var(--dur-snappy) * 0.5), 200ms, 200ms; }
 
 @keyframes glass-materialize {
-  from { --glass-m: 0; }
+  from { opacity: 0; }
 }
 @keyframes glass-content-in {
   from { opacity: 0; }
@@ -75,7 +42,7 @@ html[data-engine="chromium"][data-refraction="on"] .glass-thick {
    back into it. Scale rides the .bouncy spring; the material
    materializes with .smooth; the items appear as the bubble opens. */
 @keyframes ios-menu-open {
-  from { transform: scale(0.18); --glass-m: 0; }
+  from { transform: scale(0.4); opacity: 0; }
 }
 .ios-menu {
   transform-origin: var(--origin-x, 100%) var(--origin-y, 0%);
@@ -85,14 +52,12 @@ html[data-engine="chromium"][data-refraction="on"] .glass-thick {
 }
 .ios-menu > * { animation: glass-content-in 160ms linear 70ms backwards; }
 .ios-menu.is-closing {
-  transform: scale(0.18);
-  --glass-m: 0;
+  transform: scale(0.4);
   opacity: 0;
   pointer-events: none;
   transition:
     transform calc(var(--dur-smooth) * 0.5) var(--spring-smooth),
-    --glass-m calc(var(--dur-smooth) * 0.5) var(--spring-smooth),
-    opacity 120ms linear 100ms;
+    opacity 160ms linear;
 }
 .ios-menu.is-closing > * { opacity: 0; transition: opacity 90ms linear; }
 
@@ -107,7 +72,7 @@ html[data-engine="chromium"][data-refraction="on"] .glass-thick {
    UIAlertController still appears in place: it settles from slightly
    larger while the material materializes; it leaves with a dissolve. */
 @keyframes ios-alert-in {
-  from { transform: scale(1.12); opacity: 0; --glass-m: 0; }
+  from { transform: scale(1.12); opacity: 0; }
 }
 .ios-alert { animation: ios-alert-in calc(var(--dur-smooth) * 0.7) var(--spring-smooth) backwards; }
 
@@ -115,11 +80,11 @@ html[data-engine="chromium"][data-refraction="on"] .glass-thick {
    On iPhone 17 Pro a call or a system notice grows out of the Dynamic
    Island at the top center, with a little bounce, and shrinks back. */
 @keyframes ios-island-in {
-  0% { transform: translate3d(0, -6px, 0) scale(0.28, 0.16); opacity: 0; --glass-m: 0; }
+  0% { transform: translate3d(0, -6px, 0) scale(0.28, 0.16); opacity: 0; }
   12% { opacity: 1; }
 }
 @keyframes ios-island-out {
-  to { transform: translate3d(0, -6px, 0) scale(0.28, 0.16); opacity: 0; --glass-m: 0; }
+  to { transform: translate3d(0, -6px, 0) scale(0.28, 0.16); opacity: 0; }
 }
 .ios-banner {
   transform-origin: 50% 0;

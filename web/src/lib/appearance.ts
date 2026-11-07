@@ -70,7 +70,10 @@ export function motionAllowed() {
   return document.documentElement.dataset.motion === "full";
 }
 
-const GLASS_SELECTOR = ".glass, .glass-thick, .glass-tinted";
+// Only small glass controls follow the pointer. --mx/--my are inherited, so
+// setting them on the sidebar or a sheet restyled and repainted the whole
+// panel (and everything in it) on every mouse move.
+const GLASS_SELECTOR = ".glass-interactive";
 
 /**
  * Starts global listeners: the OS reduced-motion setting, and the

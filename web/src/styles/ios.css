@@ -119,7 +119,8 @@ html:not([data-vt]) .ios-push { animation: ios-push-in var(--dur-smooth) var(--s
   margin: 10px 0 10px 10px;
   border-radius: var(--radius-xl);
   overflow: hidden;
-  transition: width var(--dur-smooth) var(--spring-smooth), margin var(--dur-smooth) var(--spring-smooth);
+  /* Width reflows the whole detail column every frame, so keep it short. */
+  transition: width calc(var(--dur-smooth) * 0.6) var(--spring-smooth), margin calc(var(--dur-smooth) * 0.6) var(--spring-smooth);
 }
 .ios-sidebar.is-collapsed { width: 72px; }
 .ios-sidebar-item {
@@ -385,7 +386,7 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
 
 /* Swipe actions */
 .ios-row-wrap { position: relative; overflow: hidden; }
-.ios-row-wrap > .ios-row { touch-action: pan-y; will-change: transform; background: rgb(var(--ios-grouped-2)); }
+.ios-row-wrap > .ios-row { touch-action: pan-y; background: rgb(var(--ios-grouped-2)); }
 .ios-swipe-actions { position: absolute; top: 0; right: 0; bottom: 0; display: flex; }
 .ios-swipe-action {
   display: flex;

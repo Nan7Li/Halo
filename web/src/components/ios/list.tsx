@@ -218,7 +218,10 @@ export function SwipeRow({ actions, children, background = "rgb(var(--ios-groupe
           }
         }}
         style={{
-          transform: `translate3d(${offset}px, 0, 0)`,
+          // 2D translate: a resting row must not get its own compositor
+          // layer (translate3d on every row of a long list made scrolling
+          // heavy); Chrome promotes it on its own while it moves.
+          transform: `translateX(${offset}px)`,
           transition: dragging ? "none" : "transform var(--dur-spring-snappy) var(--spring-snappy)",
           touchAction: "pan-y",
           position: "relative",

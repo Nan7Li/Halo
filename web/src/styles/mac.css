@@ -224,3 +224,7 @@ html[data-idiom="mac"] .ui-pop { animation: glass-materialize 120ms linear backw
 html[data-idiom="mac"] .ios-menu > *,
 html[data-idiom="mac"] .ui-pop > * { animation: none; }
 html[data-idiom="mac"] .ios-menu.is-closing { transform: none; transition: opacity 150ms linear; }
+
+/* Wide dashboards stop growing on large monitors so cards and rows keep a
+   readable line length; the extra width becomes margin. */
+html[data-idiom="mac"] .ios-content.is-wide > :not(.ios-navbar) { max-width: 1600px; margin-left: auto; margin-right: auto; }
