@@ -163,7 +163,12 @@ html[data-idiom="mac"] .ios-search input { font-size: 13px; }
 
 /* ---- Menus: 13pt items, accent selection like NSMenu ---- */
 html[data-idiom="mac"] .ios-menu { min-width: 200px; padding: 5px; }
-html[data-idiom="mac"] .ios-menu-item { padding: 0 10px; height: 24px; gap: 12px; border-radius: 8px; font-size: 13px; }
+/* min-height, not height: items with a second line (a line picker showing
+   "Wi-Fi Calling · Available") overflowed a fixed 24px row and overlapped. */
+html[data-idiom="mac"] .ios-menu-item { padding: 3px 10px; min-height: 24px; gap: 12px; border-radius: 8px; font-size: 13px; }
+html[data-idiom="mac"] .ios-menu-item .ios-footnote { font-size: 11px; line-height: 14px; }
+html[data-idiom="mac"] .ios-menu-item:hover .text-label-2,
+html[data-idiom="mac"] .ios-menu-item:focus-visible .text-label-2 { color: inherit; opacity: 0.8; }
 html[data-idiom="mac"] .ios-menu-item + .ios-menu-item { border-top: 0; }
 html[data-idiom="mac"] .ios-menu-item:hover,
 html[data-idiom="mac"] .ios-menu-item:focus-visible { background: var(--color-primary); color: var(--color-on-primary); }

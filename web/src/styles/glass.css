@@ -38,11 +38,17 @@ html[data-contrast="high"] {
   --glass-edge-alpha: 0.22;
 }
 
+/* Glass needs a containing block for its rim and sheen, but must never
+   override a component's own fixed/absolute/sticky position. :where() has
+   zero specificity, so any positioning class or rule wins (a context menu
+   had fallen back into the page flow and stretched across the window). */
+:where(.glass, .glass-thick, .glass-chrome, .glass-tinted) {
+  position: relative;
+}
 .glass,
 .glass-thick,
 .glass-chrome,
 .glass-tinted {
-  position: relative;
   isolation: isolate;
   background-color: rgb(var(--glass-tint) / var(--glass-alpha));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));

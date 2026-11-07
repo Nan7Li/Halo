@@ -556,7 +556,13 @@ html[data-motion="reduced"] .ios-sheet { animation-name: ios-fade; }
 
 /* ---- Popover menu (context menu) ---- */
 .ios-menu {
+  /* .glass-thick sets position: relative and loads earlier with the same
+     specificity as the fixed utility, so the menu fell back into normal
+     flow and stretched across the whole window. Pin it here. */
+  position: fixed;
+  width: max-content;
   min-width: 250px;
+  max-width: min(360px, calc(100vw - 16px));
   overflow: hidden;
   border-radius: var(--radius-menu);
 }
