@@ -126,30 +126,45 @@ export function installAppearanceRuntime() {
 
   // Interactive glass "illuminates from within as a form of feedback.
   // Starting right under your fingertips, the glow spreads throughout the
-  // element" (WWDC25, Meet Liquid Glass). Light the spot where the press
-  // landed; CSS swells touch-driven glass (glass.css .is-touched).
+  // element" (WWDC25, Meet Liquid Glass). Like UIScrollView, a touch that
+  // lands in scrolling content waits a moment before it counts as a press,
+  // and any movement cancels it, so scrolling never swells the buttons it
+  // passes over. Bars outside the scroll area respond at once.
+  const PRESS_DELAY = 90;
   let touched: HTMLElement | null = null;
+  let pressTimer = 0;
+  let start = { x: 0, y: 0 };
   const release = () => {
+    window.clearTimeout(pressTimer);
     touched?.classList.remove("is-touched");
     touched = null;
   };
   const onDown = (event: PointerEvent) => {
     release();
-    const target = (event.target as Element | null)?.closest?.(".glass-interactive") as HTMLElement | null;
+    const origin = event.target as Element | null;
+    const target = (origin?.closest?.(".glass-interactive") ?? (origin?.closest?.(".ios-tab") ? origin.closest(".ios-tabbar") : null)) as HTMLElement | null;
     if (!target || (target as HTMLButtonElement).disabled) return;
-    const rect = target.getBoundingClientRect();
-    target.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-    target.style.setProperty("--my", `${event.clientY - rect.top}px`);
-    target.classList.add("is-touched");
+    if (target.matches(GLASS_SELECTOR)) {
+      const rect = target.getBoundingClientRect();
+      target.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+      target.style.setProperty("--my", `${event.clientY - rect.top}px`);
+    }
+    start = { x: event.clientX, y: event.clientY };
     touched = target;
+    const press = () => touched === target && target.classList.add("is-touched");
+    if (event.pointerType === "touch" && target.closest(".ios-scroll")) pressTimer = window.setTimeout(press, PRESS_DELAY);
+    else press();
+  };
+  const onMove = (event: PointerEvent) => {
+    if (touched && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) release();
   };
   document.addEventListener("pointerdown", onDown, { passive: true });
+  document.addEventListener("pointermove", onMove, { passive: true });
   document.addEventListener("pointerup", release, { passive: true });
   document.addEventListener("pointercancel", release, { passive: true });
-  // iOS Safari only applies :active when a touch listener exists.
-  document.addEventListener("touchstart", () => {}, { passive: true });
   return () => {
     document.removeEventListener("pointerdown", onDown);
+    document.removeEventListener("pointermove", onMove);
     document.removeEventListener("pointerup", release);
     document.removeEventListener("pointercancel", release);
     media?.removeEventListener?.("change", onMotion);

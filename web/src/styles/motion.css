@@ -100,18 +100,6 @@
   animation: ios-island-out calc(var(--dur-smooth) * 0.5) var(--spring-smooth) both;
 }
 
-/* ---- Pressed switch / slider knob ----
-   The knob lifts quickly when touched (.snappy, a quarter second) and
-   settles back with .bouncy. */
-.ios-switch:active .ios-switch-knob,
-.ios-switch.is-moving .ios-switch-knob {
-  transition-duration: calc(var(--dur-snappy) * 0.7), 200ms, calc(var(--dur-snappy) * 0.5), 160ms, 160ms;
-}
-.ios-segmented:has(.ios-segment:active) .ios-segment-thumb,
-.ios-segmented.is-moving .ios-segment-thumb {
-  transition-duration: calc(var(--dur-snappy) * 0.8), calc(var(--dur-snappy) * 0.8), calc(var(--dur-snappy) * 0.5), 160ms, 160ms;
-}
-
 /* ---- Navigation stack (lib/motion.ts navTransition) ----
    UINavigationController: the new screen slides in from the trailing
    edge over the old one, which shifts a third of the way out and dims;

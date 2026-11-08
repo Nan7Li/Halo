@@ -226,9 +226,6 @@ html.dark .ios-sidebar-item.is-active { background: rgb(var(--color-primary-rgb)
   left: 0;
   border-radius: var(--radius-pill);
   background: var(--ios-fill-3);
-  transition:
-    transform var(--dur-spring-bouncy) var(--spring-bouncy),
-    width var(--dur-spring-bouncy) var(--spring-bouncy);
 }
 html.dark .ios-tab-lens { background: rgb(255 255 255 / 0.12); }
 /* Scrolling down minimizes the bar to its selected tab. */
@@ -435,7 +432,6 @@ html.dark .ios-chevron { color: rgb(var(--ios-label-3)); }
   border-radius: var(--radius-pill);
   background: #fff;
   box-shadow: 0 3px 8px rgb(0 0 0 / 0.12), 0 3px 1px rgb(0 0 0 / 0.04), 0 0 0 0.5px rgb(0 0 0 / 0.04);
-  transition: transform var(--dur-spring-snappy) var(--spring-snappy), width var(--dur-spring-snappy) var(--spring-snappy);
 }
 .ios-segmented.is-pill .ios-segment-thumb { top: 3px; bottom: 3px; border-radius: var(--radius-pill); }
 html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }

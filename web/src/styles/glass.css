@@ -104,25 +104,18 @@ html.dark .glass-thick {
    spring on release. A trackpad or mouse gets the subdued version (HIG
    Motion): light only, no swelling. lib/glassTouch.ts sets --mx/--my to
    the touch point and toggles .is-touched. */
-.glass-interactive {
-  transition:
-    transform var(--dur-bouncy) var(--spring-bouncy),
-    background-color 200ms linear,
-    box-shadow 200ms linear;
-}
+.glass-interactive { transition: transform var(--dur-bouncy) var(--spring-bouncy); }
 .glass-interactive.is-touched { --glass-spot: 2.4; }
 @media (pointer: coarse) {
-  .glass-interactive:active,
   .glass-interactive.is-touched {
-    transform: scale(1.12);
-    transition-duration: calc(var(--dur-snappy) * 0.5), 200ms, 200ms;
-    transition-timing-function: var(--spring-snappy), linear, linear;
+    transform: scale(1.08);
+    transition-duration: calc(var(--dur-snappy) * 0.45);
+    transition-timing-function: var(--spring-snappy);
   }
 }
 @media (hover: hover) and (pointer: fine) {
   .glass-interactive:hover { --glass-alpha: calc(0.26 + 0.68 * var(--glass-clarity)); }
 }
-html[data-motion="reduced"] .glass-interactive:active,
 html[data-motion="reduced"] .glass-interactive.is-touched { transform: none; }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -228,56 +221,91 @@ html[data-nav] .ios-scroll {
 }
 
 /* ---- Interactive glass droplets (iOS 26) ----
-   Pressing lifts the control into a clear, larger droplet of glass that
-   magnifies what is under it, then it settles back with a spring. */
-.ios-tab-lens { transition: transform var(--dur-bouncy) var(--spring-bouncy), width var(--dur-bouncy) var(--spring-bouncy), scale var(--dur-bouncy) var(--spring-bouncy), background-color 200ms linear, box-shadow 200ms linear; }
-/* The selection droplet lifts into clear glass while a finger is on the
-   bar and while it travels to a new tab, then settles back into the bar. */
-.ios-tab-lens.is-moving,
-.ios-tabbar:has(.ios-tab:active) .ios-tab-lens { transition-duration: var(--dur-bouncy), var(--dur-bouncy), calc(var(--dur-snappy) * 0.5), 200ms, 200ms; }
+   A selection droplet or knob lifts into clear glass while it is touched
+   or travelling, then settles. Everything that moves here animates only
+   transform, scale and opacity, which the compositor runs on its own:
+   the droplet stays smooth even while the next page is rendering on the
+   main thread. Width, shadows and backdrop filters never animate (they
+   repaint every frame and made the droplet stall and jump). The lifted
+   look is a ring layer that fades in, not a change of background. */
+.ios-tab-lens,
+.ios-switch-knob,
+.ios-segment-thumb { will-change: transform, scale; }
+.ios-tab-lens::after,
+.ios-switch-knob::after,
+.ios-segment-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: rgb(255 255 255 / 0.22);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.75),
+    inset 0 8px 12px -8px rgb(255 255 255 / 0.8),
+    0 6px 16px rgb(0 0 0 / 0.14);
+  transition: opacity 220ms linear;
+}
+
+/* Tab bar: position follows .snappy (a small bounce, as the system
+   droplet has); the lift grows on .snappy and settles on .smooth, so the
+   two never compound into a wobble. Tabs are equal width: no width
+   animation. */
+.ios-tab-lens {
+  transition:
+    transform calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
+    scale var(--dur-smooth) var(--spring-smooth);
+}
 @media (pointer: coarse) {
   .ios-tab-lens.is-moving,
-  .ios-tabbar:has(.ios-tab:active) .ios-tab-lens {
-    scale: 1.14 1.22;
-    background: rgb(255 255 255 / 0.18);
-    box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.7),
-      inset 0 10px 14px -10px rgb(255 255 255 / 0.8),
-      0 8px 22px rgb(0 0 0 / 0.16);
-    -webkit-backdrop-filter: blur(1px) saturate(1.8) brightness(1.08);
-    backdrop-filter: blur(1px) saturate(1.8) brightness(1.08);
+  .ios-tabbar.is-touched .ios-tab-lens {
+    scale: 1.12 1.18;
+    transition-duration: calc(var(--dur-snappy) * 0.9), calc(var(--dur-snappy) * 0.45);
+    transition-timing-function: var(--spring-snappy), var(--spring-snappy);
   }
+  .ios-tab-lens.is-moving::after,
+  .ios-tabbar.is-touched .ios-tab-lens::after { opacity: 1; transition-duration: 120ms; }
 }
 
 /* Switch (HIG: "the knob transforms into Liquid Glass during
-   interaction"): it lifts into a clear droplet while pressed and while it
-   travels, then turns solid again as it settles. */
-.ios-switch-knob { transition: transform calc(var(--dur-snappy) * 0.7) var(--spring-snappy), width 200ms linear, scale var(--dur-bouncy) var(--spring-bouncy), background-color 160ms linear, box-shadow 160ms linear; }
-.ios-switch.is-moving .ios-switch-knob,
-.ios-switch:active .ios-switch-knob {
-  scale: 1.3 1.25;
-  background: rgb(255 255 255 / 0.5);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.85),
-    inset 0 6px 8px -6px rgb(255 255 255 / 0.9),
-    0 4px 12px rgb(0 0 0 / 0.18);
-  -webkit-backdrop-filter: blur(0.5px) saturate(1.15) brightness(1.04);
-  backdrop-filter: blur(0.5px) saturate(1.15) brightness(1.04);
+   interaction"). */
+.ios-switch-knob {
+  transition:
+    transform calc(var(--dur-snappy) * 0.7) var(--spring-snappy),
+    scale var(--dur-smooth) var(--spring-smooth);
 }
+.ios-switch.is-moving .ios-switch-knob {
+  scale: 1.28 1.22;
+  transition-duration: calc(var(--dur-snappy) * 0.7), calc(var(--dur-snappy) * 0.4);
+  transition-timing-function: var(--spring-snappy), var(--spring-snappy);
+}
+.ios-switch.is-moving .ios-switch-knob::after { opacity: 1; transition-duration: 100ms; }
+/* The knob turns clear while lifted: one background swap, not animated. */
+.ios-switch.is-moving .ios-switch-knob { background: rgb(255 255 255 / 0.5); box-shadow: none; }
 .ios-slider:active::-webkit-slider-thumb {
-  transform: scale(1.35, 1.25);
-  background: rgb(255 255 255 / 0.4);
+  transform: scale(1.3, 1.22);
+  background: rgb(255 255 255 / 0.5);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), inset 0 6px 8px -6px rgb(255 255 255 / 0.9), 0 4px 12px rgb(0 0 0 / 0.2);
 }
-.ios-segment-thumb { transition: transform calc(var(--dur-snappy) * 0.8) var(--spring-snappy), width calc(var(--dur-snappy) * 0.8) var(--spring-snappy), scale var(--dur-bouncy) var(--spring-bouncy), background-color 160ms linear, box-shadow 160ms linear; }
-.ios-segmented.is-moving .ios-segment-thumb,
-.ios-segmented:has(.ios-segment:active) .ios-segment-thumb {
-  scale: 1.05 1.14;
-  background: rgb(255 255 255 / 0.55);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.9), 0 6px 14px rgb(0 0 0 / 0.14);
+
+/* Segmented control. Segments differ in width, so the thumb's width does
+   change, but without a spring: only its position springs. */
+.ios-segment-thumb {
+  transition:
+    transform calc(var(--dur-snappy) * 0.8) var(--spring-snappy),
+    width calc(var(--dur-smooth) * 0.6) var(--spring-smooth),
+    scale var(--dur-smooth) var(--spring-smooth);
 }
-html.dark .ios-segmented.is-moving .ios-segment-thumb,
-html.dark .ios-segmented:has(.ios-segment:active) .ios-segment-thumb { background: rgb(120 120 128 / 0.55); }
+.ios-segmented.is-moving .ios-segment-thumb {
+  scale: 1.04 1.12;
+  transition-duration: calc(var(--dur-snappy) * 0.8), calc(var(--dur-smooth) * 0.6), calc(var(--dur-snappy) * 0.4);
+  transition-timing-function: var(--spring-snappy), var(--spring-smooth), var(--spring-snappy);
+}
+.ios-segmented.is-moving .ios-segment-thumb::after { opacity: 1; transition-duration: 100ms; }
+html.dark .ios-tab-lens::after,
+html.dark .ios-switch-knob::after,
+html.dark .ios-segment-thumb::after { background: rgb(255 255 255 / 0.1); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35), 0 6px 16px rgb(0 0 0 / 0.3); }
 /* Glass buttons swell slightly under the finger and glow on hover. */
 @media (hover: hover) and (pointer: fine) {
   .glass-interactive:hover::before { --glass-spot: 1; }

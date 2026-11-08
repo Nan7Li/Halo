@@ -209,15 +209,6 @@ html[data-idiom="mac"] .ios-search-chip.w-10 svg { width: 16px; height: 16px; }
    buttons darken in place; menus appear and vanish with a quick fade,
    as NSMenu does, instead of popping out of their button. */
 html[data-idiom="mac"] .ios-press:not(:disabled):active { opacity: 1; }
-html[data-idiom="mac"] .ios-switch:active .ios-switch-knob,
-html[data-idiom="mac"] .ios-segmented:has(.ios-segment:active) .ios-segment-thumb {
-  scale: none;
-  background: #fff;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-html[data-idiom="mac"] .ios-switch:active .ios-switch-knob { box-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 0 0 0.5px rgb(0 0 0 / 0.06); }
-html.dark[data-idiom="mac"] .ios-segmented:has(.ios-segment:active) .ios-segment-thumb { background: #636366; }
 html[data-idiom="mac"] .ios-slider:active::-webkit-slider-thumb { transform: none; background: #fff; }
 html[data-idiom="mac"] .ios-menu,
 html[data-idiom="mac"] .ui-pop { animation: glass-materialize 120ms linear backwards, ios-fade 120ms linear backwards; }
