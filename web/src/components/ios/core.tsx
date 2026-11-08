@@ -97,9 +97,14 @@ export function useSlidingIndicator(containerRef: RefObject<HTMLElement | null>,
       setStyle({ opacity: 0 });
       return;
     }
+    // The position goes in `translate`, not `transform`: the lifted
+    // droplet grows with the individual `scale` property, and CSS applies
+    // `scale` before `transform`, so a translateX in `transform` was
+    // scaled too and the droplet overshot its tab, flying further out the
+    // further right the tab was.
     const next: CSSProperties = {
       width: target.offsetWidth,
-      transform: `translateX(${target.offsetLeft}px)`,
+      translate: `${target.offsetLeft}px 0`,
       opacity: 1,
     };
     if (first.current) {

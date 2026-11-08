@@ -32,7 +32,7 @@ export function Tabs({
       >
         <span
           aria-hidden
-          className="absolute bottom-[3px] left-0 top-[3px] rounded-full bg-white shadow-[0_3px_8px_rgb(0_0_0/0.12),0_0_0_0.5px_rgb(0_0_0/0.04)] transition-[transform,width] duration-[var(--dur-spring-snappy)] ease-spring-snappy dark:bg-[#636366]"
+          className="absolute bottom-[3px] left-0 top-[3px] rounded-full bg-white shadow-[0_3px_8px_rgb(0_0_0/0.12),0_0_0_0.5px_rgb(0_0_0/0.04)] transition-[translate,width] duration-[var(--dur-spring-snappy)] ease-spring-snappy dark:bg-[#636366]"
           style={lens}
         />
         {tabs.map((tab) => {
