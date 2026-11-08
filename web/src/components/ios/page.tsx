@@ -150,8 +150,8 @@ export function GroupButton({ icon, className, type = "button", ...rest }: Butto
 /** Empty state in iOS style: large glyph, title, description, action. */
 export function ContentUnavailable({ icon, title, description, action }: { icon?: ReactNode; title: ReactNode; description?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      {icon ? <div className="mb-3 text-[48px] text-label-3 [&_svg]:h-12 [&_svg]:w-12">{icon}</div> : null}
+    <div className="ios-empty flex flex-col items-center justify-center px-6 py-16 text-center">
+      {icon ? <div className="ios-empty-icon mb-3 text-[48px] text-label-3 [&_svg]:h-12 [&_svg]:w-12">{icon}</div> : null}
       <div className="ios-title-3 text-label">{title}</div>
       {description ? <div className="mt-1.5 max-w-sm ios-subhead text-label-2">{description}</div> : null}
       {action ? <div className="mt-4">{action}</div> : null}

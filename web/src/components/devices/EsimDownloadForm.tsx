@@ -63,7 +63,7 @@ export function EsimDownloadForm(props: EsimDownloadFormProps) {
           <div className="h-1 w-full overflow-hidden rounded-full bg-fill-3">
             <div
               className={cx(
-                "h-full w-full origin-left rounded-full transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                "h-full w-full origin-left rounded-full transition-transform duration-700 ease-spring-snappy",
                 props.downloadErr ? "bg-sys-red" : pct >= 100 ? "bg-sys-green" : "bg-accent",
               )}
               style={{ transform: `scaleX(${pct / 100})` }}

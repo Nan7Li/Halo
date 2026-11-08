@@ -1,0 +1,156 @@
+/*
+ * Springs everywhere.
+ *
+ * Every control that can be pressed squeezes under the finger and springs
+ * back with the .bouncy curve when it is let go, and content that appears
+ * settles in on a spring instead of popping. The curves are the SwiftUI
+ * presets sampled into CSS linear() (tokens.css); a press goes down on the
+ * fast half of .snappy so it feels immediate, and the release rides the
+ * full .bouncy spring so it overshoots a little and settles.
+ *
+ * Reduce Motion (system or Settings → Appearance) and Motion Off remove
+ * all of it at the end of this file.
+ */
+
+:root {
+  /* .bouncy (bounce 0.3) overshoots ~4%, too little to read on a 5%
+     squeeze. The release uses a livelier spring: bounce 0.45, response
+     0.5 s, overshoot ~12.6%, settled to 0.1% at ~1 s. */
+  --spring-jelly: linear(0, 0.018, 0.0668, 0.1385, 0.2262, 0.3238, 0.4259, 0.5281, 0.6268, 0.7193, 0.8035, 0.8781, 0.9425, 0.9962, 1.0397, 1.0733, 1.0978, 1.1141, 1.1232, 1.1263, 1.1244, 1.1185, 1.1097, 1.0987, 1.0865, 1.0736, 1.0607, 1.0481, 1.0364, 1.0256, 1.0161, 1.0079, 1.001, 0.9954, 0.991, 0.9879, 0.9857, 0.9845, 0.9841, 0.9842, 0.985, 0.986, 0.9874, 0.9889, 0.9906, 0.9922, 0.9938, 0.9953, 0.9967, 0.9979, 0.9989, 0.9998, 1.0005, 1.0011, 1.0015, 1.0018, 1.0019, 1.002, 1.002, 1.0019, 1.0018, 1.0016, 1.0014, 1.0012, 1);
+  --press-down: calc(var(--dur-snappy) * 0.22);
+  --press-up: 900ms;
+  --settle: 800ms;
+}
+@supports not (transition-timing-function: linear(0, 1)) {
+  :root { --spring-jelly: cubic-bezier(0.34, 1.56, 0.64, 1); --press-up: 450ms; --settle: 450ms; }
+}
+
+/* ---- Press: squeeze and spring back ---- */
+.ios-press,
+.ios-key,
+.ios-call-btn,
+.ios-sidebar-item,
+.ios-row-icon,
+.ios-avatar-edit,
+.ios-minus-button,
+.ios-check-circle,
+.ios-swipe-action {
+  transition-property: transform, opacity, filter, background-color, color, box-shadow;
+  transition-duration: var(--press-up), 250ms, 250ms, 200ms, 200ms, 200ms;
+  transition-timing-function: var(--spring-jelly), linear, linear, linear, linear, linear;
+}
+.ios-press:not(:disabled):active,
+.ios-key:active,
+.ios-key.is-pressed,
+.ios-call-btn:active,
+.ios-sidebar-item:active,
+.ios-avatar-edit:not(:disabled):active,
+.ios-minus-button:active,
+.ios-swipe-action:active {
+  transition-duration: var(--press-down), 0ms, 0ms, 0ms, 0ms, 0ms;
+  transition-timing-function: var(--spring-snappy), linear, linear, linear, linear, linear;
+}
+.ios-press:not(:disabled):active { transform: scale(0.94); opacity: 0.75; }
+/* Large surfaces give less so they do not look like they fall away. */
+.ios-widget.ios-press:not(:disabled):active { transform: scale(0.97); opacity: 1; }
+.ios-key:active,
+.ios-key.is-pressed { transform: scale(0.9); }
+.ios-call-btn:active { transform: scale(0.88); }
+.ios-sidebar-item:active { transform: scale(0.97); }
+.ios-avatar-edit:not(:disabled):active { transform: scale(0.92); }
+.ios-minus-button:active { transform: scale(0.85); }
+.ios-swipe-action:active { filter: brightness(0.9); }
+/* A pressed list row keeps its place in the card; its icon tile squeezes. */
+.ios-row.is-button:active .ios-row-icon,
+.ios-row.is-button.is-pressed .ios-row-icon {
+  transform: scale(0.86);
+  transition-duration: var(--press-down);
+  transition-timing-function: var(--spring-snappy);
+}
+
+/* ---- Toggles that change state pop ---- */
+.ios-check-circle.is-on { animation: spring-pop var(--press-up) var(--spring-jelly); }
+.ios-check-circle.is-on svg { animation: spring-pop var(--press-up) var(--spring-jelly) 40ms backwards; }
+@keyframes spring-pop {
+  0% { transform: scale(0.55); }
+}
+
+/* Disclosure chevrons and select arrows turn on a spring. */
+.ios-chevron,
+.ui-select-arrow,
+[class*="rotate-90"],
+[class*="rotate-180"] {
+  transition: transform calc(var(--press-up) * 0.7) var(--spring-jelly);
+}
+
+/* ---- Content settles in ----
+   Grouped sections, empty states and widgets rise a few points and scale
+   up from 98% when they first appear, one after another. During a
+   navigation push the whole page already moves, so they stay still. */
+@keyframes spring-settle {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); }
+}
+@keyframes spring-fade {
+  from { opacity: 0; }
+}
+.ios-section,
+.ios-empty,
+.ios-widget,
+.ios-settle {
+  animation:
+    spring-settle var(--settle) var(--spring-jelly) backwards,
+    spring-fade 220ms linear backwards;
+}
+.ios-section:nth-of-type(2), .ios-widget:nth-child(2) { animation-delay: 30ms; }
+.ios-section:nth-of-type(3), .ios-widget:nth-child(3) { animation-delay: 60ms; }
+.ios-section:nth-of-type(4), .ios-widget:nth-child(4) { animation-delay: 90ms; }
+.ios-section:nth-of-type(5), .ios-widget:nth-child(5) { animation-delay: 110ms; }
+.ios-section:nth-of-type(n + 6), .ios-widget:nth-child(n + 6) { animation-delay: 130ms; }
+html[data-nav] .ios-section,
+html[data-nav] .ios-widget,
+html[data-nav] .ios-empty { animation: none; }
+
+/* The empty-state symbol drops in with a bounce. */
+.ios-empty-icon { animation: spring-pop var(--press-up) var(--spring-jelly) 60ms backwards; }
+
+/* ---- Badges, dots and avatars pop when they appear ---- */
+.ios-badge,
+.ios-tab-badge,
+.ios-dot,
+.ios-avatar-photo,
+.ios-avatar-badge {
+  animation: spring-pop var(--press-up) var(--spring-jelly) backwards;
+}
+
+/* ---- Fields: the focus ring springs open ---- */
+.ui-input,
+.ios-search {
+  transition:
+    box-shadow calc(var(--dur-snappy) * 0.5) var(--spring-snappy),
+    background-color 200ms linear;
+}
+
+/* ---- Reduce Motion / Motion Off ----
+   No squeezing, rising or popping; colors still change. */
+html[data-motion="reduced"] :is(.ios-press, .ios-key, .ios-call-btn, .ios-sidebar-item, .ios-row-icon, .ios-avatar-edit, .ios-minus-button, .ios-widget):active,
+html[data-motion="reduced"] .ios-key.is-pressed,
+html[data-motion="reduced"] .ios-row.is-button:active .ios-row-icon,
+html[data-motion="off"] :is(.ios-press, .ios-key, .ios-call-btn, .ios-sidebar-item, .ios-row-icon, .ios-avatar-edit, .ios-minus-button, .ios-widget):active,
+html[data-motion="off"] .ios-key.is-pressed,
+html[data-motion="off"] .ios-row.is-button:active .ios-row-icon { transform: none !important; }
+html[data-motion="reduced"] :is(.ios-section, .ios-empty, .ios-widget, .ios-settle) { animation: spring-fade 200ms linear backwards; }
+html[data-motion="reduced"] :is(.ios-badge, .ios-tab-badge, .ios-dot, .ios-avatar-photo, .ios-avatar-badge, .ios-empty-icon, .ios-check-circle, .ios-check-circle svg) { animation: none; }
+html[data-motion="off"] :is(.ios-section, .ios-empty, .ios-widget, .ios-settle, .ios-badge, .ios-tab-badge, .ios-dot, .ios-avatar-photo, .ios-avatar-badge, .ios-empty-icon, .ios-check-circle, .ios-check-circle svg) { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.ios-press, .ios-key, .ios-call-btn, .ios-sidebar-item, .ios-avatar-edit, .ios-minus-button, .ios-widget):active,
+  .ios-row.is-button:active .ios-row-icon { transform: none !important; }
+}
+
+/* Keyboard focus on a list row: an accent ring inside the row instead of
+   the browser's black outline (seen when a sheet closes with Esc and
+   focus returns to the row that opened it). */
+.ios-row:focus-visible {
+  outline: 2px solid rgb(var(--color-primary-rgb) / 0.6);
+  outline-offset: -2px;
+  border-radius: inherit;
+}

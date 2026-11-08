@@ -21,6 +21,9 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  /** The profile photo as a data URL, or "" for the monogram. */
+  avatar: string;
+  setAvatar: (image: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -28,6 +31,31 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [ready, setReady] = useState(false);
+  const [avatar, setAvatarState] = useState("");
+
+  useEffect(() => {
+    if (!user) {
+      setAvatarState("");
+      return;
+    }
+    let cancelled = false;
+    api
+      .api<{ image: string }>("/settings/avatar")
+      .then((result) => {
+        if (!cancelled) setAvatarState(result?.image || "");
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const setAvatar = useCallback(async (image: string) => {
+    const result = image
+      ? await api.api<{ image: string }>("/settings/avatar", { method: "PUT", body: { image } })
+      : await api.api<{ image: string }>("/settings/avatar", { method: "DELETE" });
+    setAvatarState(result?.image || "");
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
@@ -76,8 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ready, isAuthenticated: !!user, user, login, logout, refresh }),
-    [ready, user, login, logout, refresh],
+    () => ({ ready, isAuthenticated: !!user, user, login, logout, refresh, avatar, setAvatar }),
+    [ready, user, login, logout, refresh, avatar, setAvatar],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

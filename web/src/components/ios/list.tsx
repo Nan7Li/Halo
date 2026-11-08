@@ -22,7 +22,7 @@ export function ListSection({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cx("mb-7", className)}>
+    <section className={cx("ios-section mb-7", className)}>
       {header ? <div className={cx("ios-list-header", prominent && "is-prominent")}>{header}</div> : null}
       <div className={cx("ios-list", bodyClassName)}>{children}</div>
       {footer ? <div className="ios-list-footer">{footer}</div> : null}

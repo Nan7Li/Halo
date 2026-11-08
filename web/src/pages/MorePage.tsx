@@ -4,7 +4,9 @@ import {
   SignOutRegular,
   WeatherMoonRegular,
 } from "@fluentui/react-icons";
+import { useState } from "react";
 import { useI18n } from "../lib/i18n";
+import { ProfileSheet, UserAvatar } from "../components/shell/UserAvatar";
 import { useAuth } from "../store/auth";
 import { IOSSwitch, ListRow, ListSection, Page } from "../components/ios";
 import { useShell } from "../components/shell/ShellContext";
@@ -15,14 +17,15 @@ export default function MorePage() {
   const { t, lang, setLanguage } = useI18n();
   const { user } = useAuth();
   const { extensions, isDark, onToggleTheme, onLogout } = useShell();
+  const [profile, setProfile] = useState(false);
   return (
     <Page title={t("更多")}>
       <ListSection>
         <ListRow
-          leading={<span className="ios-avatar h-[52px] w-[52px] text-[22px]">{(user?.username || "A").slice(0, 1).toUpperCase()}</span>}
+          leading={<UserAvatar className="h-[52px] w-[52px] text-[22px]" />}
           title={<span className="ios-title-3">{user?.username || "Admin"}</span>}
-          subtitle={user?.role || t("管理员")}
-          to="/settings/system"
+          subtitle={t("头像与账户")}
+          onClick={() => setProfile(true)}
         />
       </ListSection>
       <ListSection>
@@ -55,6 +58,7 @@ export default function MorePage() {
           onClick={() => window.open("/api/system/diagnostics", "_blank", "noopener,noreferrer")}
         />
       </ListSection>
+      <ProfileSheet open={profile} onClose={() => setProfile(false)} />
       <ListSection>
         <ListRow icon={<SignOutRegular />} iconColor="red" title={t("退出登录")} destructive onClick={onLogout} />
       </ListSection>

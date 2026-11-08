@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { PanelLeftRegular, SignOutRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
@@ -7,6 +7,7 @@ import { useAuth } from "../../store/auth";
 import { glassClass, useSelectionHighlight } from "../ios/core";
 import { BrandLogo } from "./BrandLogo";
 import { VersionBadge } from "./VersionBadge";
+import { ProfileSheet, UserAvatar } from "./UserAvatar";
 import { ANDROID_NAV, PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
 import { AIRSIM_LINE_ID } from "../phone/airsim";
 import { useCalls } from "../phone/CallProvider";
@@ -35,6 +36,7 @@ export function Sidebar({
   const { lines, airsim } = useCalls();
   const openDevice = pathname.startsWith("/devices") ? new URLSearchParams(search).get("device") : null;
   const navRef = useRef<HTMLElement>(null);
+  const [profile, setProfile] = useState(false);
   // The selection springs from row to row instead of jumping.
   const highlight = useSelectionHighlight(navRef, ".ios-sidebar-item.is-active", `${pathname}?${search}|${lines.length}|${extensions.length}`);
 
@@ -128,17 +130,22 @@ export function Sidebar({
       </nav>
 
       <div className="shrink-0 border-t border-separator/50 p-3">
-        <div className="flex items-center gap-3">
-            <span className="ios-avatar h-9 w-9 text-[15px]">{(user?.username || "A").slice(0, 1).toUpperCase()}</span>
-            <div className="min-w-0 flex-1">
-              <div className="truncate ios-subhead font-semibold text-label">{user?.username || "Admin"}</div>
-              <VersionBadge compact />
-            </div>
-            <button type="button" onClick={onLogout} aria-label={t("退出登录")} className="inline-flex h-9 w-9 items-center justify-center rounded-full text-label-2 transition-colors hover:bg-sys-red/10 hover:text-sys-red">
-              <SignOutRegular className="h-5 w-5" />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <button type="button" onClick={() => setProfile(true)} aria-label={t("个人资料")} className="ios-press shrink-0 rounded-full">
+            <UserAvatar className="h-9 w-9 text-[15px]" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <button type="button" onClick={() => setProfile(true)} className="ios-press block max-w-full truncate text-left ios-subhead font-semibold text-label">
+              {user?.username || "Admin"}
             </button>
+            <VersionBadge compact />
+          </div>
+          <button type="button" onClick={onLogout} aria-label={t("退出登录")} title={t("退出登录")} className="ios-press inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-label-2 transition-colors hover:bg-sys-red/10 hover:text-sys-red">
+            <SignOutRegular className="h-5 w-5" />
+          </button>
         </div>
       </div>
+      <ProfileSheet open={profile} onClose={() => setProfile(false)} />
     </aside>
   );
 }

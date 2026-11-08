@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api";
+import { useI18n } from "../../lib/i18n";
 import type { AutoUpdateSettings, SystemInfo } from "../../types";
 
 export function VersionBadge({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [version, setVersion] = useState<string>("");
   const [hasUpdate, setHasUpdate] = useState(false);
 
@@ -41,12 +43,22 @@ export function VersionBadge({ compact = false }: { compact?: boolean }) {
   }, []);
 
   const label = version ? `v${version}` : "vdev";
+  // "1.1.15-cellbridge-preview.20261108153013": the sidebar shows the
+  // release and a Preview tag; the full build string is the tooltip.
+  const [release, ...rest] = version.split("-");
+  const prerelease = rest.length > 0;
   const title = hasUpdate ? "有新版本，点击打开设置更新" : version ? `Halo v${version}` : "Halo preview";
   if (compact) {
     return (
-      <button type="button" onClick={() => navigate("/settings/system")} title={title} className="flex items-center gap-1.5 ios-caption text-label-2 hover:text-label">
-        <span className="font-mono">{label}</span>
-        {hasUpdate ? <span className="rounded-full bg-sys-red px-1.5 text-[10px] font-semibold leading-4 text-white">NEW</span> : null}
+      <button
+        type="button"
+        onClick={() => navigate("/settings/system")}
+        title={version ? `Halo v${version}` : title}
+        className="ios-press flex min-w-0 max-w-full items-center gap-1.5 ios-caption text-label-2 hover:text-label"
+      >
+        <span className="truncate tabular-nums">{version ? `v${release}` : label}</span>
+        {prerelease ? <span className="shrink-0 rounded-full bg-fill-3 px-1.5 text-[10px] font-semibold leading-4 text-label-2">{t("预览版")}</span> : null}
+        {hasUpdate ? <span className="shrink-0 rounded-full bg-sys-red px-1.5 text-[10px] font-semibold leading-4 text-white">NEW</span> : null}
       </button>
     );
   }

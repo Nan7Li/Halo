@@ -29,7 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         ref={ref}
         className={cx(
           FIELD,
-          "rounded-full",
+          "ui-input rounded-full",
           inputSize === "large" ? "h-12" : "h-11",
           prefix ? "pl-10" : null,
           suffix ? "pr-10" : null,

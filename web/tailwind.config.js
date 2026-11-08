@@ -155,6 +155,8 @@ export default {
         "ios-xl": "var(--radius-xl)",
       },
       transitionTimingFunction: {
+        // Plain `transition` utilities ride the smooth spring too.
+        DEFAULT: "var(--spring-smooth)",
         spring: "var(--spring-smooth)",
         "spring-snappy": "var(--spring-snappy)",
         "spring-bouncy": "var(--spring-bouncy)",

@@ -69,6 +69,8 @@ func (s *Server) routeGeneralAPI(w http.ResponseWriter, r *http.Request) bool {
 		s.handleUpdateApply(w, r)
 	case "settings/password":
 		s.handlePasswordChange(w, r)
+	case "settings/avatar":
+		s.handleAvatar(w, r)
 	case "settings/preferences":
 		s.handleUIPreferences(w, r)
 	case "settings/https":

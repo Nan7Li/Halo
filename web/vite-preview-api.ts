@@ -25,6 +25,8 @@ function send(res: ServerResponse, data: unknown, status = 200) {
   res.end(JSON.stringify({ data }));
 }
 
+let previewAvatar = "";
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -176,6 +178,13 @@ export function previewApiPlugin(): Plugin {
 
           if (path === "/api/extensions") {
             send(res, []);
+            return;
+          }
+
+          if (path === "/api/settings/avatar") {
+            if (method === "PUT") previewAvatar = (JSON.parse((await readBody(req)) || "{}").image as string) || "";
+            if (method === "DELETE") previewAvatar = "";
+            send(res, { image: previewAvatar });
             return;
           }
 

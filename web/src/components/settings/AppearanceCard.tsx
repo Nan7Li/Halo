@@ -66,7 +66,7 @@ export function AppearanceCard() {
               key={preset.id}
               type="button"
               onClick={() => withViewTransition(() => setAccent(preset.hex))}
-              className="flex items-center gap-2 rounded-full border border-separator bg-white px-3 py-1.5 text-[13px] font-medium tracking-tight transition-[transform,background-color,border-color,color] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.97] dark:border-separator dark:bg-[var(--color-input)] dark:text-label"
+              className="flex items-center gap-2 rounded-full border border-separator bg-white px-3 py-1.5 text-[13px] font-medium tracking-tight transition-[transform,background-color,border-color,color] duration-500 ease-spring-bouncy active:scale-[0.97] dark:border-separator dark:bg-[var(--color-input)] dark:text-label"
               style={active ? { borderColor: preset.hex, background: "var(--color-primary-soft)", color: "var(--color-primary)" } : undefined}
             >
               <span className="h-4 w-4 rounded-full ring-2 ring-white/70 dark:ring-black/40" style={{ background: preset.hex }} />

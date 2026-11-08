@@ -98,7 +98,7 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
         onClick={toggleOpen}
         className={cx(
           "halo-select-trigger flex w-full items-center justify-between gap-2 rounded-full border border-separator bg-white px-4 text-left text-sm text-label outline-none",
-          "transition-[border-color,box-shadow,transform] duration-[180ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "transition-[border-color,box-shadow,transform] duration-500 ease-spring-bouncy",
           "hover:border-separator focus:border-accent focus:ring-2 focus:ring-accent/20",
           "active:scale-[0.99]",
           "dark:border-separator dark:bg-[var(--color-input)] dark:text-label dark:hover:border-[var(--color-border-hover)]",
@@ -109,7 +109,7 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
         <span className={cx("truncate", !selected && "text-label-3 dark:text-label-3")}>
           {selected ? selected.label : ph}
         </span>
-        <ChevronDownRegular className={cx("shrink-0 text-label-2 transition-transform duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]", open && "rotate-180")} />
+        <ChevronDownRegular className={cx("shrink-0 text-label-2 ui-select-arrow", open && "rotate-180")} />
       </button>
       {open &&
         createPortal(
@@ -132,7 +132,7 @@ export function Select({ value, onChange, options, placeholder, disabled, size =
                 }}
                 className={cx(
                   "flex w-full items-center justify-between gap-2 rounded-[14px] px-3 py-1.5 text-left text-sm",
-                  "transition-[background-color,color,transform] duration-[160ms] ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]",
+                  "transition-[background-color,color,transform] duration-500 ease-spring-bouncy active:scale-[0.98]",
                   active
                     ? "font-semibold text-accent bg-[var(--color-primary-soft)]"
                     : "text-label hover:bg-bg-2 dark:text-label/85 dark:hover:bg-grouped-3",

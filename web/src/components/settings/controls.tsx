@@ -209,7 +209,7 @@ export function SegmentedTabs({
             onClick={() => onChange(tab.key)}
             className={cx(
               "h-[38px] shrink-0 whitespace-nowrap rounded-full px-5 text-sm font-medium outline-none",
-              "transition-[background-color,color,box-shadow,transform] duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+              "transition-[background-color,color,box-shadow,transform] duration-500 ease-spring-bouncy",
               "active:scale-[0.97]",
               active
                 ? "bg-white font-semibold text-accent shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:bg-white/10"

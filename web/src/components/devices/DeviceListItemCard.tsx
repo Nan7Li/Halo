@@ -20,7 +20,7 @@ export function DeviceListItemCard({ device, selected, statusText, onSelect }: D
         onClick={() => onSelect(device.id)}
         className={cx(
           "h-full w-full rounded-[16px] border p-3 text-left",
-          "transition-[background-color,border-color,box-shadow,transform] duration-[340ms] ease-[cubic-bezier(0.32,0.72,0,1)]",
+          "transition-[background-color,border-color,box-shadow,transform] duration-500 ease-spring-bouncy",
           "active:scale-[0.985]",
           selected
             ? "border-accent/25 bg-[var(--color-primary-soft)] shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
