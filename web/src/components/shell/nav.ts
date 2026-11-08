@@ -14,6 +14,7 @@ import {
   GlobeRegular,
   MoreHorizontalRegular,
   MoreHorizontalFilled,
+  PhoneRegular,
   PuzzlePieceRegular,
   RouterRegular,
   RouterFilled,
@@ -46,6 +47,9 @@ export const PRIMARY_NAV: NavItem[] = [
   { to: "/devices", label: "设备", icon: RouterRegular, activeIcon: RouterFilled, tabIcon: Router24Filled, tint: "gray" },
 ];
 
+/** The Android phone paired over AirSIM (listed with the devices). */
+export const ANDROID_NAV: NavItem = { to: "/android", label: "安卓手机", icon: PhoneRegular, tint: "green" };
+
 export const SECONDARY_NAV: NavItem[] = [
   { to: "/network", label: "网络", icon: GlobeRegular, tint: "blue", match: ["/network"] },
   { to: "/automatic-tasks", label: "自动任务", icon: SendClockRegular, tint: "orange" },
@@ -60,7 +64,7 @@ export const MORE_TAB: NavItem = {
   activeIcon: MoreHorizontalFilled,
   tabIcon: MoreHorizontal24Filled,
   tint: "gray",
-  match: ["/more", "/network", "/automatic-tasks", "/logs", "/settings", "/extensions"],
+  match: ["/more", "/android", "/network", "/automatic-tasks", "/logs", "/settings", "/extensions"],
 };
 
 /** Sidebar contributions from enabled plugins. */

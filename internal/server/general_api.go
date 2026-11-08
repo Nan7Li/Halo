@@ -36,6 +36,9 @@ func (s *Server) routeGeneralAPI(w http.ResponseWriter, r *http.Request) bool {
 	if s.routeWireGuardAPI(w, r, cleanPath) {
 		return true
 	}
+	if s.routeAirSIMAPI(w, r, cleanPath) {
+		return true
+	}
 	if s.routeSMSAPI(w, r, cleanPath) {
 		return true
 	}

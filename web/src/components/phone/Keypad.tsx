@@ -55,7 +55,7 @@ export function Keypad({
       >
         <span className={cx("h-2 w-2 shrink-0 rounded-full", ready ? "bg-sys-green" : "bg-sys-orange")} />
         <span className="truncate">{line ? line.name || line.id : t("选择线路")}</span>
-        {line ? <span className="shrink-0 text-label-2">· {lineTransport(line) === "cellular" ? t("蜂窝") : "Wi-Fi"}</span> : null}
+        {line ? <span className="shrink-0 text-label-2">· {lineTransport(line) === "cellular" ? t("蜂窝") : lineTransport(line) === "airsim" ? t("安卓") : "Wi-Fi"}</span> : null}
         <ChevronDownRegular className="h-4 w-4 shrink-0 text-label-2" />
       </button>
       <ContextMenu
@@ -68,7 +68,7 @@ export function Keypad({
             <span className="flex flex-col">
               <span>{item.name || item.id}</span>
               <span className="ios-footnote text-label-2">
-                {lineTransport(item) === "cellular" ? t("蜂窝通话") : "Wi-Fi Calling"} · {lineReady(item) ? t("可用") : t("未就绪")}
+                {lineTransport(item) === "cellular" ? t("蜂窝通话") : lineTransport(item) === "airsim" ? t("安卓手机 · AirSIM") : "Wi-Fi Calling"} · {lineReady(item) ? t("可用") : t("未就绪")}
               </span>
             </span>
           ),

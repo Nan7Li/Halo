@@ -1,5 +1,6 @@
 import { api } from "../../api";
 import type { DeviceListItem, DevicesResponse, SMSContact, SMSMessage } from "../../types";
+import { airsimLine, type AirSIMStatus } from "../phone/airsim";
 
 // Build a query string keeping snake_case keys (api() only snakeizes JSON bodies, not paths).
 function qs(params: Record<string, string | number | undefined>): string {
@@ -13,8 +14,14 @@ function qs(params: Record<string, string | number | undefined>): string {
 }
 
 export async function listSmsDevices(): Promise<DeviceListItem[]> {
-  const res = await api<DevicesResponse>("/devices");
-  return (res.devices || []).filter((d) => d.running);
+  const [res, airsim] = await Promise.all([
+    api<DevicesResponse>("/devices"),
+    api<AirSIMStatus>("/airsim").catch(() => null),
+  ]);
+  const devices = (res.devices || []).filter((d) => d.running);
+  // The paired Android phone sends and receives texts too; its history is
+  // kept under the "airsim" device ID even while it is offline.
+  return airsim?.paired ? [...devices, airsimLine(airsim)] : devices;
 }
 
 export function listContacts(deviceId: string): Promise<SMSContact[]> {

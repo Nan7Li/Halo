@@ -21,11 +21,12 @@ export function isLive(call: VoWiFiCall) {
 /** Whether the browser can place and answer calls on this line. */
 export function lineReady(device: DeviceListItem) {
   const transport = device.callAudioTransport;
-  if (transport === "cellular" || transport === "vowifi") return !!device.callAudioReady;
+  if (transport === "cellular" || transport === "vowifi" || transport === "airsim") return !!device.callAudioReady;
   return !!device.vowifiEnabled && !!device.vowifiRuntime?.imsReady;
 }
 
-export function lineTransport(device: DeviceListItem): "cellular" | "vowifi" {
+export function lineTransport(device: DeviceListItem): "cellular" | "vowifi" | "airsim" {
+  if (device.callAudioTransport === "airsim") return "airsim";
   return device.callAudioTransport === "cellular" ? "cellular" : "vowifi";
 }
 

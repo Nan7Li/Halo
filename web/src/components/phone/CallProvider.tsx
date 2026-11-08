@@ -6,6 +6,7 @@ import { message } from "../ui/message";
 import { useI18n } from "../../lib/i18n";
 import { startCallAudio, type AudioStatus, type CallAudioHandle, type MicStatus } from "./callAudio";
 import { callPhase, isLive, lineReady, type LineCall } from "./model";
+import { AIRSIM_LINE_ID, airsimCall, airsimLine, type AirSIMStatus } from "./airsim";
 import { CallOverlay } from "./CallOverlay";
 
 interface CallsResponse {
@@ -35,6 +36,9 @@ export interface CallState {
   toggleMute: () => void;
   /** Bumped whenever a call ends so history lists can refresh. */
   historyVersion: number;
+  /** The Android phone paired over AirSIM, when there is one. */
+  airsim: AirSIMStatus | null;
+  refreshAirSIM: () => Promise<void>;
 }
 
 const CallContext = createContext<CallState | null>(null);
@@ -53,7 +57,8 @@ export function useCalls() {
 export function CallProvider({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { pathname } = useLocation();
-  const [lines, setLines] = useState<DeviceListItem[]>([]);
+  const [deviceLines, setLines] = useState<DeviceListItem[]>([]);
+  const [airsim, setAirSIM] = useState<AirSIMStatus | null>(null);
   const [linesLoaded, setLinesLoaded] = useState(false);
   const [calls, setCalls] = useState<LineCall[]>([]);
   const [audio, setAudio] = useState<AudioStatus>("off");
@@ -63,6 +68,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [expanded, setExpanded] = useState(false);
   const [historyVersion, setHistoryVersion] = useState(0);
   const previous = useRef(new Map<string, string>());
+  const airsimCallsRef = useRef<LineCall[]>([]);
   const audioHandle = useRef<CallAudioHandle | null>(null);
   const onPhonePage = pathname.startsWith("/phone");
 
@@ -84,14 +90,58 @@ export function CallProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, [refreshLines, onPhonePage]);
 
-  const readyIds = useMemo(() => lines.filter(lineReady).map((line) => line.id).join("\n"), [lines]);
+  // The paired Android phone follows its own event stream: Halo long-polls
+  // /airsim/events, which answers as soon as the phone's state changes.
+  const refreshAirSIM = useCallback(async () => {
+    try {
+      setAirSIM(await api<AirSIMStatus>("/airsim"));
+    } catch {
+      /* AirSIM is optional */
+    }
+  }, []);
+  useEffect(() => {
+    let active = true;
+    let revision = 0;
+    const controller = new AbortController();
+    const loop = async () => {
+      while (active) {
+        try {
+          const status = await api<AirSIMStatus>(`/airsim/events?after=${revision}`, { timeoutMs: 35000, signal: controller.signal });
+          if (!active) return;
+          revision = status.revision;
+          setAirSIM(status);
+          if (!status.paired) await new Promise((resolve) => window.setTimeout(resolve, 15000));
+        } catch {
+          if (!active) return;
+          await new Promise((resolve) => window.setTimeout(resolve, 5000));
+        }
+      }
+    };
+    void loop();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
+
+  const lines = useMemo(
+    () => (airsim?.paired ? [...deviceLines, airsimLine(airsim)] : deviceLines),
+    [deviceLines, airsim],
+  );
+  const airsimCalls = useMemo<LineCall[]>(
+    () => (airsim?.call ? [{ ...airsimCall(airsim.call), deviceId: AIRSIM_LINE_ID }] : []),
+    [airsim?.call?.id, airsim?.call?.state, airsim?.call?.number], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  airsimCallsRef.current = airsimCalls;
+
+  const readyIds = useMemo(
+    () => deviceLines.filter(lineReady).map((line) => line.id).join("\n"),
+    [deviceLines],
+  );
 
   useEffect(() => {
     const ids = readyIds ? readyIds.split("\n") : [];
-    if (!ids.length) {
-      setCalls([]);
-      return;
-    }
     let active = true;
     const load = async () => {
       const results = await Promise.all(
@@ -102,7 +152,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         ),
       );
       if (!active) return;
-      const next = results.flat();
+      const next = [...results.flat(), ...airsimCallsRef.current];
       let ended = false;
       for (const call of next) {
         const before = previous.current.get(call.id);
@@ -126,7 +176,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       active = false;
       window.clearInterval(timer);
     };
-  }, [readyIds, t]);
+  }, [readyIds, t, airsimCalls]);
 
   const current = useMemo(() => {
     const live = calls.filter(isLive);
@@ -152,7 +202,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setAudio("off");
       return;
     }
-    const handle = startCallAudio({ deviceId: mediaCall.deviceId, callId: mediaCall.id, onStatus: setAudio, onMic: setMic });
+    const handle = startCallAudio({
+      deviceId: mediaCall.deviceId,
+      callId: mediaCall.id,
+      mediaPath: mediaCall.deviceId === AIRSIM_LINE_ID ? "/api/airsim/calls/media" : undefined,
+      onStatus: setAudio,
+      onMic: setMic,
+    });
     audioHandle.current = handle;
     return () => {
       handle.stop();
@@ -163,7 +219,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const post = useCallback(async (deviceId: string, name: "dial" | "answer" | "hangup", body: Record<string, string>) => {
     setBusy(true);
     try {
-      await api(`/devices/${encodeURIComponent(deviceId)}/calls/${name}`, { method: "POST", body });
+      const path = deviceId === AIRSIM_LINE_ID ? `/airsim/calls/${name}` : `/devices/${encodeURIComponent(deviceId)}/calls/${name}`;
+      await api(path, { method: "POST", body, timeoutMs: 15000 });
+      if (deviceId === AIRSIM_LINE_ID) void refreshAirSIM();
       return true;
     } catch (error) {
       message.error(apiMessage(error));
@@ -171,7 +229,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [refreshAirSIM]);
 
   const value = useMemo<CallState>(
     () => ({
@@ -187,6 +245,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       expanded,
       setExpanded,
       historyVersion,
+      airsim,
+      refreshAirSIM,
       dial: async (deviceId, number) => {
         const ok = await post(deviceId, "dial", { number: number.trim() });
         if (ok) setExpanded(true);
@@ -206,7 +266,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         });
       },
     }),
-    [lines, linesLoaded, refreshLines, current, calls, audio, mic, muted, busy, expanded, historyVersion, post],
+    [lines, linesLoaded, refreshLines, current, calls, audio, mic, muted, busy, expanded, historyVersion, post, airsim, refreshAirSIM],
   );
 
   return (

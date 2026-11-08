@@ -8,7 +8,7 @@ import { useI18n } from "../lib/i18n";
 import { useAuth } from "../store/auth";
 import { IOSSwitch, ListRow, ListSection, Page } from "../components/ios";
 import { useShell } from "../components/shell/ShellContext";
-import { SECONDARY_NAV } from "../components/shell/nav";
+import { ANDROID_NAV, SECONDARY_NAV } from "../components/shell/nav";
 
 /** Phone-only: the destinations that do not fit in the tab bar. */
 export default function MorePage() {
@@ -26,7 +26,7 @@ export default function MorePage() {
         />
       </ListSection>
       <ListSection>
-        {SECONDARY_NAV.map((item) => {
+        {[ANDROID_NAV, ...SECONDARY_NAV].map((item) => {
           const Icon = item.icon;
           return <ListRow key={item.to} to={item.to} icon={<Icon />} iconColor={item.tint} title={t(item.label)} />;
         })}

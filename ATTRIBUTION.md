@@ -30,3 +30,14 @@ The optional call bridge adapts CellBridge under the MIT license. It does not re
 - Adapted paths: `internal/cellbridge/cellular`, `internal/cellbridge/sip`, `internal/cellbridge/qdc507`, `internal/cellbridge/voice`
 - The QDC507 vendor voice payload is not part of this MIT copy. Deployments supply that file separately and check its hash.
 - Deployment notes: [docs/CellBridge.zh-CN.md](docs/CellBridge.zh-CN.md)
+
+## AirSIM
+
+The optional Android phone line talks to [AirSIM](https://github.com/kai-wu-cortex/AirSIM)'s Standalone Android app over its local pairing and VoWLAN protocols, so an Android phone can place and answer calls and send and receive texts for Halo. Halo plays the part of AirSIM's iPhone client on the local network; it does not include AirSIM's Android, iOS or Relay code, and it does not use AirSIM's cloud Relay.
+
+- Upstream project: [kai-wu-cortex/AirSIM](https://github.com/kai-wu-cortex/AirSIM)
+- Protocol reference commit: `1855e435aa1e207e6939c525c3feea4bba09ee2b`
+- Required Notice: Copyright 2026 AirSIM contributors. AirSIM is licensed under the PolyForm Noncommercial License 1.0.0. Commercial use requires separate written permission from the copyright holder.
+- License text: [LICENSES/airsim-PolyForm-Noncommercial-1.0.0.txt](LICENSES/airsim-PolyForm-Noncommercial-1.0.0.txt)
+- Path: `internal/airsim`
+- AirSIM's names and logos are not used to suggest that Halo is endorsed by the AirSIM project.

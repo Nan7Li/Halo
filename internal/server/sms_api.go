@@ -231,20 +231,25 @@ func (s *Server) handleSMSSend(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
-	if s.devices == nil {
-		writeError(w, http.StatusServiceUnavailable, "device_manager_unavailable", "device manager is unavailable")
-		return
-	}
 	var request struct {
-		Phone    string `json:"phone"`
-		Message  string `json:"message"`
-		DeviceID string `json:"device_id"`
+		Phone      string `json:"phone"`
+		Message    string `json:"message"`
+		DeviceID   string `json:"device_id"`
+		SIMAccount string `json:"sim_account"`
 	}
 	if err := s.decodeJSON(w, r, &request); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
 	request.DeviceID = strings.TrimSpace(request.DeviceID)
+	if request.DeviceID == airsimDeviceID {
+		s.sendAirSIMSMS(w, r, request.Phone, request.Message, request.SIMAccount)
+		return
+	}
+	if s.devices == nil {
+		writeError(w, http.StatusServiceUnavailable, "device_manager_unavailable", "device manager is unavailable")
+		return
+	}
 	if request.DeviceID == "" {
 		writeError(w, http.StatusBadRequest, "device_required", "a sending device is required")
 		return

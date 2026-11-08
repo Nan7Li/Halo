@@ -184,6 +184,19 @@ export function previewApiPlugin(): Plugin {
             return;
           }
 
+          if (path === "/api/airsim" || path === "/api/airsim/events" || path === "/api/airsim/pair") {
+            if (path === "/api/airsim/pair" && method === "POST") previewAirSIM.paired = true;
+            if (path === "/api/airsim" && method === "DELETE") previewAirSIM.paired = false;
+            const after = Number(new URL(req.url || "", "http://preview").searchParams.get("after") || 0);
+            if (path === "/api/airsim/events" && after >= previewAirSIMStatus().revision) {
+              // Long poll: nothing changes in the preview.
+              setTimeout(() => send(res, previewAirSIMStatus()), 20000);
+              return;
+            }
+            send(res, previewAirSIMStatus());
+            return;
+          }
+
           if (path === "/api/devices") {
             send(res, {
               devices: [
@@ -404,5 +417,41 @@ export function previewApiPlugin(): Plugin {
         }
       });
     },
+  };
+}
+
+// PREVIEW_AIRSIM=0 starts unpaired; PREVIEW_AIRSIM_CALL=incoming|active rings the phone.
+const previewAirSIM = { paired: process.env.PREVIEW_AIRSIM !== "0" };
+function previewAirSIMStatus() {
+  if (!previewAirSIM.paired) {
+    return { paired: false, state: "unpaired", sim_slots: [], call: null, history: [], revision: 1 };
+  }
+  const call = process.env.PREVIEW_AIRSIM_CALL;
+  return {
+    paired: true,
+    state: "online",
+    host: "192.168.1.50",
+    control_port: 7592,
+    pcm_port: 7593,
+    agent_id: "android-preview",
+    device_name: "Pixel 6",
+    manufacturer: "Google",
+    model: "Pixel 6",
+    phone_number: "+8613800138000",
+    paired_at: "2026-11-08T08:00:00Z",
+    last_seen: new Date().toISOString(),
+    battery: { percent: 76, charging: true },
+    sim_slots: [
+      { id: "sim-1", label: "中国移动", number: "+8613800138000", default: true, slot_index: 0, carrier_name: "China Mobile" },
+      { id: "sim-2", label: "giffgaff", number: "", default: false, slot_index: 1, carrier_name: "giffgaff", is_embedded: true },
+    ],
+    call: call
+      ? { id: "android-1", android_id: "tc@1", direction: "incoming", state: call, number: "+8613912345678", started_at: new Date(Date.now() - 42000).toISOString() }
+      : null,
+    history: [
+      { id: "android-0", direction: "incoming", state: "ended", number: "10086", started_at: new Date(Date.now() - 3600e3).toISOString(), missed: true },
+      { id: "android-00", direction: "outgoing", state: "ended", number: "+8613912345678", started_at: new Date(Date.now() - 7200e3).toISOString() },
+    ],
+    revision: 3,
   };
 }

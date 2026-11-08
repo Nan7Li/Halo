@@ -27,6 +27,7 @@ import LogsPage from "./pages/LogsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NetworkPage from "./pages/NetworkPage";
 import MorePage from "./pages/MorePage";
+import AndroidPage from "./pages/AndroidPage";
 import ExtensionPage from "./pages/ExtensionPage";
 import { safeRedirect } from "./lib/safeRedirect";
 
@@ -157,6 +158,7 @@ function AppRoot() {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="settings/:section" element={<SettingsPage />} />
           <Route path="more" element={<MorePage />} />
+          <Route path="android" element={<AndroidPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -27,11 +27,14 @@ export function micUnavailableReason(status: MicStatus): string {
 export function startCallAudio({
   deviceId,
   callId,
+  mediaPath,
   onStatus,
   onMic,
 }: {
   deviceId: string;
   callId: string;
+  /** Overrides the device call media endpoint (the AirSIM phone has its own). */
+  mediaPath?: string;
   onStatus: (status: AudioStatus) => void;
   onMic: (status: MicStatus) => void;
 }): CallAudioHandle {
@@ -99,9 +102,8 @@ export function startCallAudio({
       return;
     }
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    socket = new WebSocket(
-      `${protocol}//${window.location.host}/api/devices/${encodeURIComponent(deviceId)}/calls/media?call_id=${encodeURIComponent(callId)}`,
-    );
+    const path = mediaPath ?? `/api/devices/${encodeURIComponent(deviceId)}/calls/media`;
+    socket = new WebSocket(`${protocol}//${window.location.host}${path}?call_id=${encodeURIComponent(callId)}`);
     socket.binaryType = "arraybuffer";
     socket.onopen = () => {
       if (!closed) onStatus("ready");

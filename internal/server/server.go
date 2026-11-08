@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"vocat/internal/airsim"
 	"vocat/internal/auth"
 	"vocat/internal/device"
 	"vocat/internal/exportproxy"
@@ -124,6 +125,7 @@ type Server struct {
 	cellularDataLifecycleOnce sync.Once
 	cellularData              *cellularDataRuntime
 	wireguard                 *wireguard.Manager
+	airsim                    *airsim.Manager
 	recordingsDir             string
 	callMediaLeaseMu          sync.Mutex
 	callMediaLeases           map[callMediaLeaseKey]*callMediaLease
@@ -210,6 +212,7 @@ func New(options Options) (*Server, error) {
 	if err := server.sso.Cleanup(context.Background()); err != nil {
 		return nil, fmt.Errorf("server: clean expired SSO flows: %w", err)
 	}
+	server.airsim = airsim.NewManager(airsimStorage{store: options.Store}, server.saveAirSIMSMS, options.Logger)
 	server.cellularDataRuntime()
 	server.loadAccessConfig(context.Background())
 	server.loadUILanguage(context.Background())

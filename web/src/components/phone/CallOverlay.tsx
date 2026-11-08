@@ -129,7 +129,7 @@ function InCallScreen() {
           <ChevronDownRegular className="h-5 w-5" />
         </button>
         <span className="rounded-full bg-white/15 px-3 py-1 ios-caption font-semibold backdrop-blur">
-          {transport === "cellular" ? t("蜂窝") : "Wi-Fi Calling"} · {line?.name || current.deviceId}
+          {transport === "cellular" ? t("蜂窝") : transport === "airsim" ? t("安卓手机") : "Wi-Fi Calling"} · {line?.name || current.deviceId}
         </span>
         <span className="h-10 w-10" />
       </div>

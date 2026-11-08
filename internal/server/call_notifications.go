@@ -43,8 +43,11 @@ func (value IncomingCallNotification) Title() string {
 
 func (value IncomingCallNotification) Text() string {
 	envText := "VoWiFi"
-	if value.Environment == "cellular" {
+	switch value.Environment {
+	case "cellular":
 		envText = "基站直连"
+	case "airsim":
+		envText = "安卓手机（AirSIM）"
 	}
 	return strings.Join([]string{
 		"📞 收到来电",

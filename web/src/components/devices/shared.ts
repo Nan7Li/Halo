@@ -105,9 +105,12 @@ export function softphoneReadyReason(device?: {
   epdgProbe?: { disabledVoWiFi?: boolean; error?: string; epdg?: string };
   callAudioReady?: boolean;
   callAudioReason?: string;
-  callAudioTransport?: "" | "cellular" | "vowifi";
+  callAudioTransport?: "" | "cellular" | "vowifi" | "airsim";
 } | null): string {
   if (!device) return "";
+  if (device.callAudioTransport === "airsim") {
+    return device.callAudioReady ? "" : device.callAudioReason || tl("安卓手机离线");
+  }
   if (device.callAudioTransport === "cellular") {
     if (device.callAudioReady) return "";
     return device.callAudioReason || tl("大疆通话音频未就绪");

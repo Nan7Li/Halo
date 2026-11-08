@@ -211,7 +211,7 @@ export interface DeviceListItem {
   vowifiEnabled: boolean;
   callAudioReady?: boolean;
   callAudioReason?: string;
-  callAudioTransport?: "" | "cellular" | "vowifi";
+  callAudioTransport?: "" | "cellular" | "vowifi" | "airsim";
   vowifiActive?: boolean;
   radioMode?: "cellular" | "airplane" | "vowifi" | "transition" | "offline";
   vowifiRuntime: VoWiFiRuntime;

@@ -7,7 +7,8 @@ import { useAuth } from "../../store/auth";
 import { glassClass, useSelectionHighlight } from "../ios/core";
 import { BrandLogo } from "./BrandLogo";
 import { VersionBadge } from "./VersionBadge";
-import { PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
+import { ANDROID_NAV, PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
+import { AIRSIM_LINE_ID } from "../phone/airsim";
 import { useCalls } from "../phone/CallProvider";
 import { deviceStatusMeta, isVoWiFiInUse } from "../devices/shared";
 
@@ -31,7 +32,7 @@ export function Sidebar({
   const { t } = useI18n();
   const { user } = useAuth();
   const { pathname, search } = useLocation();
-  const { lines } = useCalls();
+  const { lines, airsim } = useCalls();
   const openDevice = pathname.startsWith("/devices") ? new URLSearchParams(search).get("device") : null;
   const navRef = useRef<HTMLElement>(null);
   // The selection springs from row to row instead of jumping.
@@ -79,11 +80,26 @@ export function Sidebar({
       <nav ref={navRef} className="ios-sidebar-nav relative min-h-0 flex-1 overflow-y-auto pb-3">
         <span className="ios-select-highlight ios-sidebar-highlight" style={highlight} aria-hidden />
         {PRIMARY_NAV.map(renderItem)}
-        {lines.length ? (
-          <>
-            {/* Like Finder's Locations: every module with its live state. */}
-            <div className="ios-sidebar-heading">{t("设备")}</div>
-            {lines.map((device) => {
+        {/* Like Finder's Locations: every module with its live state. */}
+        <div className="ios-sidebar-heading">{t("设备")}</div>
+        {lines.map((device) => {
+              if (device.id === AIRSIM_LINE_ID) {
+                const online = airsim?.state === "online";
+                return (
+                  <NavLink
+                    key={device.id}
+                    to={ANDROID_NAV.to}
+                    className={cx("ios-sidebar-item", pathname === ANDROID_NAV.to && "is-active")}
+                    title={`${device.name} · ${t(online ? "在线" : "离线")}`}
+                  >
+                    <span className="ios-sidebar-icon items-center justify-center">
+                      <span className={cx("h-2 w-2 rounded-full", online ? "bg-sys-green" : "bg-label-4")} />
+                    </span>
+                    <span className="ios-sidebar-label min-w-0 flex-1 truncate">{device.name}</span>
+                    <span className="ios-sidebar-label shrink-0 ios-caption text-label-3">{t("安卓")}</span>
+                  </NavLink>
+                );
+              }
               const meta = deviceStatusMeta(device);
               return (
                 <NavLink
@@ -102,8 +118,7 @@ export function Sidebar({
                 </NavLink>
               );
             })}
-          </>
-        ) : null}
+        {airsim?.paired ? null : renderItem(ANDROID_NAV)}
         <div className="ios-sidebar-heading">{t("网络与自动化")}</div>
         {SECONDARY_NAV.slice(0, 2).map(renderItem)}
         {extensions.length ? <div className="ios-sidebar-heading">{t("扩展")}</div> : null}
