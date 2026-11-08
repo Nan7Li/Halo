@@ -263,6 +263,15 @@ html[data-nav] .ios-scroll {
     transform calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
     scale var(--dur-smooth) var(--spring-smooth);
 }
+/* The top tab bar (regular width) has tabs of different widths, so its
+   droplet resizes too, on the same spring as its position; without this
+   the width jumped in one frame while the droplet slid. */
+.ios-tab-lens.is-fluid {
+  transition:
+    transform calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
+    scale var(--dur-smooth) var(--spring-smooth),
+    width calc(var(--dur-snappy) * 0.9) var(--spring-snappy);
+}
 @media (pointer: coarse) {
   .ios-tab-lens.is-moving,
   .ios-tabbar.is-touched .ios-tab-lens {

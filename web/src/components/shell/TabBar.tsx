@@ -73,7 +73,7 @@ export function TopTabBar({ items, onShowSidebar, badges = {} }: { items: NavIte
           <PanelLeftRegular />
         </button>
         <nav ref={barRef} aria-label={t("主导航")} className={cx("relative flex h-11 items-center rounded-full p-1", glassClass("regular"))}>
-          <span className={cx("ios-tab-lens !top-1 !bottom-1", moving && "is-moving")} style={lens} aria-hidden />
+          <span className={cx("ios-tab-lens is-fluid !top-1 !bottom-1", moving && "is-moving")} style={lens} aria-hidden />
           {items.map((tab, index) => {
             const selected = index === active;
             const Icon = tab.activeIcon ?? tab.icon;
