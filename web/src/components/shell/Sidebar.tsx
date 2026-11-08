@@ -1,9 +1,10 @@
+import { useRef } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { PanelLeftRegular, SignOutRegular } from "@fluentui/react-icons";
 import { cx } from "../../lib/utils";
 import { useI18n } from "../../lib/i18n";
 import { useAuth } from "../../store/auth";
-import { glassClass } from "../ios/core";
+import { glassClass, useSelectionHighlight } from "../ios/core";
 import { BrandLogo } from "./BrandLogo";
 import { VersionBadge } from "./VersionBadge";
 import { PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
@@ -32,6 +33,9 @@ export function Sidebar({
   const { pathname, search } = useLocation();
   const { lines } = useCalls();
   const openDevice = pathname.startsWith("/devices") ? new URLSearchParams(search).get("device") : null;
+  const navRef = useRef<HTMLElement>(null);
+  // The selection springs from row to row instead of jumping.
+  const highlight = useSelectionHighlight(navRef, ".ios-sidebar-item.is-active", `${pathname}?${search}|${lines.length}|${extensions.length}`);
 
   const renderItem = (item: NavItem) => {
     const label = item.literal ? item.label : t(item.label);
@@ -72,7 +76,8 @@ export function Sidebar({
         </button>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto pb-3">
+      <nav ref={navRef} className="ios-sidebar-nav relative min-h-0 flex-1 overflow-y-auto pb-3">
+        <span className="ios-select-highlight ios-sidebar-highlight" style={highlight} aria-hidden />
         {PRIMARY_NAV.map(renderItem)}
         {lines.length ? (
           <>

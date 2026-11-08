@@ -185,10 +185,20 @@ export function SwipeRow({ actions, children, background = "rgb(var(--ios-groupe
     setOffset((current) => (current < -width / 2 ? -width : 0));
   };
   const close = () => setOffset(0);
+  // At rest the row is see-through and the actions are hidden, so a list
+  // can paint its selection highlight beneath the rows. The row turns
+  // opaque while it is dragged, open, or springing shut.
+  const [closing, setClosing] = useState(false);
+  const [lastOffset, setLastOffset] = useState(offset);
+  if (lastOffset !== offset) {
+    setLastOffset(offset);
+    if (offset === 0 && lastOffset !== 0) setClosing(true);
+  }
+  const revealed = dragging || offset !== 0 || closing;
 
   return (
     <div className="ios-row-wrap">
-      <div className="ios-swipe-actions" style={{ width }} aria-hidden={offset === 0}>
+      <div className="ios-swipe-actions" style={{ width, visibility: revealed ? undefined : "hidden" }} aria-hidden={offset === 0}>
         {actions.map((action, index) => (
           <button
             key={index}
@@ -210,6 +220,9 @@ export function SwipeRow({ actions, children, background = "rgb(var(--ios-groupe
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onTransitionEnd={(event) => {
+          if (event.target === event.currentTarget && event.propertyName === "transform" && offset === 0) setClosing(false);
+        }}
         onClickCapture={(event) => {
           if (offset !== 0) {
             event.preventDefault();
@@ -225,7 +238,7 @@ export function SwipeRow({ actions, children, background = "rgb(var(--ios-groupe
           transition: dragging ? "none" : "transform var(--dur-spring-snappy) var(--spring-snappy)",
           touchAction: "pan-y",
           position: "relative",
-          background,
+          background: revealed ? background : undefined,
         }}
       >
         {children}

@@ -1,4 +1,4 @@
-import { useState, type PointerEvent, type ReactNode } from "react";
+import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { ChatMultipleRegular, CheckmarkRegular, ChevronDownRegular, ChevronRightRegular } from "@fluentui/react-icons";
 import { ListSkeleton, type SelectOption } from "../ui";
 import { cx } from "../../lib/utils";
@@ -6,6 +6,7 @@ import type { SmsThread } from "./smsText";
 import { formatRecentTime } from "../phone/model";
 import { useI18n } from "../../lib/i18n";
 import { ContextMenu, ContentUnavailable, SearchField, SwipeRow } from "../ios";
+import { useSelectionHighlight } from "../ios/core";
 
 export interface ContactListProps {
   isMobile: boolean;
@@ -57,6 +58,9 @@ export function ContactList(props: ContactListProps) {
     onRowPointerEnd,
     header,
   } = props;
+  const listRef = useRef<HTMLDivElement>(null);
+  // Re-measured when the selection or the rows change (new messages reorder them).
+  const highlight = useSelectionHighlight(listRef, ".sms-row.is-active", contacts.length ? `${activeKey}|${contacts.map((c) => `${c.key}:${c.lastTs}`).join(",")}|${loading}` : "");
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const deviceLabel = deviceOptions.find((option) => option.value === selectedDevice)?.label ?? t("全部设备");
 
@@ -100,7 +104,8 @@ export function ContactList(props: ContactListProps) {
           description={searchQuery ? t("换个关键词试试") : t("模组收到短信后会显示在这里，也可以点右上角新建一条。")}
         />
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto pb-28 md:pb-4">
+        <div ref={listRef} className="relative min-h-0 flex-1 overflow-y-auto pb-28 md:pb-4">
+          {isMobile ? null : <span className="ios-select-highlight sms-list-highlight" style={highlight} aria-hidden />}
           {contacts.map((thread, index) => {
             const active = activeKey === thread.key && !isMobile;
             const unread = isUnread(thread);
@@ -108,9 +113,11 @@ export function ContactList(props: ContactListProps) {
             const row = (
               <div
                 className={cx(
-                  "relative flex w-full cursor-pointer items-stretch gap-3 pl-2 pr-4 text-left transition-colors duration-100",
-                  active ? "bg-accent text-[var(--color-on-primary)]" : "bg-bg hover:bg-fill-4 active:bg-fill-3",
-                  active && "rounded-[18px] md:mx-2 md:w-[calc(100%-16px)]",
+                  "sms-row relative flex w-full cursor-pointer items-stretch gap-3 pl-2 pr-4 text-left",
+                  // Desktop rows are inset capsules, so the sliding highlight
+                  // fits every row the same way and nothing shifts on select.
+                  !isMobile && "rounded-[18px] md:mx-2 md:w-[calc(100%-16px)]",
+                  active ? "is-active text-[var(--color-on-primary)]" : "hover:bg-fill-4 active:bg-fill-3",
                 )}
                 role="button"
                 tabIndex={0}

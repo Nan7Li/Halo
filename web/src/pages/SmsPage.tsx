@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type UIEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type UIEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ArrowDownloadRegular, ComposeRegular, DeleteRegular } from "@fluentui/react-icons";
 import { BarGroup, ContextMenu, GroupButton, useIsMac } from "../components/ios";
@@ -124,6 +124,12 @@ export default function SmsPage() {
   const deviceReqId = useRef(0);
   const contactReqId = useRef(0);
   const threadReqId = useRef(0);
+  // Last loaded messages per conversation: switching back shows them at
+  // once while the fresh copy loads, instead of the previous thread's.
+  const threadCache = useRef(new Map<string, SMSMessage[]>());
+  // Set on a switch: the next layout lands at the newest message before
+  // it is painted, with no visible scroll jump.
+  const pinBottom = useRef(false);
   const lpTimer = useRef<number | null>(null);
   const lpStart = useRef({ x: 0, y: 0 });
 
@@ -156,6 +162,12 @@ export default function SmsPage() {
   const filteredContacts = useMemo(() => filterThreads(contacts, searchQuery), [contacts, searchQuery]);
   const activeThread = useMemo(() => contacts.find((t) => t.key === selectedKey) || null, [contacts, selectedKey]);
   const groups = useMemo(() => groupMessagesByDay(messages), [messages]);
+  useLayoutEffect(() => {
+    const el = detailRef.current;
+    if (!pinBottom.current || !el) return;
+    el.scrollTop = el.scrollHeight;
+    if (messages.length && !messagesLoadingRef.current) pinBottom.current = false;
+  }, [messages, selectedKey]);
   const composerInfo = useMemo(() => analyzeSmsEncoding(composer), [composer]);
   const composerLength = useMemo(() => Array.from(composer || "").length, [composer]);
   const deviceFilters = useMemo<DeviceFilterOption[]>(
@@ -305,6 +317,7 @@ export default function SmsPage() {
     try {
       const list = sortMessages(await getThread(query));
       if (id !== threadReqId.current) return false;
+      threadCache.current.set(thread.key, list);
       setMessagesState(list);
       setHasMoreState(list.length === THREAD_PAGE);
       return true;
@@ -321,6 +334,11 @@ export default function SmsPage() {
     async (key: string, opts: { syncRoute?: boolean; silent?: boolean; scrollToBottom?: boolean } = {}) => {
       const { syncRoute = true, silent = false, scrollToBottom = true } = opts;
       if (!key) return;
+      if (key !== keyRef.current && !silent) {
+        setMessagesState(threadCache.current.get(key) ?? []);
+        setHasMoreState(false);
+        pinBottom.current = scrollToBottom;
+      }
       setKey(key);
       if (syncRoute) syncQuery(deviceRef.current, key);
       const thread = contactsRef.current.find((t) => t.key === key) || null;

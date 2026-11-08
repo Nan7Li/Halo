@@ -118,7 +118,7 @@ export function ThreadPanel(props: ThreadPanelProps) {
             </button>
           ) : null}
         </div>
-        <div className="flex min-w-0 max-w-[60vw] flex-col items-center md:max-w-[420px]">
+        <div key={activeThread.key} className="sms-head-in flex min-w-0 max-w-[60vw] flex-col items-center md:max-w-[420px]">
           <span className="ios-avatar mb-1 h-10 w-10 text-[17px]">{Array.from(name)[0]?.toUpperCase()}</span>
           <span className="glass inline-flex max-w-full items-center rounded-full px-3 py-0.5">
             <span className="truncate ios-footnote font-semibold text-label">{name}</span>
@@ -137,6 +137,9 @@ export function ThreadPanel(props: ThreadPanelProps) {
             </button>
           </div>
         ) : null}
+        {/* Keyed by conversation (and by whether its messages are in), so
+            each newly shown thread settles in once. */}
+        <div key={groups.length ? activeThread.key : `${activeThread.key}:empty`} className="sms-thread-in">
         {groups.map((group) => (
           <Fragment key={group.date}>
             <div className="my-3 text-center ios-caption font-medium text-label-2">{group.date}</div>
@@ -200,6 +203,7 @@ export function ThreadPanel(props: ThreadPanelProps) {
             </div>
           </Fragment>
         ))}
+        </div>
       </div>
 
       {/* Composer: a glass capsule with the send arrow inside. */}

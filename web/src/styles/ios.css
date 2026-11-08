@@ -1037,3 +1037,45 @@ html[data-idiom="mac"] .ios-minus-button::before { left: 4px; right: 4px; height
 .ios-app :is(.rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl):is([class*="border-amber-"], [class*="border-red-"], [class*="border-emerald-"], [class*="border-green-"], [class*="border-sky-"], [class*="border-indigo-"], [class*="border-orange-"], [class*="border-yellow-"]):not(input):not(button):not(textarea) {
   border-color: transparent;
 }
+
+/* ---- Sliding selection (sidebar, conversation list) ----
+   One highlight layer springs from the old row to the new one instead of
+   each row switching its own background. Position and height use .bouncy
+   at a 0.35 s perceptual duration: visibly elastic, settled in about half
+   a second. Only transform animates for position (compositor); height
+   changes only between rows of different heights. */
+.ios-select-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+  transition:
+    transform calc(var(--dur-bouncy) * 0.7) var(--spring-bouncy),
+    height calc(var(--dur-bouncy) * 0.7) var(--spring-bouncy),
+    width calc(var(--dur-smooth) * 0.6) var(--spring-smooth),
+    opacity 160ms linear;
+}
+html[data-motion="reduced"] .ios-select-highlight { transition-timing-function: var(--spring-smooth); }
+.ios-sidebar-highlight { border-radius: 12px; background: rgb(var(--color-primary-rgb) / 0.14); }
+html.dark .ios-sidebar-highlight { background: rgb(var(--color-primary-rgb) / 0.22); }
+html[data-idiom="mac"] .ios-sidebar-highlight { border-radius: 9px; background: rgb(0 0 0 / 0.08); }
+html.dark[data-idiom="mac"] .ios-sidebar-highlight { background: rgb(255 255 255 / 0.12); }
+/* The highlight paints the selection; the row itself stays clear. */
+html .ios-sidebar-nav .ios-sidebar-item.is-active,
+html[data-idiom] .ios-sidebar-nav .ios-sidebar-item.is-active { background: transparent; }
+.sms-list-highlight { border-radius: 18px; background: rgb(var(--color-primary-rgb)); }
+/* Row text crossfades to white as the highlight arrives under it. */
+.sms-row,
+.sms-row * { transition: color 180ms linear, background-color 100ms linear; }
+
+/* ---- Switching conversations ----
+   The new thread settles in with .smooth (a short rise and fade), and its
+   name in the header crossfades, instead of the old messages lingering
+   under the new name and then popping. */
+@keyframes sms-thread-in { from { opacity: 0; transform: translateY(14px); } }
+@keyframes sms-fade-in { from { opacity: 0; } }
+.sms-thread-in { animation: sms-thread-in calc(var(--dur-smooth) * 0.6) var(--spring-smooth) both; }
+.sms-head-in { animation: sms-fade-in 180ms linear both; }
+html[data-motion="reduced"] .sms-thread-in { animation-name: sms-fade-in; }

@@ -122,6 +122,59 @@ export function useSlidingIndicator(containerRef: RefObject<HTMLElement | null>,
 }
 
 /**
+ * A selection highlight that springs from the old row to the new one in a
+ * vertical list (sidebar, conversation list). Render a `.ios-select-highlight`
+ * span as the first child of the positioned scroll container and give it
+ * this style; rows paint over it. `key` is the selected item's identity:
+ * it re-measures when it changes and whenever the container resizes.
+ */
+export function useSelectionHighlight(containerRef: RefObject<HTMLElement | null>, activeSelector: string, key: unknown) {
+  const [style, setStyle] = useState<CSSProperties>({ opacity: 0 });
+  const shown = useRef(false);
+  const measure = useCallback(() => {
+    const container = containerRef.current;
+    const target = container?.querySelector<HTMLElement>(activeSelector);
+    if (!container || !target) {
+      shown.current = false;
+      setStyle((current) => (current.opacity === 0 ? current : { ...current, opacity: 0 }));
+      return;
+    }
+    const box = container.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    const next: CSSProperties = {
+      transform: `translate(${rect.left - box.left + container.scrollLeft}px, ${rect.top - box.top + container.scrollTop}px)`,
+      width: rect.width,
+      height: rect.height,
+      opacity: 1,
+    };
+    if (!shown.current) {
+      // Appearing (first paint, or after nothing was selected): no slide.
+      shown.current = true;
+      next.transition = "none";
+      requestAnimationFrame(() => setStyle((current) => ({ ...current, transition: undefined })));
+      setStyle(next);
+      return;
+    }
+    setStyle((current) =>
+      current.transform === next.transform && current.width === next.width && current.height === next.height && current.opacity === 1
+        ? current
+        : { ...next, transition: current.transition },
+    );
+  }, [containerRef, activeSelector]);
+  // Re-subscribes per key too: the container may have been remounted
+  // (a list swapped for its loading skeleton and back).
+  useLayoutEffect(() => {
+    measure();
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => measure());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [measure, containerRef, key]);
+  return style;
+}
+
+/**
  * True for a moment after `value` changes: a selection indicator or knob
  * lifts into clear glass while it travels (iOS 26 switches, segmented
  * controls and tab bars), then settles back with the bouncy spring.
