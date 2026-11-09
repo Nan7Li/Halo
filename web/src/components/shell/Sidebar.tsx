@@ -8,7 +8,7 @@ import { glassClass, useSelectionHighlight } from "../ios/core";
 import { BrandLogo } from "./BrandLogo";
 import { VersionBadge } from "./VersionBadge";
 import { ProfileSheet, UserAvatar } from "./UserAvatar";
-import { ANDROID_NAV, PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
+import { ANDROID_NAV, IPHONE_NAV, PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
 import { AIRSIM_LINE_ID } from "../phone/airsim";
 import { useCalls } from "../phone/CallProvider";
 import { deviceStatusMeta, isVoWiFiInUse } from "../devices/shared";
@@ -121,6 +121,7 @@ export function Sidebar({
               );
             })}
         {airsim?.paired ? null : renderItem(ANDROID_NAV)}
+        {renderItem(IPHONE_NAV)}
         <div className="ios-sidebar-heading">{t("网络与自动化")}</div>
         {SECONDARY_NAV.slice(0, 2).map(renderItem)}
         {extensions.length ? <div className="ios-sidebar-heading">{t("扩展")}</div> : null}

@@ -34,25 +34,34 @@ func (s *Server) handleCallMedia(w http.ResponseWriter, r *http.Request, config 
 		return true
 	}
 	defer releaseUpdate()
+	open, status, code, message := s.callMediaOpener(config, callID)
+	if open == nil {
+		writeError(w, status, code, message)
+		return true
+	}
+	return s.serveBrowserPCM(w, r, config, callID, open)
+}
+
+// callMediaOpener picks the media source for one call: the cellular PCM
+// bridge or VoWiFi RTP. A nil opener comes with the HTTP error to report.
+func (s *Server) callMediaOpener(config store.Device, callID string) (func(context.Context) (vowifi.CallMedia, func(), error), int, string, string) {
 	if binding, ok := s.bindingForAction(config.ID, callID); ok {
 		switch binding.transport {
 		case "cellular":
-			return s.serveBrowserPCM(w, r, config, callID, s.openCellularBrowserMedia(config.ID, callID, binding))
+			return s.openCellularBrowserMedia(config.ID, callID, binding), 0, "", ""
 		case "vowifi":
-			return s.serveBrowserPCM(w, r, config, callID, s.openVoWiFiBrowserMedia(config.ID, callID))
+			return s.openVoWiFiBrowserMedia(config.ID, callID), 0, "", ""
 		default:
-			writeError(w, http.StatusNotImplemented, "call_media_unavailable", "这条通话没有浏览器音频")
-			return true
+			return nil, http.StatusNotImplemented, "call_media_unavailable", "这条通话没有浏览器音频"
 		}
 	}
 	if s.cellularHasCall(config.ID, callID) {
-		return s.serveBrowserPCM(w, r, config, callID, s.openCellularBrowserMedia(config.ID, callID, callBinding{transport: "cellular"}))
+		return s.openCellularBrowserMedia(config.ID, callID, callBinding{transport: "cellular"}), 0, "", ""
 	}
 	if s.callTransport(config.ID) != "vowifi" {
-		writeError(w, http.StatusNotImplemented, "call_media_unavailable", "browser audio is only available for an active VoWiFi IMS call")
-		return true
+		return nil, http.StatusNotImplemented, "call_media_unavailable", "browser audio is only available for an active VoWiFi IMS call"
 	}
-	return s.serveBrowserPCM(w, r, config, callID, s.openVoWiFiBrowserMedia(config.ID, callID))
+	return s.openVoWiFiBrowserMedia(config.ID, callID), 0, "", ""
 }
 
 func (s *Server) openCellularBrowserMedia(deviceID, callID string, binding callBinding) func(context.Context) (vowifi.CallMedia, func(), error) {

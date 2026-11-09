@@ -25,6 +25,22 @@ function send(res: ServerResponse, data: unknown, status = 200) {
   res.end(JSON.stringify({ data }));
 }
 
+const previewAgent: Record<string, unknown> = {
+  enabled: true,
+  agent_id: "android-5f1c0a9e2b7d4c3a8e6f0b1d",
+  name: "",
+  pair_port: 7590,
+  control_port: 7592,
+  pcm_port: 7593,
+  tls_cert: "",
+  tls_key: "",
+  addresses: ["192.168.1.20", "100.101.12.7"],
+  lines: [
+    { id: "ec25-uk", label: "EC25-UK", number: "+447700900123" },
+    { id: "qdc507", label: "QDC507", number: "+8613800138000" },
+  ],
+  clients: [{ id: "a1b2c3d4e5f6", created_at: new Date(Date.now() - 86400000).toISOString(), last_seen: new Date(Date.now() - 600000).toISOString(), local_mode: true, cloud_enabled: false }],
+};
 let previewAvatar = "";
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -190,6 +206,16 @@ export function previewApiPlugin(): Plugin {
 
           if (path === "/api/settings/preferences") {
             send(res, { language: "zh" });
+            return;
+          }
+
+          if (path === "/api/airsim-agent" || path.startsWith("/api/airsim-agent/")) {
+            if (path === "/api/airsim-agent" && method === "PUT") Object.assign(previewAgent, JSON.parse((await readBody(req)) || "{}"));
+            if (path === "/api/airsim-agent/pair" && method === "POST") {
+              previewAgent.pairing = { code: "482915", expires_at: new Date(Date.now() + 120000).toISOString() };
+            }
+            if (path.startsWith("/api/airsim-agent/clients/") && method === "DELETE") previewAgent.clients = [];
+            send(res, previewAgent);
             return;
           }
 
