@@ -738,6 +738,9 @@ html[data-motion="reduced"] .ios-sheet-root.is-closing .ios-sheet { transform: n
    title and centered content move out of its way. */
 .ios-scroll.has-top-tabbar .ios-navbar-title { display: none; }
 .ios-scroll.has-top-tabbar .ios-navbar { height: 68px; }
+/* Messages is a full-height split view with its own headers: start it below
+   the floating top tab bar instead of under it. */
+.ios-scroll.has-top-tabbar .sms-page { padding-top: 64px; }
 
 /* Device photo in a list row: a 40pt continuous-corner tile. */
 .ios-row-thumb {
