@@ -483,6 +483,12 @@ func (session *Session) consumeLineLocked(line string, response *Response) {
 		}
 	}
 	pending.remainingEcho = nil
+	if _, final, ok := splitGluedFinal(line); ok {
+		// The truncated data before the error cannot be decoded; drop it
+		// and finish the command instead of waiting for a final line that
+		// never comes.
+		line = final
+	}
 	if isFinalResult(line) || callResult {
 		session.pending = nil
 		session.recoveryDeadline = time.Time{}
@@ -618,6 +624,27 @@ func isCallResult(line string) bool {
 	default:
 		return false
 	}
+}
+
+// splitGluedFinal finds a +CMS/+CME ERROR glued to the end of a data line
+// with no line break before it. Some modules (QDC507 reading a damaged SIM
+// SMS with AT+CMGL) stop mid-PDU and write "<partial PDU>+CMS ERROR: 350".
+// Without this the command never sees its final result and the session is
+// poisoned, failing every later command.
+func splitGluedFinal(line string) (data, final string, ok bool) {
+	upper := strings.ToUpper(line)
+	for _, marker := range []string{"+CMS ERROR:", "+CME ERROR:"} {
+		index := strings.LastIndex(upper, marker)
+		if index <= 0 {
+			continue
+		}
+		code := strings.TrimSpace(line[index+len(marker):])
+		if code == "" || strings.IndexFunc(code, func(r rune) bool { return r < '0' || r > '9' }) >= 0 {
+			continue
+		}
+		return line[:index], line[index:], true
+	}
+	return "", "", false
 }
 
 func isFinalResult(line string) bool {

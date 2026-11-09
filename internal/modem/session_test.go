@@ -188,6 +188,8 @@ func TestSessionParsesResponses(t *testing.T) {
 		{name: "expected registration", command: "AT+CEREG?", text: "+CEREG: 0,5", final: "OK", chunks: []string{"\r\n+CEREG: 0,5\r\nOK\r\n"}},
 		{name: "asynchronous CUSD", command: `AT+CUSD=1,"*100#",15`, final: "OK", urc: `+CUSD: 0,"004F004B",72`, chunks: []string{"\r\n+CUSD: 0,\"004F004B\",72\r\nOK\r\n"}},
 		{name: "command error", command: "AT+CPIN?", final: "+CME ERROR: 10", chunks: []string{"\r\n+CME ERROR: 10\r\n"}},
+		{name: "error glued to a truncated PDU", command: "AT+CMGL=4", text: "+CMGL: 1,1,,154\n0891683110701405F1\n+CMGL: 3,1,,154", final: "+CMS ERROR: 350",
+			chunks: []string{"\r\n+CMGL: 1,1,,154\r\n0891683110701405F1\r\n+CMGL: 3,1,,154\r\n0891683110701405F164+CMS ERROR: 350\r\n"}},
 		{name: "dial final", command: "ATD12345;", final: "NO CARRIER", urc: "NO CARRIER", chunks: []string{"NO CARRIER\r\n"}},
 		{name: "answer final", command: "ATA", final: "BUSY", urc: "BUSY", chunks: []string{"BUSY\r\n"}},
 		{name: "query during call", command: "AT+CFUN?", text: "+CFUN: 1", final: "OK", urc: "NO CARRIER", chunks: []string{"NO CARRIER\r\n+CFUN: 1\r\nOK\r\n"}},
