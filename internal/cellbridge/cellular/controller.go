@@ -653,7 +653,7 @@ func (controller *Controller) OpenMedia(callID, owner string) (vowifi.CallMedia,
 	if controller.mediaSub != nil || controller.lease != nil {
 		return nil, nil, ErrMediaBusy
 	}
-	sub := &subscriber{owner: owner, ch: make(chan []int16, 8), epoch: current.epoch}
+	sub := &subscriber{owner: owner, ch: make(chan []int16, 25), epoch: current.epoch}
 	controller.mediaSub = sub
 	lease := &uplinkLease{open: true, audio: controller.Audio, recorder: current.recorder}
 	lease.onError = func(err error) { controller.failAudio(current, err) }
