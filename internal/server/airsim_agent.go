@@ -48,27 +48,32 @@ const airsimAgentKey = "airsim.agent"
 var b64url = base64.RawURLEncoding
 
 type airsimAgentConfig struct {
-	Enabled     bool                `json:"enabled"`
-	AgentID     string              `json:"agent_id"`
-	Name        string              `json:"name,omitempty"`
-	PairPort    int                 `json:"pair_port"`
-	ControlPort int                 `json:"control_port"`
-	PCMPort     int                 `json:"pcm_port"`
-	DeviceIDs   []string            `json:"device_ids,omitempty"`
-	TLSCert     string              `json:"tls_cert,omitempty"`
-	TLSKey      string              `json:"tls_key,omitempty"`
-	Clients     []airsimAgentClient `json:"clients,omitempty"`
+	Enabled     bool     `json:"enabled"`
+	AgentID     string   `json:"agent_id"`
+	Name        string   `json:"name,omitempty"`
+	PairPort    int      `json:"pair_port"`
+	ControlPort int      `json:"control_port"`
+	PCMPort     int      `json:"pcm_port"`
+	DeviceIDs   []string `json:"device_ids,omitempty"`
+	TLSCert     string   `json:"tls_cert,omitempty"`
+	TLSKey      string   `json:"tls_key,omitempty"`
+	// Cloud lets Halo act on AirSIM's Relay for a cloud-mode iPhone:
+	// push-woken incoming calls and calls from anywhere (airsim_cloud.go).
+	Cloud   bool                `json:"cloud,omitempty"`
+	Clients []airsimAgentClient `json:"clients,omitempty"`
 }
 
 type airsimAgentClient struct {
-	ID           string          `json:"id"`
-	Secret       string          `json:"secret"`
-	CreatedAt    time.Time       `json:"created_at"`
-	LastSeen     time.Time       `json:"last_seen,omitempty"`
-	LocalMode    bool            `json:"local_mode"`
-	CloudEnabled bool            `json:"cloud_enabled"`
-	SMSCursor    int64           `json:"sms_cursor"`
-	Registration json.RawMessage `json:"registration,omitempty"`
+	ID           string    `json:"id"`
+	Secret       string    `json:"secret"`
+	CreatedAt    time.Time `json:"created_at"`
+	LastSeen     time.Time `json:"last_seen,omitempty"`
+	LocalMode    bool      `json:"local_mode"`
+	CloudEnabled bool      `json:"cloud_enabled"`
+	SMSCursor    int64     `json:"sms_cursor"`
+	// CloudSMSCursor is the last SMS pushed through the Relay.
+	CloudSMSCursor int64           `json:"cloud_sms_cursor,omitempty"`
+	Registration   json.RawMessage `json:"registration,omitempty"`
 }
 
 func defaultAirSIMAgentConfig() airsimAgentConfig {
@@ -124,10 +129,14 @@ type airsimAgent struct {
 	certPath string
 	certMod  time.Time
 	certErr  string
+
+	cloud *airsimCloud
 }
 
 func newAirSIMAgent(s *Server) *airsimAgent {
-	return &airsimAgent{s: s, verifier: airsim.NewVerifier(), changed: make(chan struct{})}
+	agent := &airsimAgent{s: s, verifier: airsim.NewVerifier(), changed: make(chan struct{})}
+	agent.cloud = newAirSIMCloud(agent)
+	return agent
 }
 
 // StartAirSIMAgent loads the saved configuration and, when enabled, opens
@@ -148,6 +157,7 @@ func (s *Server) StartAirSIMAgent(ctx context.Context) {
 	agent.restart(ctx)
 	go agent.mirrorCalls(ctx)
 	go agent.watchSMS(ctx)
+	go agent.cloud.run(ctx)
 }
 
 func (a *airsimAgent) load(ctx context.Context) (airsimAgentConfig, error) {
@@ -897,9 +907,28 @@ func (a *airsimAgent) refreshCalls(ctx context.Context) {
 
 // observe records the current live call (nil for none).
 func (a *airsimAgent) observe(live *agentCall) {
+	before, after := a.observeLocked(live)
+	if a.cloud != nil {
+		a.cloud.observe(before, after)
+	}
+}
+
+// observeLocked records live and returns copies of the active call before and
+// after, for the cloud side.
+func (a *airsimAgent) observeLocked(live *agentCall) (before, after *agentCall) {
 	now := time.Now().UTC().Format(time.RFC3339)
 	a.callsMu.Lock()
 	defer a.callsMu.Unlock()
+	if a.active != nil {
+		copied := *a.active
+		before = &copied
+	}
+	defer func() {
+		if a.active != nil {
+			copied := *a.active
+			after = &copied
+		}
+	}()
 	previous := a.active
 	changed := false
 	if previous != nil && (live == nil || live.ID != previous.ID) {
@@ -929,6 +958,7 @@ func (a *airsimAgent) observe(live *agentCall) {
 	if changed {
 		a.bumpLocked()
 	}
+	return before, after
 }
 
 func (a *airsimAgent) bumpLocked() {
@@ -1000,18 +1030,44 @@ func (a *airsimAgent) dial(q agentRequest) {
 	number, _ := input["number"].(string)
 	simAccount, _ := input["sim_account"].(string)
 	operationID, _ := input["operation_id"].(string)
-	line, ok := a.lineFor(ctx, strings.TrimSpace(simAccount))
-	if !ok {
-		agentError(q.w, http.StatusServiceUnavailable, "no_line_ready")
+	number = strings.TrimSpace(number)
+	id, status, result := a.placeCall(ctx, strings.TrimSpace(simAccount), number, nil)
+	if status == http.StatusServiceUnavailable {
+		agentError(q.w, status, "no_line_ready")
 		return
 	}
-	number = strings.TrimSpace(number)
-	status, result := a.invoke(ctx, line, "dial", map[string]any{"number": number})
 	if status >= 300 {
 		agentJSON(q.w, http.StatusBadGateway, result)
 		return
 	}
 	output := map[string]any{"dialing": true, "number": number, "android_confirmed": true}
+	if id != "" {
+		if operationID != "" {
+			output["operation_id"] = operationID
+			output["android_id"] = id
+			output["backend_id"] = id
+			output["operation_proof"] = airsim.DialProof(q.secret, q.nonce, operationID, id, id)
+		}
+	} else if operationID != "" {
+		agentError(q.w, http.StatusGatewayTimeout, "owned_dial_receipt_unavailable")
+		return
+	}
+	agentJSON(q.w, http.StatusOK, output)
+}
+
+// placeCall dials number on the line named by slotID (or the default line)
+// and returns the iPhone-facing id of the new call ("" when the line gave no
+// id in time). before runs with that id ahead of the call being recorded,
+// so the cloud side can bind it first.
+func (a *airsimAgent) placeCall(ctx context.Context, slotID, number string, before func(id string)) (string, int, map[string]any) {
+	line, ok := a.lineFor(ctx, slotID)
+	if !ok {
+		return "", http.StatusServiceUnavailable, map[string]any{"error": "no_line_ready"}
+	}
+	status, result := a.invoke(ctx, line, "dial", map[string]any{"number": number})
+	if status >= 300 {
+		return "", status, result
+	}
 	callID, _ := result["call_id"].(string)
 	if callID == "" {
 		// Lines without a call id in the dial answer: take the outgoing
@@ -1029,33 +1085,27 @@ func (a *airsimAgent) dial(q agentRequest) {
 			}
 		}
 	}
-	if callID != "" {
-		id := agentCallID(line.config.ID, callID)
-		a.observe(&agentCall{
-			ID: id, AndroidID: id, Index: 1, Direction: "outgoing", State: "dialing", Number: number,
-			StartedAt: time.Now().UTC().Format(time.RFC3339), SlotIndex: line.index, SlotID: line.index,
-			deviceID: line.config.ID, callID: callID,
-		})
-		if operationID != "" {
-			output["operation_id"] = operationID
-			output["android_id"] = id
-			output["backend_id"] = id
-			output["operation_proof"] = airsim.DialProof(q.secret, q.nonce, operationID, id, id)
-		}
-	} else if operationID != "" {
-		agentError(q.w, http.StatusGatewayTimeout, "owned_dial_receipt_unavailable")
-		return
+	if callID == "" {
+		return "", status, result
 	}
-	agentJSON(q.w, http.StatusOK, output)
+	id := agentCallID(line.config.ID, callID)
+	if before != nil {
+		before(id)
+	}
+	a.observe(&agentCall{
+		ID: id, AndroidID: id, Index: 1, Direction: "outgoing", State: "dialing", Number: number,
+		StartedAt: time.Now().UTC().Format(time.RFC3339), SlotIndex: line.index, SlotID: line.index,
+		deviceID: line.config.ID, callID: callID,
+	})
+	return id, status, result
 }
 
-func (a *airsimAgent) callAction(q agentRequest, action string) {
-	ctx := q.r.Context()
+// actOnActive answers or hangs up the active call. requested, when set,
+// must name it.
+func (a *airsimAgent) actOnActive(ctx context.Context, requested, action string) (int, map[string]any) {
 	active := a.activeCall()
-	requested := q.text("call_id")
 	if active == nil || (requested != "" && requested != active.ID && requested != active.AndroidID) {
-		agentError(q.w, http.StatusConflict, "call_not_found")
-		return
+		return http.StatusConflict, map[string]any{"error": "call_not_found"}
 	}
 	var line agentLine
 	found := false
@@ -1065,15 +1115,25 @@ func (a *airsimAgent) callAction(q agentRequest, action string) {
 		}
 	}
 	if !found {
-		agentError(q.w, http.StatusConflict, "call_not_found")
-		return
+		return http.StatusConflict, map[string]any{"error": "call_not_found"}
 	}
 	status, result := a.invoke(ctx, line, action, map[string]any{"call_id": active.callID})
+	if status < 300 {
+		go a.refreshCalls(context.WithoutCancel(ctx))
+	}
+	return status, result
+}
+
+func (a *airsimAgent) callAction(q agentRequest, action string) {
+	status, result := a.actOnActive(q.r.Context(), q.text("call_id"), action)
+	if status == http.StatusConflict {
+		agentError(q.w, status, "call_not_found")
+		return
+	}
 	if status >= 300 {
 		agentJSON(q.w, http.StatusBadGateway, result)
 		return
 	}
-	go a.refreshCalls(context.WithoutCancel(ctx))
 	switch {
 	case action == "answer":
 		agentJSON(q.w, http.StatusOK, map[string]any{"answered": true})
@@ -1206,22 +1266,35 @@ func (a *airsimAgent) ackSMS(q agentRequest) {
 }
 
 func (a *airsimAgent) sendSMS(q agentRequest) {
-	ctx := q.r.Context()
-	line, ok := a.lineFor(ctx, q.text("sim_account"))
-	if !ok {
+	switch a.sendSMSOn(q.r.Context(), q.text("sim_account"), q.text("phone"), q.input()["message"]) {
+	case errNoLine:
 		agentError(q.w, http.StatusServiceUnavailable, "no_line_ready")
-		return
+	case nil:
+		agentJSON(q.w, http.StatusOK, map[string]any{"sent": true, "segments": 1})
+	default:
+		agentError(q.w, http.StatusBadGateway, "sms_send_failed")
 	}
-	body, _ := json.Marshal(map[string]any{"phone": q.text("phone"), "message": q.input()["message"], "device_id": line.config.ID})
+}
+
+var (
+	errNoLine     = errors.New("no_line_ready")
+	errSMSRefused = errors.New("sms_send_failed")
+)
+
+func (a *airsimAgent) sendSMSOn(ctx context.Context, slotID, phone string, message any) error {
+	line, ok := a.lineFor(ctx, slotID)
+	if !ok {
+		return errNoLine
+	}
+	body, _ := json.Marshal(map[string]any{"phone": phone, "message": message, "device_id": line.config.ID})
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/sms/send", bytes.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	a.s.handleSMSSend(recorder, request)
 	if recorder.Code >= 300 {
-		agentError(q.w, http.StatusBadGateway, "sms_send_failed")
-		return
+		return errSMSRefused
 	}
-	agentJSON(q.w, http.StatusOK, map[string]any{"sent": true, "segments": 1})
+	return nil
 }
 
 // ---- PCM ----

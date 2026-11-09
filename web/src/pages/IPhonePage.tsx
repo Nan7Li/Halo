@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   CertificateRegular,
+  CloudRegular,
   DeleteRegular,
   KeyRegular,
   LinkRegular,
@@ -34,6 +35,15 @@ interface AgentStatus {
   clients: { id: string; createdAt: string; lastSeen?: string; localMode: boolean; cloudEnabled: boolean }[] | null;
   pairing?: { code: string; expiresAt: string };
   activeCall?: { number: string; state: string; direction: string };
+  cloud: boolean;
+  cloudStatus?: {
+    running: boolean;
+    relay?: string;
+    registered?: boolean;
+    commandsConnected?: boolean;
+    lastHeartbeat?: string;
+    lastError?: string;
+  };
 }
 
 /**
@@ -57,12 +67,14 @@ export default function IPhonePage() {
   useEffect(() => {
     void load();
   }, [load]);
-  // While a pairing window is open, watch for the iPhone to claim it.
+  // While a pairing window is open, watch for the iPhone to claim it; while
+  // the cloud is on, keep its connection state fresh.
+  const cloudOn = Boolean(status?.enabled && status?.cloud);
   useEffect(() => {
-    if (!status?.pairing) return;
-    const timer = window.setInterval(() => void load(), 2000);
+    if (!status?.pairing && !cloudOn) return;
+    const timer = window.setInterval(() => void load(), status?.pairing ? 2000 : 10000);
     return () => window.clearInterval(timer);
-  }, [status?.pairing, load]);
+  }, [status?.pairing, cloudOn, load]);
 
   const save = async (body: Partial<AgentStatus>) => {
     setBusy(true);
@@ -206,6 +218,8 @@ export default function IPhonePage() {
 
       {status.enabled ? <RelaySection pairPort={status.pairPort} /> : null}
 
+      {status.enabled ? <CloudSection status={status} busy={busy} onToggle={(value) => void save({ cloud: value })} /> : null}
+
       {status.enabled ? (
         <ListSection
           header={t("公网连接")}
@@ -229,6 +243,47 @@ export default function IPhonePage() {
 
       <SettingsSheet open={settings} status={status} busy={busy} onClose={() => setSettings(false)} onSave={save} />
     </Page>
+  );
+}
+
+function CloudSection({ status, busy, onToggle }: { status: AgentStatus; busy: boolean; onToggle: (value: boolean) => void }) {
+  const { t } = useI18n();
+  const cloud = status.cloudStatus;
+  const cloudClients = (status.clients ?? []).filter((client) => client.cloudEnabled && !client.localMode);
+  let state = t("未开启");
+  if (status.cloud) {
+    if (!cloud?.running) state = cloudClients.length ? t("正在启动…") : t("没有云端模式的 iPhone");
+    else if (cloud.registered && cloud.commandsConnected) state = t("在线");
+    else state = t("正在连接…");
+  }
+  return (
+    <ListSection
+      header={t("云端（AirSIM Relay）")}
+      footer={
+        status.cloud && cloud?.lastError ? (
+          <span className="text-sys-red">{cloud.lastError}</span>
+        ) : (
+          t("开启后，用云端模式配对的 iPhone 在任何网络下都能接打电话，App 不在前台时来电也会响。通话语音和短信会经过 iPhone 配对时登记的 Relay 服务器（TestFlight 版是 AirSIM 作者的服务器）。")
+        )
+      }
+    >
+      <ListRow
+        icon={<CloudRegular />}
+        iconColor="blue"
+        title={t("通过 Relay 连接")}
+        accessory={<IOSSwitch checked={status.cloud} disabled={busy} onChange={onToggle} ariaLabel={t("通过 Relay 连接")} />}
+      />
+      {status.cloud ? (
+        <>
+          <ListRow title={t("状态")} detail={state} />
+          {cloud?.relay ? <ListRow title={t("Relay")} detail={cloud.relay} /> : null}
+          {cloud?.lastHeartbeat ? <ListRow title={t("最后心跳")} detail={formatRecentTime(cloud.lastHeartbeat)} /> : null}
+          {!cloudClients.length ? (
+            <ListRow multiline title={<span className="text-label-2">{t("在 iPhone 的 AirSIM 里配对时不要选「纯本地」，配对后打开「云端模式」。")}</span>} />
+          ) : null}
+        </>
+      ) : null}
+    </ListSection>
   );
 }
 

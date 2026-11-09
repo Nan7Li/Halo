@@ -2014,4 +2014,16 @@ export const EN_DICT: Record<string, string> = {
   "UDP 端口": "UDP Port",
   "隧道网段": "Tunnel Subnet",
   "Halo 会生成密钥并马上连接 VPS，然后给你一个在 VPS 上运行的安装脚本。网段不要和家里或 VPS 的局域网重叠：VPS 用 .1，NAS 用 .2。云服务商的安全组要放行这个 UDP 端口。": "Halo creates the keys, connects to the VPS right away and gives you a setup script to run on the VPS. The subnet must not overlap your home or VPS network: the VPS takes .1, the NAS .2. Allow this UDP port in your cloud provider's security group.",
+  // ---- iPhone 听筒 · 云端 ----
+  "云端（AirSIM Relay）": "Cloud (AirSIM Relay)",
+  "通过 Relay 连接": "Connect through the Relay",
+  "开启后，用云端模式配对的 iPhone 在任何网络下都能接打电话，App 不在前台时来电也会响。通话语音和短信会经过 iPhone 配对时登记的 Relay 服务器（TestFlight 版是 AirSIM 作者的服务器）。":
+    "When on, an iPhone paired in cloud mode can call from any network, and incoming calls ring even when the app is in the background. Call audio and texts pass through the Relay the iPhone registered when pairing (for the TestFlight build, the AirSIM author's server).",
+  "未开启": "Off",
+  "正在启动…": "Starting…",
+  "没有云端模式的 iPhone": "No iPhone in cloud mode",
+  "正在连接…": "Connecting…",
+  "最后心跳": "Last heartbeat",
+  "在 iPhone 的 AirSIM 里配对时不要选「纯本地」，配对后打开「云端模式」。":
+    "When pairing in AirSIM on the iPhone, don't choose “local only”; turn on cloud mode after pairing.",
 };

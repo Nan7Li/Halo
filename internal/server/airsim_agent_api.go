@@ -12,7 +12,7 @@ import (
 // Admin API for Halo-as-AirSIM-agent: /api/airsim-agent.
 //
 //	GET     status, ports, paired iPhones, the open pairing window
-//	PUT     {enabled, name, pair_port, control_port, pcm_port, device_ids, tls_cert, tls_key}
+//	PUT     {enabled, name, pair_port, control_port, pcm_port, device_ids, tls_cert, tls_key, cloud}
 //	POST    /pair                 open a two-minute pairing window
 //	DELETE  /clients/{id}          forget one iPhone
 //	*       /relay...              VPS relay (airsim_relay.go)
@@ -89,6 +89,7 @@ func (s *Server) updateAirSIMAgent(w http.ResponseWriter, r *http.Request, agent
 		DeviceIDs   *[]string `json:"device_ids"`
 		TLSCert     *string   `json:"tls_cert"`
 		TLSKey      *string   `json:"tls_key"`
+		Cloud       *bool     `json:"cloud"`
 	}
 	if err := s.decodeJSON(w, r, &request); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
@@ -135,6 +136,9 @@ func (s *Server) updateAirSIMAgent(w http.ResponseWriter, r *http.Request, agent
 		if request.TLSKey != nil {
 			cfg.TLSKey = strings.TrimSpace(*request.TLSKey)
 		}
+		if request.Cloud != nil {
+			cfg.Cloud = *request.Cloud
+		}
 	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "save_failed", err.Error())
@@ -171,6 +175,7 @@ func (a *airsimAgent) status(ctx context.Context) map[string]any {
 		"pair_port": cfg.PairPort, "control_port": cfg.ControlPort, "pcm_port": cfg.PCMPort,
 		"device_ids": cfg.DeviceIDs, "tls_cert": cfg.TLSCert, "tls_key": cfg.TLSKey,
 		"clients": clients, "lines": lines, "addresses": localAddresses(),
+		"cloud": cfg.Cloud, "cloud_status": a.cloud.status(),
 	}
 	a.mu.Lock()
 	if a.runErr != "" {
