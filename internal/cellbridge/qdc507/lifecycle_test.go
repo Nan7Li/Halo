@@ -609,10 +609,10 @@ func checkSafeCalls(t *testing.T, calls [][]string, envs [][]string) {
 		if strings.Contains(joined, "pkill") || strings.Contains(joined, "killall") || strings.Contains(joined, "HOME=/root") {
 			t.Fatalf("unsafe call %s", joined)
 		}
-		if !strings.Contains(joined, "-L tcp:127.0.0.1:5038") && !strings.Contains(joined, "devices -l") {
+		if !strings.Contains(joined, "-L tcp:localhost:5038") && !strings.Contains(joined, "devices -l") {
 			// devices still carries -L when a socket is configured.
 		}
-		if !strings.Contains(joined, "-L") || !strings.Contains(joined, "tcp:127.0.0.1:5038") {
+		if !strings.Contains(joined, "-L") || !strings.Contains(joined, "tcp:localhost:5038") {
 			t.Fatalf("adb socket dropped: %s", joined)
 		}
 		shell := shellCommand(argv)
