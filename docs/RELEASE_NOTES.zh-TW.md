@@ -1,6 +1,6 @@
 # Halo 1.2.0 正式版
 
-Halo 的第一個正式版。它把家裡的 NAS 變成一支電話：SIM 卡留在家，通話和簡訊透過網頁、iPhone 或 SIP 軟電話帶到你身邊。核心使用 VoCat v0.3.42。
+Halo 1.2.0 把家裡的 NAS 變成一支電話：SIM 卡留在家，通話和簡訊透過網頁、iPhone 或 SIP 軟電話帶到你身邊。核心使用 VoCat v0.3.42。
 
 ## 重點
 
@@ -22,7 +22,11 @@ Halo 的第一個正式版。它把家裡的 NAS 變成一支電話：SIM 卡留
 sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/Halo/halo/scripts/deploy-cellbridge-nas.sh | bash'
 ```
 
-已經安裝的 NAS 會在「设置」→「系统与更新」收到這個版本，帳號、設定、錄音和大疆運行檔都會保留。
+已經安裝的 NAS（CellBridge 更新通道）會在「设置」→「系统与更新」收到這個版本，帳號、設定、錄音和大疆運行檔都會保留。同版本的正式版優先於預覽版。
+
+一般 Linux 安裝使用 `stable` 通道，對應 [`v1.2.0`](https://github.com/Nan7Li/Halo/releases/tag/v1.2.0) 的執行檔及 `SHA256SUMS`；NAS 完整安裝包對應 [`halo-1.2.0-cellbridge`](https://github.com/Nan7Li/Halo/releases/tag/halo-1.2.0-cellbridge)。兩個通道不會自動互換，GitHub Latest 保留給一般 stable 執行檔。
+
+注意：CellBridge 自動更新仍會追蹤版本號更高的預覽版，並不是「只接收正式版」的偏好。若只想使用正式版，請先關閉自動更新，更新時再明確指定正式版安裝包。
 
 完整教程：[docs/GUIDE.zh-TW.md](https://github.com/Nan7Li/Halo/blob/halo/docs/GUIDE.zh-TW.md)
 

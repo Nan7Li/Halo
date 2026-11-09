@@ -24,7 +24,7 @@ Halo 把幾件原本分散的事做成一個產品：
 - **iPhone 聽筒**：Halo 依 AirSIM 的協定自行實作了安卓端，iPhone 上的 AirSIM App 可以直接用 Halo 的號碼打電話、收簡訊。
 - **VPS 中繼**：內建 WireGuard 中繼。一鍵產生 VPS 安裝腳本與裝置設定，家裡沒有公網 IP 也能從外面連回 Halo，也能當成小火箭的節點用。
 - **SIP 閘道與 QDC507 語音**：整合 CellBridge，任何 SIP 軟電話都能撥入 Halo；QDC507 的聲卡初始化、語音模組載入與校驗由 Halo 自動處理。
-- **NAS 一鍵安裝與自動更新**：Debian 13 一行指令裝好，正式版 / 預覽版兩個通道，在沒有通話時自動更新，帳號與資料保留。
+- **NAS 一鍵安裝與自動更新**：Debian 13 一行指令裝好，可選正式或預覽安裝包；NAS 使用 CellBridge 更新通道，在沒有通話時自動更新，帳號與資料保留。
 - **全新介面**：依 Apple HIG 設計的 iOS 27 / macOS Liquid Glass 介面，手機、平板、電腦都能用，透明度、強調色、動畫都可以調。
 
 底層的模組控制、IMS / Wi‑Fi Calling、簡訊、eSIM 和代理使用 [VoCat](https://github.com/MengMengCode/VoCat)，詳見[架構](#架構)。
@@ -35,7 +35,7 @@ Halo 把幾件原本分散的事做成一個產品：
 ┌──────────────────────────── Halo ────────────────────────────┐
 │  介面（Liquid Glass）· 電話 / 最近通話 / 錄音 · 外觀設定       │
 │  瀏覽器通話音訊 · iPhone 聽筒（AirSIM 協定）· 安卓手機線路      │
-│  VPS 中繼（WireGuard）· NAS 安裝器 · 正式 / 預覽更新通道        │
+│  VPS 中繼（WireGuard）· NAS 安裝器 · stable / CellBridge 更新通道        │
 │  CellBridge 整合：SIP 閘道 · QDC507 蜂窩語音                   │
 ├──────────────────────────────────────────────────────────────┤
 │  VoCat 核心：模組控制 · IMS / Wi‑Fi Calling · 簡訊 · eSIM · 代理 │
@@ -100,7 +100,7 @@ sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certifica
 
 這些功能程式碼已經在 1.2.0 裡，但還沒有完成或沒有在真實硬體上驗證過。使用時請預期會遇到問題，並歡迎回報。
 
-1. **大疆 QDC507 蜂窩語音**：只用模擬裝置和單元測試驗證過，還沒有在真實模組上完成雙向通話。剛開機的模組要先載入語音模組才會出現聲卡（[#16](https://github.com/Nan7Li/Halo/pull/16) 修正中）。廠商語音運行檔不在本倉庫，由安裝程式從 MaVo 下載並校驗。
+1. **大疆 QDC507 蜂窩語音**：只用模擬裝置和單元測試驗證過，還沒有在真實模組上完成雙向通話。剛開機的模組要先載入語音模組才會出現聲卡（[#16](https://github.com/Nan7Li/Halo/pull/16) 已修正初始化順序，仍待實機驗證）。廠商語音運行檔不在本倉庫，由安裝程式從 MaVo 下載並校驗。
 2. **SIP 閘道**：只支援 UDP（信令與 RTP），沒有 TCP / TLS；iPhone 鎖屏來電取決於你用的 SIP App。
 3. **iPhone 聽筒（AirSIM iOS）**：
    - 不支援 DTMF（通話中按鍵）和早期媒體（接通前的回鈴音 / 語音提示）。

@@ -84,7 +84,7 @@ func TestCellbridgeSelectsNewestPreviewNotStable(t *testing.T) {
 	defer server.Close()
 
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
-	result, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.14-cellbridge")
+	result, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.13-cellbridge")
 	if err != nil {
 		t.Fatal(err)
 	}

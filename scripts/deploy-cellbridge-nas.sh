@@ -63,7 +63,19 @@ printf '正在查询已发布的 Halo CellBridge 融合版…\n'
 if [[ -n "$release_tag" ]]; then
   request "$api/tags/$release_tag" "$stage/release.json"
 else
-  request "$api?per_page=100" "$stage/releases.json"
+  printf '[]\n' > "$stage/releases.json"
+  page=1
+  while :; do
+    request "$api?per_page=100&page=$page" "$stage/page.json"
+    jq -e 'type == "array"' "$stage/page.json" >/dev/null || fail '发布记录格式错误'
+    jq -s '.[0] + .[1]' "$stage/releases.json" "$stage/page.json" > "$stage/merged.json"
+    mv "$stage/merged.json" "$stage/releases.json"
+    count=$(jq 'length' "$stage/page.json")
+    ((count == 100)) || break
+    # Fail closed rather than silently choosing from an incomplete history.
+    ((page < 20)) || fail '发布记录超过扫描上限，请使用 --tag 指定版本'
+    page=$((page + 1))
+  done
   # Formal releases (halo-X.Y.Z-cellbridge) come first; previews only with
   # --preview or while no formal release exists.
   jq --argjson preview "$prefer_preview" '[.[] | select(.draft == false) |
@@ -72,7 +84,9 @@ else
       sort_version: (.tag_name | capture("^halo-(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)-cellbridge(-preview\\.(?<preview>[0-9]+))?$") |
         [.major, .minor, .patch, (.preview // "0")] | map(tonumber))}] as $all |
     ($all | map(select(.formal))) as $formal |
-    if ($preview == 1 or ($formal | length) == 0) then ($all | max_by(.sort_version)) else ($formal | max_by(.sort_version)) end' \
+    if $preview == 1 then ($all | map(select(.formal | not)) | max_by(.sort_version))
+    elif ($formal | length) == 0 then ($all | max_by(.sort_version))
+    else ($formal | max_by(.sort_version)) end' \
     "$stage/releases.json" > "$stage/release.json"
 fi
 jq -e --arg pattern "$tag_pattern" 'type == "object" and .draft == false and (.tag_name | test($pattern))' "$stage/release.json" >/dev/null || fail '没有可安装的已发布融合版'

@@ -38,6 +38,7 @@ jobs:
         run: |
           npm ci --prefix web --no-audit --no-fund
           npm test --prefix web
+          python3 scripts/tests/test_deploy_release_selection.py
           npm run build --prefix web
           go test ./...
           go vet ./...
@@ -105,7 +106,9 @@ jobs:
           test "$current" = "$GITHUB_SHA"
           if [ "$FORMAL" = true ]; then
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
-              -F draft=false -F prerelease=false -f make_latest=true >/dev/null
+              -F draft=false -F prerelease=false -f make_latest=false >/dev/null
+            # Keep /releases/latest for ordinary vX.Y.Z binaries: existing
+            # stable clients deliberately reject CellBridge-tagged builds.
           else
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$release_id" \
               -F draft=false -F prerelease=true -f make_latest=false >/dev/null

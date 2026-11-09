@@ -173,5 +173,5 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --title "$RELEASE_TAG" \
               --generate-notes \
-              --verify-tag
+              --verify-tag --draft=false --prerelease=false --latest=true
           fi

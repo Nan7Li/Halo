@@ -15,8 +15,9 @@ type semanticVersion struct {
 
 // IsNewerVersion reports whether latest is newer than current. Both values
 // may include the conventional v prefix, prerelease suffixes, and build
-// metadata. Invalid release versions are rejected instead of triggering a
-// downgrade or an arbitrary file replacement.
+// metadata. CellBridge formal releases outrank previews with the same base
+// version; all other comparisons use SemVer precedence. Invalid release versions
+// are rejected instead of triggering a downgrade or an arbitrary file replacement.
 func IsNewerVersion(current, latest string) (bool, error) {
 	currentVersion, err := parseSemanticVersion(current)
 	if err != nil {
@@ -44,7 +45,28 @@ func IsNewerVersion(current, latest string) (bool, error) {
 	if currentVersion.prerelease == "" {
 		return false, nil
 	}
+	// Only the CellBridge formal/preview pair overrides SemVer. Compare the
+	// base version first so a higher-base preview remains a valid upgrade.
+	if currentVersion.prerelease == "cellbridge" && isCellbridgePreviewPrerelease(latestVersion.prerelease) {
+		return false, nil
+	}
+	if latestVersion.prerelease == "cellbridge" && isCellbridgePreviewPrerelease(currentVersion.prerelease) {
+		return true, nil
+	}
 	return comparePrerelease(currentVersion.prerelease, latestVersion.prerelease) < 0, nil
+}
+
+func isCellbridgePreviewPrerelease(prerelease string) bool {
+	preview, ok := strings.CutPrefix(prerelease, "cellbridge-preview.")
+	if !ok || preview == "" || (len(preview) > 1 && preview[0] == '0') {
+		return false
+	}
+	for _, digit := range preview {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func sameVersion(current, latest string) (bool, error) {
