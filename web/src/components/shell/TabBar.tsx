@@ -53,7 +53,19 @@ export function TabBar({ badges = {} }: { badges?: Record<string, number> }) {
  * symbols and labels side by side and a leading button that converts it
  * back into the sidebar (sidebarAdaptable).
  */
-export function TopTabBar({ items, onShowSidebar, badges = {} }: { items: NavItem[]; onShowSidebar: () => void; badges?: Record<string, number> }) {
+export function TopTabBar({
+  items,
+  onShowSidebar,
+  badges = {},
+  className,
+  onAnimationEnd,
+}: {
+  items: NavItem[];
+  onShowSidebar: () => void;
+  badges?: Record<string, number>;
+  className?: string;
+  onAnimationEnd?: React.AnimationEventHandler;
+}) {
   const { t } = useI18n();
   const { pathname } = useLocation();
   const active = items.findIndex((tab) => isActive(tab, pathname));
@@ -62,7 +74,7 @@ export function TopTabBar({ items, onShowSidebar, badges = {} }: { items: NavIte
   const moving = useLift(active, 360);
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-3">
-      <div className="pointer-events-auto flex items-center gap-2">
+      <div className={cx("ios-toptabs pointer-events-auto flex items-center gap-2", className)} onAnimationEnd={onAnimationEnd}>
         <button
           type="button"
           onClick={onShowSidebar}

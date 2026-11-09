@@ -1079,3 +1079,40 @@ html[data-idiom] .ios-sidebar-nav .ios-sidebar-item.is-active { background: tran
 .sms-thread-in { animation: sms-thread-in calc(var(--dur-smooth) * 0.6) var(--spring-smooth) both; }
 .sms-head-in { animation: sms-fade-in 180ms linear both; }
 html[data-motion="reduced"] .sms-thread-in { animation-name: sms-fade-in; }
+
+/* ---- Sidebar <-> top tab bar (sidebarAdaptable) ----
+   The sidebar slides out past the window edge while the detail column
+   takes its room; the tab bar drops in on the bouncy spring. Showing the
+   sidebar plays it backwards. Margin reflows the detail column, so the
+   slide is kept short like the width change above. */
+.ios-sidebar { --sidebar-footprint: 274px; }
+html[data-idiom="mac"] .ios-sidebar { --sidebar-footprint: 228px; }
+.ios-sidebar.is-entering { animation: ios-sidebar-in calc(var(--dur-smooth) * 0.75) var(--spring-smooth) both; }
+.ios-sidebar.is-leaving {
+  pointer-events: none;
+  animation: ios-sidebar-out calc(var(--dur-smooth) * 0.6) var(--spring-smooth) forwards;
+}
+@keyframes ios-sidebar-in {
+  from { transform: translateX(calc(-100% - 16px)); opacity: 0.4; margin-right: calc(-1 * var(--sidebar-footprint)); }
+}
+@keyframes ios-sidebar-out {
+  to { transform: translateX(calc(-100% - 16px)); opacity: 0.4; margin-right: calc(-1 * var(--sidebar-footprint)); }
+}
+.ios-toptabs { transform-origin: 50% 0; }
+.ios-toptabs.is-entering { animation: ios-toptabs-in calc(var(--dur-bouncy) * 0.8) var(--spring-bouncy) both; }
+.ios-toptabs.is-leaving {
+  pointer-events: none;
+  animation: ios-toptabs-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes ios-toptabs-in {
+  from { opacity: 0; transform: translateY(-16px) scale(0.92); }
+  40% { opacity: 1; }
+}
+@keyframes ios-toptabs-out {
+  to { opacity: 0; transform: translateY(-10px) scale(0.95); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-sidebar.is-entering, .ios-sidebar.is-leaving, .ios-toptabs.is-entering, .ios-toptabs.is-leaving { animation: none; }
+}
+html[data-motion="off"] .ios-sidebar.is-entering, html[data-motion="off"] .ios-toptabs.is-entering,
+html[data-motion="reduced"] .ios-sidebar.is-entering, html[data-motion="reduced"] .ios-toptabs.is-entering { animation: none; }

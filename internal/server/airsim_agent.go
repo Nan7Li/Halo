@@ -1240,7 +1240,12 @@ func (a *airsimAgent) openMedia(ctx context.Context, call *agentCall) (vowifi.Ca
 	if open == nil {
 		return nil, nil, errors.New(message)
 	}
-	releaseLease, err := a.s.acquireCallMediaLease(config.ID, call.callID, "airsim-iphone")
+	// The iPhone is the handset: it takes the audio from a Halo browser tab
+	// that picked it up first (every open tab plays a live call), but not
+	// from a SIP handset.
+	releaseLease, err := a.s.acquireCallMediaLeaseWith(config.ID, call.callID, "airsim-iphone", nil, func(holder string) bool {
+		return holder == "browser"
+	})
 	if err != nil {
 		return nil, nil, err
 	}
