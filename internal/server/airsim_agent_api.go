@@ -15,9 +15,14 @@ import (
 //	PUT     {enabled, name, pair_port, control_port, pcm_port, device_ids, tls_cert, tls_key}
 //	POST    /pair                 open a two-minute pairing window
 //	DELETE  /clients/{id}          forget one iPhone
+//	*       /relay...              VPS relay (airsim_relay.go)
 func (s *Server) routeAirSIMAgentAPI(w http.ResponseWriter, r *http.Request, cleanPath string) bool {
 	if cleanPath != "airsim-agent" && !strings.HasPrefix(cleanPath, "airsim-agent/") {
 		return false
+	}
+	if relayTail, ok := strings.CutPrefix(cleanPath, "airsim-agent/relay"); ok && (relayTail == "" || strings.HasPrefix(relayTail, "/")) {
+		s.routeRelayAPI(w, r, strings.TrimPrefix(relayTail, "/"))
+		return true
 	}
 	agent := s.airsimAgent
 	if agent == nil {

@@ -25,6 +25,19 @@ function send(res: ServerResponse, data: unknown, status = 200) {
   res.end(JSON.stringify({ data }));
 }
 
+const previewRelay: Record<string, unknown> = {
+  configured: true,
+  available: true,
+  host: "vps.example.com",
+  port: 51820,
+  subnet: "10.8.0.0/24",
+  nas_address: "10.8.0.2",
+  vps_address: "10.8.0.1",
+  running: true,
+  connected: true,
+  peers: [{ id: "p0", name: "iPhone", address: "10.8.0.3", created_at: "2026-11-09T08:00:00Z" }],
+};
+
 const previewAgent: Record<string, unknown> = {
   enabled: true,
   agent_id: "android-5f1c0a9e2b7d4c3a8e6f0b1d",
@@ -206,6 +219,25 @@ export function previewApiPlugin(): Plugin {
 
           if (path === "/api/settings/preferences") {
             send(res, { language: "zh" });
+            return;
+          }
+
+          if (path === "/api/airsim-agent/relay" || path.startsWith("/api/airsim-agent/relay/")) {
+            if (path === "/api/airsim-agent/relay/script" || path.endsWith("/config")) {
+              res.setHeader("Content-Type", "text/plain; charset=utf-8");
+              res.end("[Interface]\nPrivateKey = (preview)\nAddress = 10.8.0.1/24\nListenPort = 51820\n");
+              return;
+            }
+            if (path === "/api/airsim-agent/relay" && method === "PUT") {
+              Object.assign(previewRelay, JSON.parse((await readBody(req)) || "{}"), { configured: true, running: true, nas_address: "10.8.0.2", vps_address: "10.8.0.1" });
+            }
+            if (path === "/api/airsim-agent/relay" && method === "DELETE") Object.assign(previewRelay, { configured: false, running: false, connected: false, peers: [] });
+            if (path === "/api/airsim-agent/relay/peers" && method === "POST") {
+              const peers = previewRelay.peers as { id: string }[];
+              peers.push({ id: `p${peers.length}`, name: "iPhone", address: `10.8.0.${peers.length + 3}`, created_at: new Date().toISOString() } as never);
+            }
+            if (path.startsWith("/api/airsim-agent/relay/peers/") && method === "DELETE") previewRelay.peers = [];
+            send(res, previewRelay);
             return;
           }
 

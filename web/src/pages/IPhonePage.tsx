@@ -15,6 +15,7 @@ import { Button, Input } from "../components/ui";
 import { message } from "../components/ui/message";
 import { confirmDialog } from "../components/ui/MessageBox";
 import { formatNumber, formatRecentTime } from "../components/phone/model";
+import { RelaySection } from "../components/phone/RelaySection";
 
 interface AgentStatus {
   enabled: boolean;
@@ -125,7 +126,7 @@ export default function IPhonePage() {
         />
       ) : null}
 
-      <ListSection footer={status.error ? <span className="text-sys-red">{status.error}</span> : t("开启后 Halo 会监听下面三个端口。局域网和 Tailscale 直接连接；公网需要配置受信任的证书。")}>
+      <ListSection footer={status.error ? <span className="text-sys-red">{status.error}</span> : t("开启后 Halo 会监听下面三个端口。局域网、Tailscale 和 VPS 中继直接连接；公网域名需要配置受信任的证书。")}>
         <ListRow
           icon={<PhoneLinkSetupRegular />}
           iconColor="green"
@@ -202,6 +203,8 @@ export default function IPhonePage() {
           )}
         </ListSection>
       ) : null}
+
+      {status.enabled ? <RelaySection pairPort={status.pairPort} /> : null}
 
       {status.enabled ? (
         <ListSection
