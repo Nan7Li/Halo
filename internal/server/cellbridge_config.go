@@ -84,7 +84,7 @@ func defaultCellBridgeConfig() cellBridgeConfig {
 		PlaybackDevice: "plughw:1,0",
 		RuntimeDir:     "/opt/halo/qdc507",
 		ADBPath:        "adb",
-		ADBSocket:      "tcp:127.0.0.1:5038",
+		ADBSocket:      "tcp:localhost:5038",
 	}
 }
 

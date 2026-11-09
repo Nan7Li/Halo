@@ -324,7 +324,7 @@ section '电话页要填的值'
 cat <<EOF
 模块运行文件目录：/opt/halo/qdc507
 ADB 路径：adb
-ADB socket：tcp:127.0.0.1:5038
+ADB socket：tcp:localhost:5038
 录音设备和播放设备：使用上面 arecord/aplay 的实际声卡，不要把 plughw:1,0 写成模块已经就绪。
 程序安装成功、模块 UAC/ADB 就绪、大疆音频验证成功，是三件不同的事。
 模块 root ADB 和双向通话：unknown，本检查不会打开 ADB 或发起通话；需连接模块后在电话页验证。

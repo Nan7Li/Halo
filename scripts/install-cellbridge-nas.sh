@@ -520,5 +520,5 @@ else
   printf '大疆语音文件未配齐。请执行 ./source/scripts/fetch-qdc507-runtime.sh 后，再运行 sudo ./install --runtime-dir ./qdc507-runtime。\n'
   printf '当前不能当作大疆语音可用。\n'
 fi
-printf '电话页运行文件目录填 /opt/halo/qdc507，ADB socket 填 tcp:127.0.0.1:5038。声卡按检查脚本列出的实际设备填写。\n'
+printf '电话页运行文件目录填 /opt/halo/qdc507，ADB socket 填 tcp:localhost:5038。声卡按检查脚本列出的实际设备填写。\n'
 printf '请只保留原生服务或 Docker 其中一种。\n'

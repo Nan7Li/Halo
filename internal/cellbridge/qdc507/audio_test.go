@@ -135,7 +135,7 @@ func TestADBInvocationPreservesEnvironment(t *testing.T) {
 	if strings.Contains(joined, "pkill") || strings.Contains(joined, "kill-server") {
 		t.Fatalf("argv = %q", joined)
 	}
-	if argv[0] != "adb" || argv[1] != "-L" || argv[2] != "tcp:127.0.0.1:5038" {
+	if argv[0] != "adb" || argv[1] != "-L" || argv[2] != "tcp:localhost:5038" {
 		t.Fatalf("argv = %#v", argv)
 	}
 	home := ""
@@ -151,7 +151,7 @@ func TestADBInvocationPreservesEnvironment(t *testing.T) {
 	if home != "HOME=/home/halo" {
 		t.Fatalf("HOME = %q", home)
 	}
-	if socket != "ADB_SERVER_SOCKET=tcp:127.0.0.1:5038" {
+	if socket != "ADB_SERVER_SOCKET=tcp:localhost:5038" {
 		t.Fatalf("socket = %q", socket)
 	}
 }
@@ -477,5 +477,26 @@ func TestPrepareReaderIsNotQDC507(t *testing.T) {
 	status, err := Prepare(context.Background(), Config{OptIn: true, DeviceType: "usb_sim_reader", USBPath: "1-1"})
 	if err == nil || status.Ready || !strings.Contains(status.Reason, "usb_sim_reader") {
 		t.Fatalf("status=%+v err=%v", status, err)
+	}
+}
+
+func TestADBInvocationSpellsLoopbackAsLocalhost(t *testing.T) {
+	for in, want := range map[string]string{
+		"tcp:127.0.0.1:5038":   "tcp:localhost:5038",
+		"tcp:localhost:5038":   "tcp:localhost:5038",
+		"tcp:5038":             "tcp:5038",
+		"tcp:192.168.1.2:5038": "tcp:192.168.1.2:5038",
+		"unix:/run/adb.sock":   "unix:/run/adb.sock",
+	} {
+		argv, env, err := ADBInvocation("adb", in, []string{"devices"})
+		if err != nil {
+			t.Fatalf("%s: %v", in, err)
+		}
+		if argv[2] != want {
+			t.Fatalf("%s: argv socket = %q, want %q", in, argv[2], want)
+		}
+		if env[len(env)-1] != "ADB_SERVER_SOCKET="+want {
+			t.Fatalf("%s: env socket = %q", in, env[len(env)-1])
+		}
 	}
 }

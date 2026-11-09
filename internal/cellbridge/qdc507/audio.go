@@ -123,11 +123,23 @@ func ADBInvocation(path, socket string, args []string) (argv []string, env []str
 		if !socketPattern.MatchString(socket) {
 			return nil, nil, fmt.Errorf("adb server socket %q is invalid", socket)
 		}
+		socket = localADBSocket(socket)
 		env = append(env, "ADB_SERVER_SOCKET="+socket)
 		argv = append(argv, "-L", socket)
 	}
 	argv = append(argv, args...)
 	return argv, env, nil
+}
+
+// localADBSocket spells a loopback IPv4 socket as localhost. adb only starts
+// its own server for a local socket ("tcp:PORT" or "tcp:localhost:PORT");
+// "tcp:127.0.0.1:PORT" counts as a remote host, so with no server running
+// every command failed with "cannot start server on remote host".
+func localADBSocket(socket string) string {
+	if port, ok := strings.CutPrefix(socket, "tcp:127.0.0.1:"); ok {
+		return "tcp:localhost:" + port
+	}
+	return socket
 }
 
 // Prepare checks the opt-in, module identity, runtime hashes and, when
