@@ -600,7 +600,7 @@ func checkSafeCalls(t *testing.T, calls [][]string, envs [][]string) {
 		if home != "HOME=/home/halo" {
 			t.Fatalf("HOME = %q", home)
 		}
-		if socket != "ADB_SERVER_SOCKET=tcp:127.0.0.1:5038" {
+		if socket != "ADB_SERVER_SOCKET=tcp:localhost:5038" {
 			t.Fatalf("socket = %q", socket)
 		}
 	}

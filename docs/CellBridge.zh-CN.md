@@ -45,7 +45,7 @@ OpenWrt 需要安装 `alsa-utils`（提供 `arecord` 和 `aplay`）以及可用�
 高级项默认折叠：
 
 - 运行时目录：放置外部厂商文件的目录。Halo 不内置该文件。
-- ADB 路径和 ADB socket。默认 socket 是 `tcp:127.0.0.1:5038`，避免占用系统 adb。
+- ADB 路径和 ADB socket。默认 socket 是 `tcp:localhost:5038`，避免占用系统 adb。写成 `localhost`（或只写端口）时 adb 会自己启动这个服务；写成 `127.0.0.1` 时 adb 当它是远程主机，不会启动，Halo 会自动改写成 `localhost`。
 - 启动引导。这是明确 opt-in。关闭时只检查已运行且可验证的模块路由，不会安装文件或启动路由。启用引导时，目录里的厂商文件还需通过 SHA-256 校验。
 
 同一 USB 口换成另一块设备后，原来的通话会被结束，且不会向新设备发送挂断或引导命令。
