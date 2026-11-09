@@ -135,3 +135,18 @@ func TestSendSMSBlockedForRestrictedRegionSIM(t *testing.T) {
 	}
 	client.assertDone(t)
 }
+
+// Not parallel: it flips the package-wide switch and restores it before the
+// parallel tests resume.
+func TestRegionBlockCanBeTurnedOff(t *testing.T) {
+	previous := AllowAllSIMRegions()
+	t.Cleanup(func() { SetAllowAllSIMRegions(previous) })
+	SetAllowAllSIMRegions(true)
+	if reason := RegionBlockReason("460011234567890"); reason != "" {
+		t.Fatalf("with the switch on, RegionBlockReason = %q, want empty", reason)
+	}
+	SetAllowAllSIMRegions(false)
+	if RegionBlockReason("460011234567890") == "" {
+		t.Fatal("with the switch off, a China SIM was not blocked")
+	}
+}

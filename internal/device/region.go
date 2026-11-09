@@ -2,7 +2,9 @@ package device
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"sync/atomic"
 	"unicode"
 
 	"vocat/internal/i18n"
@@ -17,6 +19,22 @@ var BlockedMCCs = map[string]string{
 	"460": "中国",
 	"461": "中国",
 }
+
+// AllowAllSIMRegionsEnv turns the region block off when set to "1". It is
+// meant for the operator's own testing; the default keeps the block.
+const AllowAllSIMRegionsEnv = "VOCAT_ALLOW_ALL_SIM_REGIONS"
+
+var allowAllSIMRegions atomic.Bool
+
+func init() {
+	allowAllSIMRegions.Store(os.Getenv(AllowAllSIMRegionsEnv) == "1")
+}
+
+// SetAllowAllSIMRegions turns the region block off (true) or back on.
+func SetAllowAllSIMRegions(allow bool) { allowAllSIMRegions.Store(allow) }
+
+// AllowAllSIMRegions reports whether the region block is off.
+func AllowAllSIMRegions() bool { return allowAllSIMRegions.Load() }
 
 // CardMCCMNC splits an IMSI into its mobile country code and mobile network
 // code. The MCC is the leading three digits and the MNC the following two or
@@ -66,6 +84,9 @@ func IsPlaceholderIMSI(imsi string) bool {
 // MCC triggers a block (fail-open), so a transient IMSI read failure never
 // denies service to a legitimate card.
 func RegionBlockReason(imsi string) string {
+	if allowAllSIMRegions.Load() {
+		return ""
+	}
 	mcc, _ := CardMCCMNC(imsi)
 	country, blocked := BlockedMCCs[mcc]
 	if !blocked {
