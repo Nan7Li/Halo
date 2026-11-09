@@ -689,6 +689,7 @@ func run(logger *slog.Logger, logs *loghub.Hub) error {
 	go handler.RunCellBridge(pollContext)
 	handler.StartAutomaticTasks(pollContext)
 	handler.StartAirSIM(pollContext)
+	handler.StartAirSIMAgent(pollContext)
 	handler.StartAutoUpdate(pollContext)
 
 	serverConfig := func(handler http.Handler) *http.Server {

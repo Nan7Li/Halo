@@ -126,6 +126,7 @@ type Server struct {
 	cellularData              *cellularDataRuntime
 	wireguard                 *wireguard.Manager
 	airsim                    *airsim.Manager
+	airsimAgent               *airsimAgent
 	recordingsDir             string
 	callMediaLeaseMu          sync.Mutex
 	callMediaLeases           map[callMediaLeaseKey]*callMediaLease

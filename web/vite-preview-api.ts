@@ -25,6 +25,35 @@ function send(res: ServerResponse, data: unknown, status = 200) {
   res.end(JSON.stringify({ data }));
 }
 
+const previewRelay: Record<string, unknown> = {
+  configured: true,
+  available: true,
+  host: "vps.example.com",
+  port: 51820,
+  subnet: "10.8.0.0/24",
+  nas_address: "10.8.0.2",
+  vps_address: "10.8.0.1",
+  running: true,
+  connected: true,
+  peers: [{ id: "p0", name: "iPhone", address: "10.8.0.3", created_at: "2026-11-09T08:00:00Z" }],
+};
+
+const previewAgent: Record<string, unknown> = {
+  enabled: true,
+  agent_id: "android-5f1c0a9e2b7d4c3a8e6f0b1d",
+  name: "",
+  pair_port: 7590,
+  control_port: 7592,
+  pcm_port: 7593,
+  tls_cert: "",
+  tls_key: "",
+  addresses: ["192.168.1.20", "100.101.12.7"],
+  lines: [
+    { id: "ec25-uk", label: "EC25-UK", number: "+447700900123" },
+    { id: "qdc507", label: "QDC507", number: "+8613800138000" },
+  ],
+  clients: [{ id: "a1b2c3d4e5f6", created_at: new Date(Date.now() - 86400000).toISOString(), last_seen: new Date(Date.now() - 600000).toISOString(), local_mode: true, cloud_enabled: false }],
+};
 let previewAvatar = "";
 
 function readBody(req: IncomingMessage): Promise<string> {
@@ -190,6 +219,35 @@ export function previewApiPlugin(): Plugin {
 
           if (path === "/api/settings/preferences") {
             send(res, { language: "zh" });
+            return;
+          }
+
+          if (path === "/api/airsim-agent/relay" || path.startsWith("/api/airsim-agent/relay/")) {
+            if (path === "/api/airsim-agent/relay/script" || path.endsWith("/config")) {
+              res.setHeader("Content-Type", "text/plain; charset=utf-8");
+              res.end("[Interface]\nPrivateKey = (preview)\nAddress = 10.8.0.1/24\nListenPort = 51820\n");
+              return;
+            }
+            if (path === "/api/airsim-agent/relay" && method === "PUT") {
+              Object.assign(previewRelay, JSON.parse((await readBody(req)) || "{}"), { configured: true, running: true, nas_address: "10.8.0.2", vps_address: "10.8.0.1" });
+            }
+            if (path === "/api/airsim-agent/relay" && method === "DELETE") Object.assign(previewRelay, { configured: false, running: false, connected: false, peers: [] });
+            if (path === "/api/airsim-agent/relay/peers" && method === "POST") {
+              const peers = previewRelay.peers as { id: string }[];
+              peers.push({ id: `p${peers.length}`, name: "iPhone", address: `10.8.0.${peers.length + 3}`, created_at: new Date().toISOString() } as never);
+            }
+            if (path.startsWith("/api/airsim-agent/relay/peers/") && method === "DELETE") previewRelay.peers = [];
+            send(res, previewRelay);
+            return;
+          }
+
+          if (path === "/api/airsim-agent" || path.startsWith("/api/airsim-agent/")) {
+            if (path === "/api/airsim-agent" && method === "PUT") Object.assign(previewAgent, JSON.parse((await readBody(req)) || "{}"));
+            if (path === "/api/airsim-agent/pair" && method === "POST") {
+              previewAgent.pairing = { code: "482915", expires_at: new Date(Date.now() + 120000).toISOString() };
+            }
+            if (path.startsWith("/api/airsim-agent/clients/") && method === "DELETE") previewAgent.clients = [];
+            send(res, previewAgent);
             return;
           }
 

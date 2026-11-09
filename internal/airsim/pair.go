@@ -217,3 +217,7 @@ func pairRequest(ctx context.Context, client *http.Client, method, url string, b
 	}
 	return response.StatusCode, nil
 }
+
+// AllowLoopbackForTests lets another package's tests pair with an agent on
+// 127.0.0.1. Production code never calls it.
+func AllowLoopbackForTests(allowed bool) { loopbackAllowed = allowed }
