@@ -22,9 +22,9 @@
   <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-Release-2088FF?style=flat-square&logo=githubactions&logoColor=white">
 </p>
 
-[English](../README.md) | [العربية](README.ar.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
+[English](README.vocat.en.md) | [العربية](README.ar.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
 
-> **Halo 1.1.15** 是基于 [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42（`eba11d5`）的个人界面与发行版，原作者为 Vocat Project Authors。模组、IMS、WiFi Calling、eSIM 和代理等核心能力都是原项目的工作。本分支保留 Halo 界面、品牌、主色、电话页、通话历史与录音、WireGuard 隧道，并纳入该提交为止的上游修复。仍适用 [Vocat Research & Evaluation License](../LICENSE)。详见 [ATTRIBUTION.md](../ATTRIBUTION.md)。可选的 CellBridge 通话桥见 [CellBridge.zh-CN.md](CellBridge.zh-CN.md)。
+> **Halo 1.2.0** 是基于 [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42（`eba11d5`）的个人界面与发行版，原作者为 Vocat Project Authors。模组、IMS、WiFi Calling、eSIM 和代理等核心能力都是原项目的工作。本分支保留 Halo 界面、品牌、主色、电话页、通话历史与录音、WireGuard 隧道，并纳入该提交为止的上游修复。仍适用 [Vocat Research & Evaluation License](../LICENSE)。详见 [ATTRIBUTION.md](../ATTRIBUTION.md)。可选的 CellBridge 通话桥见 [CellBridge.zh-CN.md](CellBridge.zh-CN.md)。
 
 Vocat 是一款面向 Quectel EC20/EC25 系列以及中国移动 ML307 系列蜂窝模组的开源 Web 控制面板与工程工具套件。它在一个自包含的服务中整合了模组发现、实时射频状态、AT 与 USSD 终端、短信、WiFi Calling（WiFi 通话）、eSIM 管理、网络选择、代理路由、通知、审计日志以及发布自动化。
 

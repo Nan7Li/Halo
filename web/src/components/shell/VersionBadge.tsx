@@ -44,9 +44,10 @@ export function VersionBadge({ compact = false }: { compact?: boolean }) {
 
   const label = version ? `v${version}` : "vdev";
   // "1.1.15-cellbridge-preview.20261108153013": the sidebar shows the
-  // release and a Preview tag; the full build string is the tooltip.
+  // release and a Preview tag; the full build string is the tooltip. A
+  // formal fusion release ("1.2.0-cellbridge") gets no Preview tag.
   const [release, ...rest] = version.split("-");
-  const prerelease = rest.length > 0;
+  const prerelease = rest.length > 0 && rest.join("-") !== "cellbridge";
   const title = hasUpdate ? "有新版本，点击打开设置更新" : version ? `Halo v${version}` : "Halo preview";
   if (compact) {
     return (

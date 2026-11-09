@@ -1,0 +1,655 @@
+<p align="center">
+  <img src="../web/public/favicon.svg" width="96" alt="Vocat">
+</p>
+
+<h1 align="center">VoCat</h1>
+
+<p align="center">
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.25-00ADD8?style=flat-square&logo=go&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=111111">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript&logoColor=white">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-Embedded-003B57?style=flat-square&logo=sqlite&logoColor=white">
+</p>
+
+<p align="center">
+  <img alt="Linux" src="https://img.shields.io/badge/Linux-amd64_%7C_386_%7C_arm64_%7C_aarch64_%7C_armv7-FCC624?style=flat-square&logo=linux&logoColor=111111">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Multi--Arch-2496ED?style=flat-square&logo=docker&logoColor=white">
+  <img alt="WiFi Calling" src="https://img.shields.io/badge/WiFi_Calling-IMS_SMS-7B1FA2?style=flat-square">
+  <img alt="eSIM" src="https://img.shields.io/badge/eSIM-LPA_%2F_eUICC-009688?style=flat-square">
+  <img alt="Telegram" src="https://img.shields.io/badge/Telegram-Bot-26A5E4?style=flat-square&logo=telegram&logoColor=white">
+  <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-Release-2088FF?style=flat-square&logo=githubactions&logoColor=white">
+</p>
+
+**English** | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
+
+> This is the original VoCat README, kept for reference. Halo's own introduction is in [../README.md](../README.md).
+
+Vocat is an open-source web control panel and engineering toolkit for Quectel EC20/EC25-class and China Mobile ML307 series cellular modems. It combines modem discovery, live radio status, AT and USSD terminals, SMS, WiFi Calling, eSIM management, network selection, proxy routing, notifications, audit logs, and release automation in one self-contained service.
+
+The backend is written in Go, the interface is built with React and TypeScript, and the production frontend is embedded into the Go binary. A single executable contains the web application and uses SQLite for persistent state.
+
+<p align="center">
+  <img src="../img/image.png">
+  <img src="../img/image-1.png">
+</p>
+
+## Features
+
+| Area | What Vocat provides |
+| --- | --- |
+| Device management | Automatic serial/USB discovery, multiple modem support, friendly device names, live overview updates, module restart, flight mode, and USB networking mode controls. |
+| Radio and network | Registration status, operator, signal metrics, RSRP/RSRQ/SINR, network mode, band, channel, operator scanning, automatic or manual network selection, and LTE cell querying and single-cell lock/unlock (EARFCN/PCI). |
+| AT and USSD | Interactive AT terminal, command history, raw modem responses, USSD start/continue/cancel flows, and clear modem error reporting. |
+| SMS | Direct cellular and IMS SMS transmission, inbound synchronization, multipart handling, delivery reports, conversation history, unread state, timestamps, per-message delivery status, and JSON / offline HTML export. |
+| WiFi Calling | IKEv2/ePDG tunnel setup, EAP-AKA authentication, IMS registration, IMS SMS, reconnect controls, status diagnostics, and per-device routing. |
+| eSIM and eUICC | eUICC discovery, EID and production information, certificate metadata, multi-eUICC inventory, installed profile listing, enable/disable/switch operations, download, rename, and delete operations when supported by the card. |
+| Card policy | ICCID-based WiFi Calling and flight-mode behavior with immediate policy application. |
+| Proxy routing | Upstream SOCKS routing, device bindings, country rules, TCP reachability checks, and UDP Associate checks for WiFi Calling data paths. |
+| Notifications | New inbound SMS forwarding through Telegram, Bark, email, Pushplus, signed webhooks, WeCom, Feishu / Lark group bots, and MeoW. Each SMS is delivered as an individual notification. |
+| Telegram bot | Device status, installed-profile listing and switching, WiFi Calling controls, and SMS sending. Sensitive actions require administrator confirmation. |
+| Operations | Password and SSO authentication (Pocket ID, GitHub, Generic OAuth2), CSRF protection, access policies, audit events, live logs, log retention, health checks, responsive layout, dark mode, and English/Chinese application UI. |
+| Distribution | Static Linux binaries, systemd installation script, self-update with SHA-256 verification, Docker image, GHCR publishing, and GitHub Actions release builds. |
+
+## Supported hardware
+
+Vocat targets Qualcomm-based Quectel and China Mobile ML307 series modules that expose compatible AT, QMI, serial, and USB networking interfaces, including:
+
+- Quectel EC20
+- Quectel EC25
+- Quectel EG25 family
+- Compatible EG600 and related modules
+- China Mobile ML307 series (e.g. ML307A-E5, various OEMs)
+- Other Qualcomm modules discovered via `qmi_wwan` (SIMCom, Sierra, Telit, and 410-class dongles)
+- DJI / Baiwang 4G modules, with `vocat doctor --repair-dji-qmi` on Linux
+
+Available features depend on the module firmware, USB composition, SIM/eSIM capabilities, host drivers, radio network, and carrier configuration.
+
+## Installation
+
+### One-click Linux installation
+
+As root (including OpenWrt/Kwrt, where `sudo` is normally absent):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MengMengCode/VoCat/master/scripts/install.sh | bash
+```
+
+From a normal user on a distribution with sudo:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MengMengCode/VoCat/master/scripts/install.sh | sudo bash
+```
+
+Check the host's VoWiFi/XFRM prerequisites without installing VoCat:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MengMengCode/VoCat/master/scripts/install.sh | bash -s -- --check-env
+```
+
+Install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MengMengCode/VoCat/master/scripts/install.sh -o install.sh
+sudo bash install.sh 0.0.2
+```
+
+VoWiFi IMS requires Linux XFRM/IPsec. On OpenWrt/Kwrt the installer attempts
+to install matching `ip-full`, `kmod-ipsec`, `kmod-ipsec4/6`,
+`kmod-crypto-authenc`, AES-CBC and SHA1 packages from the firmware's own feed.
+If matching kernel modules are unavailable, use a firmware that includes them;
+never force-install kmods built for a different kernel.
+
+If your kernel cannot provide XFRM/IPsec and you only need non-VoWiFi features
+such as cellular SMS or data, install with `--skip-vowifi-check`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MengMengCode/VoCat/master/scripts/install.sh -o install.sh
+sudo bash install.sh --skip-vowifi-check
+```
+
+The installer:
+
+- detects `amd64`, `386`, `arm64`, `aarch64`, or `armv7`;
+- downloads the matching GitHub Release binary;
+- verifies it against `SHA256SUMS`;
+- installs Vocat under `/opt/vocat`;
+- creates a hardened systemd service with the hardware and network access required by Vocat;
+- stores runtime configuration in `/etc/vocat/env`;
+- generates a random initial administrator password on first installation.
+
+After installation, open:
+
+```text
+http://<server-address>:7575
+```
+
+### Manual binary installation
+
+Download the matching binary and `SHA256SUMS` from GitHub Releases:
+
+| Platform | Release file |
+| --- | --- |
+| Linux x86-64 | `halo-linux-amd64` (fallback `vocat-linux-amd64`) |
+| Linux x86 32-bit | `halo-linux-386` (fallback `vocat-linux-386`) |
+| Linux ARM64 | `halo-linux-arm64` (fallback `vocat-linux-arm64`) |
+| Linux AArch64 | `halo-linux-aarch64` (fallback `vocat-linux-aarch64`) |
+| Linux ARMv7 | `halo-linux-armv7` (fallback `vocat-linux-armv7`) |
+
+Verify and install it:
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+sudo install -d -m 0755 /opt/vocat/bin /opt/vocat/data
+sudo install -m 0755 vocat-linux-amd64 /opt/vocat/bin/vocat
+read -rsp "Admin password: " VOCAT_BOOTSTRAP_PASSWORD; echo
+printf '%s\n' "$VOCAT_BOOTSTRAP_PASSWORD" | sudo /opt/vocat/bin/vocat bootstrap-admin
+unset VOCAT_BOOTSTRAP_PASSWORD
+sudo env \
+  VOCAT_DATABASE_PATH=/opt/vocat/data/vocat.db \
+  /opt/vocat/bin/vocat serve
+```
+
+This manual command runs Vocat in the foreground. Use `vocat serve` so the
+process starts the server directly; running `vocat` without arguments as root
+on a TTY opens the interactive management menu instead. Use the one-click
+installer when a managed systemd service and automatic restart are required.
+
+### Docker
+
+For a Linux host that must discover every attached supported Quectel modem and
+continue seeing USB hot-plug events, run Vocat in hardware-access mode:
+
+```bash
+docker pull ghcr.io/mengmengcode/vocat:latest
+
+read -rsp "Admin password: " VOCAT_BOOTSTRAP_PASSWORD; echo
+printf '%s\n' "$VOCAT_BOOTSTRAP_PASSWORD" | docker run --rm -i \
+  --user 0:0 \
+  -v vocat-data:/opt/vocat/data \
+  --entrypoint /opt/vocat/bin/vocat \
+  ghcr.io/mengmengcode/vocat:latest bootstrap-admin
+unset VOCAT_BOOTSTRAP_PASSWORD
+
+docker run -d \
+  --name vocat \
+  --restart unless-stopped \
+  --network host \
+  --privileged \
+  --user 0:0 \
+  -v vocat-data:/opt/vocat/data \
+  -v /dev:/dev \
+  -v /sys:/sys:ro \
+  ghcr.io/mengmengcode/vocat:latest
+```
+
+Open `http://<server-address>:7575` after the container starts. Host networking
+is required so QMI network interfaces remain visible to Vocat, while privileged
+device access is required for serial ports, QMI control nodes, TUN interfaces,
+network configuration, and devices added after the container starts. The
+`/dev` bind mount makes new `ttyUSB*`, `ttyACM*`, `cdc-wdm*`, and MHI
+`wwan*` nodes visible without recreating the container.
+
+This mode intentionally gives Vocat broad access to the host's devices and
+network stack. Use it only on a trusted Linux host. The automatic discovery
+identifies supported Quectel USB modems (USB vendor ID `2c7c`) and China Mobile ML307 series modules by product string, and PCIe/MHI
+modems exposed through the Linux WWAN subsystem; it does not identify arbitrary
+modem layouts. Mapping only individual nodes with `--device`, such as
+`/dev/ttyUSB2`, `/dev/cdc-wdm0`, or `/dev/wwan0qmi0`, limits the container to
+those fixed nodes and does not provide complete multi-device or hot-plug discovery.
+
+On OpenWrt hosts, the fw4 input chain drops new connections from interfaces it
+does not manage, including Vocat's per-session VoWiFi TUN. Vocat therefore
+inserts narrow `vocat-ims-*` accept rules (P-CSCF to the negotiated inner
+address) with the `nft` bundled in the image. Without them IMS registration and
+outgoing SMS still work, but incoming SMS and calls are rejected. If the bundled
+`nft` cannot read the host ruleset, Vocat logs `nft could not inspect the
+OpenWrt fw4 input chain`; point `VOCAT_NFT` at the host's own nft instead:
+
+```bash
+cat > /opt/vocat-host-nft <<'EOF'
+#!/bin/sh
+exec /host/lib/ld-musl-$(uname -m).so.1 --library-path /host/usr/lib:/host/lib /host/usr/sbin/nft "$@"
+EOF
+chmod 755 /opt/vocat-host-nft
+# Add to the docker run command above:
+#   -v /usr:/host/usr:ro -v /lib:/host/lib:ro \
+#   -v /opt/vocat-host-nft:/usr/local/bin/host-nft:ro \
+#   -e VOCAT_NFT=/usr/local/bin/host-nft
+```
+
+The GHCR image is published for `linux/amd64` and `linux/arm64`.
+
+> [!TIP]
+> **NAS / QNAP Container Station Deployment Note**:
+> On NAS operating systems like QNAP QTS / QuTS hero (Container Station), custom non-root administrator accounts and volume isolation mechanisms may cause Docker named volumes (e.g. `-v vocat-data:/opt/vocat/data`) to resolve to different isolated paths between the one-off `bootstrap-admin` initialization and the daemon service container, leading to "Incorrect password" errors during Web login.
+> For NAS environments, it is strongly recommended to replace named volumes with a host absolute path bind mount (e.g. `-v /share/Container/vocat/data:/opt/vocat/data` on QNAP) for both initialization and runtime to guarantee consistent SQLite database persistence.
+
+### USB SIM readers
+
+USB SIM readers use the Linux PC/SC service. The one-click installer installs
+and starts `pcscd` plus the CCID driver automatically on supported package
+managers. On Debian/Ubuntu, the equivalent manual setup is
+`apt install pcscd libccid`. If USB sees a CCID reader but PC/SC is unavailable,
+VoCat keeps the reader visible in the add-device dialog and reports the missing
+service or driver instead of silently hiding it.
+
+### QMI command-line utilities
+
+VoCat uses `qmicli` to verify that a QMI control channel is ready and
+`qmi-proxy` to multiplex access to it. Packet-data sessions are managed by the
+built-in QMI WDS client instead of `qmi-network` CID/PDH state files. The
+one-click installer installs and verifies the corresponding utilities. For manual deployment,
+Debian/Ubuntu uses `apt install libqmi-utils`; Arch Linux uses
+`pacman -S libqmi`, Alpine uses `apk add qmi-utils`, and OpenWrt uses
+`opkg install qmi-utils`.
+
+`vocat doctor --repair-dji-qmi` checks for `qmicli` before changing any USB
+driver binding or asserting DTR. If the utility is unavailable, the command
+stops with an installation hint and leaves the current device state untouched.
+
+### AT cellular host data
+
+AT-backed ECM/RNDIS data requires Linux, iproute2 and BusyBox with `udhcpc`.
+VoCat must exclusively manage the modem network interface; disable competing
+DHCP clients or network-manager profiles for that interface. VoCat maintains
+an IPv4 lease and marked policy routes without changing the system default
+route or resolver. This path currently requires IPv4-capable service.
+
+## Configuration
+
+Vocat reads an optional JSON configuration file from `VOCAT_CONFIG`, then applies `VOCAT_*` environment variables. Environment variables take precedence.
+
+| Environment variable | Default | Description |
+| --- | --- | --- |
+| `VOCAT_ADDR` | `0.0.0.0:7575` | HTTP listen address. |
+| `VOCAT_DATABASE_PATH` | `./data/vocat.db` | SQLite database path. |
+| `VOCAT_SESSION_TTL` | `24h` | Authentication session lifetime. |
+| `VOCAT_SECURE_COOKIES` | `false` | Optional force-Secure override for all entries; HTTP/HTTPS cookies otherwise adapt automatically. |
+| `VOCAT_SHUTDOWN_TIMEOUT` | `10s` | Graceful shutdown timeout. |
+| `VOCAT_MAX_REQUEST_BODY_BYTES` | `1048576` | Maximum API request body size. |
+| `VOCAT_MCP_ENABLED` | `true` | Serve the MCP endpoint at `/mcp` for AI agents. Set `false` to disable it. |
+| `VOCAT_PROBE_UNKNOWN_USB` | `false` | Opt in to probing unrecognized USB serial devices with AT commands. Probing changes serial settings and clears input; enable only when those ports are dedicated to modems. Verified modem identities are discovered automatically. JSON key: `probe_unknown_usb`. |
+| `VOCAT_REPO` | `Nan7Li/VoCat` | Trusted GitHub repository used by the self-updater, in `owner/name` form. |
+| `GITHUB_TOKEN` | empty | Optional GitHub token for private repositories or higher API limits. |
+
+User-supplied Apple carrier bundles can be converted into reviewable,
+allow-listed carrier profiles. Preview is the default:
+
+```bash
+vocat carrier import-ipcc Carrier_iPhone.ipcc
+```
+
+After reviewing the match scope and warnings, install with `--install` and restart:
+
+```bash
+vocat carrier import-ipcc --install Carrier_iPhone.ipcc
+```
+
+The importer does not copy disabled certificate checks, carrier-auth bypasses, APN credentials, emergency-call data, or device-specific media parameters.
+
+Administrator credentials are stored only in SQLite. Initialize an empty
+database once with `vocat bootstrap-admin`; environment variables and JSON
+configuration cannot set or overwrite the administrator username or password.
+
+Do not store Telegram tokens, SMTP passwords, webhook secrets, SIM credentials, or other private data in the repository. Configure them through the application settings or protected environment files.
+
+## Single sign-on (SSO)
+
+VoCat supports Pocket ID through OpenID Connect, GitHub.com OAuth Apps, and
+Generic OAuth2 providers. Select one provider in **Settings → Single sign-on
+(SSO)**. SSO starts disabled and password login remains available. Sign in with
+the local administrator first, save a provider, and explicitly bind an external
+account before enabling SSO. Other external accounts cannot register or become
+administrators, including accounts sharing the bound account's email address.
+
+### Pocket ID
+
+1. Use an HTTPS origin for VoCat, such as `https://vocat.example.com`, and set
+   the HTTPS entry as the public origin. Cookie security is selected automatically for each browser entry; `VOCAT_SECURE_COOKIES=true` is only an optional global force-Secure override. In the SSO settings choose **Pocket ID**. The
+   public origin initially uses the current browser address; edit the visible
+   **VoCat public origin** field if necessary. The compact callback URL and Copy
+   button appear immediately, so the URL can be copied
+   before creating the OIDC client or saving any credentials:
+   `https://vocat.example.com/api/auth/sso/callback`.
+2. In Pocket ID create a separate **Confidential** OIDC client for VoCat. Register
+   the exact callback URL and verify that the intended user or group is allowed
+   to use this client. VoCat and Komari need separate clients and local sessions.
+3. In VoCat enter Pocket ID's exact public `APP_URL` as the Issuer, and enter the
+   Client ID and Client Secret issued for the client created in step 2. The
+   Client ID field includes a reminder of where to find this value.
+   Scopes and PKCE S256 are handled by VoCat.
+   Token authentication is selected from validated Discovery metadata, preferring
+   `client_secret_basic` over `client_secret_post`. Save while SSO remains disabled.
+   Origin edits update the displayed callback immediately; they take effect for
+   authorization after saving.
+4. Check the saved configuration; success displays **Configuration check passed**.
+   Then bind the account. Complete Pocket ID's Passkey login and consent, and
+   confirm the returned binding in VoCat.
+   Configuration checking validates metadata and connectivity; it cannot verify
+   a client secret or user authorization without this login.
+5. Enable SSO and save. Use a private browser window to verify SSO login, return
+   to the requested page, and the first state-changing request.
+
+The settings page shows the bound account and an unbind action. To change the
+external account, unbind it first, then bind the intended account and enable SSO
+again.
+
+The Issuer is matched exactly, including its path and trailing slash. Pocket ID
+login uses the verified ID Token's `issuer + sub`; a UserInfo endpoint or email
+claim is not required. Discovery and its authorization, Token and JWKS endpoints
+must use the configured Issuer's origin. Deployments using `INTERNAL_APP_URL`
+with a different backend origin are not supported in this release. Keep the
+public `APP_URL` as the Issuer. Existing explicitly
+configured authentication methods and scopes are preserved when saving.
+
+### GitHub and Generic OAuth2
+
+For GitHub, create an OAuth App on GitHub.com with the same exact callback URL,
+select **GitHub**, enter its Client ID and Secret, and follow the save, check,
+bind, enable sequence above. Endpoints are fixed to GitHub.com; the default
+scope is `read:user`, and PKCE S256 is required. The binding follows the stable
+GitHub numeric account ID, so changing a login name does not change the account.
+GitHub Enterprise is outside this release's scope.
+
+For Generic OAuth2, supply the authorization, Token, and UserInfo URLs in addition
+to the client credentials. Scopes, the top-level user ID field (default `id`),
+Token authentication and PKCE compatibility options are displayed when Generic
+OAuth2 is selected.
+UserInfo is requested with a Bearer access token. The ID must be a
+nonempty string or an integer; large integer IDs retain their exact value.
+The default Token authentication is `client_secret_post` and PKCE is S256.
+Disable PKCE only for a provider that lacks PKCE support.
+Generic OAuth2 does not perform OIDC ID Token verification.
+
+### Multiple browser entries for SSO
+
+One saved provider and account binding can serve the configured HTTPS public origin and explicit local/private IP entries over HTTP or HTTPS. Register each complete callback URL (`/api/auth/sso/callback`) with the identity provider. Authorization and token exchange use the same callback frozen at flow creation; callbacks on a different entry are rejected. HTTP is accepted only for localhost, loopback and literal private IP addresses, not arbitrary public HTTP hosts.
+
+IPv6 callback hosts use the browser's compressed spelling, including hexadecimal IPv4-mapped addresses. Register the callback shown in settings with the identity provider. Existing configurations using an expanded IPv6 spelling are recognized automatically, but the provider must accept the normalized callback URL.
+
+Direct TLS, the configured HTTPS public origin behind a proxy, and trusted `X-Forwarded-Proto` select Secure cookies automatically. Untrusted forwarded headers are ignored. Proxies must preserve Host. Password sessions use their request transport, the explicit override, and same-authority HTTPS Origin/Referer hints that can only upgrade Cookie protection. These browser hints do not authorize requests, change network access policy, or select callback destinations.
+
+A session persists its Secure-cookie requirement at sign-in and can only upgrade it on later HTTPS requests, including when a missing or stale CSRF cookie must be replaced without scheme hints. Existing sessions keep working after the additive database migration; their previous transport cannot be inferred, so HTTPS users with an existing session should sign in again or make a refresh with a recognized HTTPS signal.
+
+Saving or disabling SSO does not change password-client Cookie behavior. A proxy that removes all browser and transport scheme information must explicitly provide a trusted HTTPS signal. The configured-origin fallback is limited to SSO sign-in and SSO-session CSRF refreshes. Separate LAN HTTP entries remain usable without a process restart or configuration switch; remove a legacy force-Secure override when using both protocols. HTTP credentials travel without transport encryption.
+
+### Network, credentials and sessions
+
+VoCat's existing source-network policy also applies to SSO routes. Configuring
+SSO does not make an installation publicly accessible. The browser must reach
+VoCat and the authorization endpoint; the VoCat process must reach Discovery,
+Token and JWKS/UserInfo endpoints with trusted TLS certificates. Saving the exact
+Pocket ID HTTPS Issuer or Generic endpoint URLs approves
+those addresses for HTTPS connections, including RFC1918/IPv6 ULA private
+addresses. GitHub's fixed endpoints remain restricted to public addresses.
+
+For a Generic provider's internal HTTP service, explicitly enter its full HTTP URL
+in the Token/UserInfo field.
+Every DNS candidate and actual connection for these HTTP destinations must be a
+permitted private address. Pocket ID's Discovery cannot approve another origin;
+its endpoints must use the configured Issuer's origin. The Issuer, Discovery fetch
+URL and browser authorization endpoint always require HTTPS. Loopback, link-local,
+cloud metadata and other special-use destinations remain blocked for IdP
+connections. Install private CA certificates in the host/container trust store;
+there is no TLS verification bypass option. The browser's localhost or HTTPS
+origin for VoCat is independent of these IdP connection permissions.
+
+The supplied Compose deployment uses host networking. Verify DNS, routing and CA
+trust from the actual container; do not assume bridge-network service names are
+available. Reverse proxies must preserve the configured public origin. VoCat
+does not derive callback URLs from forwarded host headers. Root-path deployment
+is required. For local Vite development, use one consistent loopback origin,
+such as `http://127.0.0.1:5173`, for the public origin and callback registration;
+IdP transport exceptions belong only in test fixtures.
+
+Session and CSRF cookies retain `SameSite=Strict`; short-lived authorization
+cookies use `SameSite=Lax` for top-level GET callbacks. Saving any SSO
+configuration, including disabling it or rotating the secret, revokes all SSO
+sessions. Unbinding an account revokes that binding's SSO sessions.
+Password sessions and API tokens survive those actions. Changing the local
+administrator's password revokes all sessions and API tokens, cancels in-flight
+authorizations, and preserves the external binding. The UI requests sign-in
+again when a successful operation revokes the current SSO session.
+
+Leave the secret input empty to preserve an existing secret, or enter a new
+secret to replace it. The settings page does not offer a secret-clearing control.
+Changing the provider, client
+ID, Issuer, or Generic identity endpoints/ID field requires a new identity
+namespace, new credentials, and a new binding. Existing bindings require explicit
+reset confirmation. To change the bound account, unbind it and then create a new
+binding. Client secrets are held only on the server in the protected SQLite
+database; the sensitive-setting flag redacts responses and does not encrypt the
+database. Third-party tokens are not persisted or returned to the browser.
+
+Signing out ends only the current VoCat session. Disabling an IdP account or
+signing out of Pocket ID does not immediately revoke an existing VoCat session;
+it expires according to `VOCAT_SESSION_TTL`, or can be revoked by disabling SSO
+or unbinding in VoCat. The public capabilities endpoint is
+`GET /api/auth/providers`. SSO settings and binding APIs require a browser
+session and CSRF for writes; Bearer tokens cannot manage them. Configuration
+revision conflicts return `409 sso_config_changed`; changed identity sources
+return `409 sso_rebind_required`.
+
+### Upgrade and rollback
+
+SSO adds SQLite schema version 29. Upgrades preserve the existing administrator,
+sessions, API tokens and device data; SSO remains disabled until configured.
+Before upgrading, record the old binary or image digest and back up configuration,
+CA material and the complete persistent data directory while VoCat is stopped,
+or use SQLite's backup API/`.backup` to obtain a consistent live snapshot. Copying
+only a running WAL-mode database file is not a reliable backup.
+
+Disable SSO in the new version to recover from provider problems while keeping
+password login and current business data. Returning to a schema-28 binary
+requires stopping VoCat and restoring the matching pre-upgrade data and
+configuration snapshot. Merely reverting the container image or lowering
+`PRAGMA user_version` cannot downgrade the database. Restore into a separate
+directory/volume where possible and retain the newer database for investigation.
+Restoring a snapshot loses messages and task changes recorded after that backup.
+For Docker, update by pulling the image and recreating the container.
+
+Before a production release, complete the real Pocket ID Passkey/access-policy
+test and an upgrade/rollback rehearsal for that deployment.
+
+## API tokens and MCP
+
+Non-browser clients authenticate against the same `/api/...` endpoints with
+a bearer token instead of the browser's session cookie and CSRF flow:
+
+```bash
+vocat token create --read-only --ttl 720h ci-runner   # prints the token once
+curl -H "Authorization: Bearer vcat_..." http://127.0.0.1:7575/api/devices
+```
+
+`vocat token list` and `vocat token revoke <name>` manage the inventory.
+Tokens act with administrator privileges; a `--read-only` token may only
+issue `GET` requests (one documented exception: reading an SMS thread marks
+it read locally — the rule is "no hardware or network mutations"). Rotating
+the administrator password revokes every token. Create tokens after the
+first `bootstrap-admin`. Remote bearer clients also need a network access
+policy that admits their source address; the default `internal` mode only
+serves private networks.
+
+By default (`VOCAT_MCP_ENABLED=false` to disable), the same service
+exposes an MCP (Model Context Protocol) endpoint for AI agents at `http://<host>:7575/mcp` using
+the Streamable HTTP transport and bearer-token authentication. Tools cover
+device status, SMS threads and guarded sending, eSIM profile listing and
+switching, and WiFi Calling status/reconnect; sensitive operations (raw AT,
+eSIM download/delete, SIM PIN, network selection, system update) are not
+exposed, and tool output never includes IMSI, SIM PIN, or activation codes.
+A read-only token receives a tool list without the write tools. SMS sending
+follows the same blocked-destination policy and global hourly limit as the
+web UI and sends over the cellular AT path (the web UI's IMS-preferred
+routing when WiFi Calling is enabled stays web-side, and messages sent
+through MCP are not yet written to the web conversation history).
+
+Client configuration (Claude Code as the example):
+
+```json
+{
+  "mcpServers": {
+    "vocat": {
+      "type": "http",
+      "url": "http://192.168.1.10:7575/mcp",
+      "headers": { "Authorization": "Bearer vcat_..." }
+    }
+  }
+}
+```
+
+See [docs/API_MCP_DEVELOPMENT_PLAN.md](API_MCP_DEVELOPMENT_PLAN.md) for
+the design record.
+
+## Telegram bot
+
+When Telegram notifications are enabled and both Chat ID and Admin ID are configured, the bot supports:
+
+```text
+/status [device]
+/esim <device>
+/switch <device> <iccid>
+/wfc <device> <status|on|off|reconnect>
+/sms <device> <number> <message>
+/ussd <device> <code>
+/ussd_reply <session> <input>
+/ussd_cancel <session>
+```
+
+Profile switching and SMS submission use one-time confirmation buttons. The bot does not expose eSIM download, delete, or rename commands.
+
+The web terminal and Telegram share USSD routing. With WiFi Calling enabled, requests use IMS/USSI and return a readiness error until IMS registers, without falling back to cellular AT+CUSD. With WiFi Calling disabled, requests use cellular USSD. Menu replies and cancellation stay bound to the original device and dialog. Cancellation errors are reported and retain the session for retry; an uncertain submission is never automatically resubmitted over another channel.
+
+USSI dialog handling follows [3GPP TS 24.390](https://www.etsi.org/deliver/etsi_ts/124300_124399/124390/18.00.00_60/ts_124390v180000p.pdf). A failed BYE retains a cancellation record, but further menu input is blocked once cancellation has started ([RFC 3261, section 15.1.1](https://www.rfc-editor.org/rfc/rfc3261.html#section-15.1.1)).
+
+## Updating
+
+Halo checks `Nan7Li/VoCat` by default and prefers `halo-linux-*` release assets, falling back to `vocat-linux-*`. In **Settings**, enable automatic checks (on by default) and optionally automatic install-and-restart. Manual CLI:
+
+```bash
+vocat update --check
+sudo vocat update
+```
+
+The updater downloads the binary matching the current Linux architecture, verifies it with the published `SHA256SUMS`, replaces the executable atomically, and restarts the `vocat` systemd service when available.
+
+For Docker installations:
+
+```bash
+docker pull ghcr.io/mengmengcode/vocat:latest
+```
+
+Recreate the container after pulling the new image.
+
+## WireGuard tunnels
+
+The **WG Tunnels** page stores standard `wg-quick` configs and can bring them up or down on the Halo host. Autostart tunnels are applied after the server starts. This needs Linux `wireguard-tools` (`wg` and `wg-quick`); it is not a userspace VPN inside the browser.
+
+## Development
+
+Requirements:
+
+- Go 1.25 or newer
+- Node.js 20 or newer
+- npm
+
+Run the frontend development server:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Build the embedded frontend and start the backend:
+
+```bash
+cd web
+npm run build
+cd ..
+go run ./cmd/vocat
+```
+
+Run all tests:
+
+```bash
+go test ./...
+```
+
+Build a production binary:
+
+```bash
+go build -trimpath -ldflags "-s -w" -o vocat ./cmd/vocat
+```
+
+## Release automation
+
+Pushing a version tag starts two GitHub Actions workflows:
+
+- `release-binaries` builds and publishes `amd64`, `386`, `arm64`, `aarch64`, and `armv7` binaries plus `SHA256SUMS`.
+- `docker` builds and publishes a multi-architecture image to GitHub Container Registry.
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+## Project layout
+
+```text
+cmd/vocat/                  Application entry point and CLI
+internal/device/            Modem discovery and device control
+internal/modem/             AT session and response handling
+internal/server/            HTTP API, notifications, and embedded web server
+internal/store/             SQLite persistence
+internal/update/            GitHub Release self-updater
+internal/vowifi/            IKE, EAP-AKA, IMS, and WiFi Calling runtime
+scripts/install.sh          Linux installer and updater
+web/src/                    React and TypeScript frontend
+.github/workflows/          Binary and Docker release automation
+```
+
+## Responsible use
+
+Cellular modem and eSIM operations can affect subscriber service, stored profiles, network registration, and hardware state. Keep backups, review destructive actions carefully, and use the software only in lawful environments where you are permitted to operate the connected hardware and network resources.
+
+Vocat does not bypass carrier authentication, network policy, hardware security, or eSIM trust requirements. Support for an operation means that Vocat can request it from the modem or eUICC; the device, profile, network, or carrier may still reject it.
+
+## Contributing
+
+Issues and pull requests are welcome. Keep changes focused, include tests where practical, avoid committing credentials or subscriber data, and document hardware-specific behavior clearly.
+
+Before submitting a change:
+
+```bash
+go test ./...
+cd web && npm run build
+```
+
+## Thanks
+- [Nodeseek.com](https://www.nodeseek.com) — A community dedicated to servers
+- [Linux.do](https://linux.do) — An inspiring tech community
+- [iniwex5](https://github.com/iniwex5) — Style and Functionality Guidelines
+
+## Buy me a coffee
+
+| Network | Address |
+| ------- | ------- |
+| USDT-TRON (TRC20) | `TWSAkvzVsFc7KqncDLmUfRxpPQbpV5CgTB` |
+| USDT-BSC (BEP20) | `0xb43031387342ebb1ff536fb9ad6440b9e6377139` |
+| USDT-Polygon | `0xb43031387342ebb1ff536fb9ad6440b9e6377139` |
+
+## License
+
+See [LICENSE](../LICENSE).
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=mengmengcode%2Fvocat&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=mengmengcode/vocat&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=mengmengcode/vocat&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=mengmengcode/vocat&type=date&legend=top-left" />
+ </picture>
+</a>
