@@ -460,8 +460,8 @@ html.dark .ios-segment-thumb { background: #636366; box-shadow: none; }
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.04);
 }
 .ios-switch.is-small .ios-switch-knob { width: 30px; height: 20px; }
-.ios-switch.is-on .ios-switch-knob { transform: translateX(21px); }
-.ios-switch.is-small.is-on .ios-switch-knob { transform: translateX(17px); }
+.ios-switch.is-on .ios-switch-knob { translate: 21px 0; }
+.ios-switch.is-small.is-on .ios-switch-knob { translate: 17px 0; }
 
 /* ---- Slider ---- */
 .ios-slider {

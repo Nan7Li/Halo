@@ -88,7 +88,7 @@
    up from 98% when they first appear, one after another. During a
    navigation push the whole page already moves, so they stay still. */
 @keyframes spring-settle {
-  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); }
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
 }
 @keyframes spring-fade {
   from { opacity: 0; }
@@ -105,7 +105,10 @@
 .ios-section:nth-of-type(3), .ios-widget:nth-child(3) { animation-delay: 60ms; }
 .ios-section:nth-of-type(4), .ios-widget:nth-child(4) { animation-delay: 90ms; }
 .ios-section:nth-of-type(5), .ios-widget:nth-child(5) { animation-delay: 110ms; }
-.ios-section:nth-of-type(n + 6), .ios-widget:nth-child(n + 6) { animation-delay: 130ms; }
+/* Only the first screenful settles in: sections further down are off
+   screen anyway, and every animating layer under the frosted tab bar
+   makes its blur recompute each frame. */
+.ios-section:nth-of-type(n + 6), .ios-widget:nth-child(n + 6) { animation: none; }
 html[data-nav] .ios-section,
 html[data-nav] .ios-widget,
 html[data-nav] .ios-empty { animation: none; }

@@ -236,7 +236,7 @@ html[data-nav] .ios-scroll {
    look is a ring layer that fades in, not a change of background. */
 .ios-tab-lens,
 .ios-switch-knob,
-.ios-segment-thumb { will-change: transform, scale; }
+.ios-segment-thumb { will-change: translate, scale; }
 .ios-tab-lens::after,
 .ios-switch-knob::after,
 .ios-segment-thumb::after {
@@ -260,7 +260,7 @@ html[data-nav] .ios-scroll {
    animation. */
 .ios-tab-lens {
   transition:
-    transform calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
+    translate calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
     scale var(--dur-smooth) var(--spring-smooth);
 }
 /* The top tab bar (regular width) has tabs of different widths, so its
@@ -268,7 +268,7 @@ html[data-nav] .ios-scroll {
    the width jumped in one frame while the droplet slid. */
 .ios-tab-lens.is-fluid {
   transition:
-    transform calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
+    translate calc(var(--dur-snappy) * 0.9) var(--spring-snappy),
     scale var(--dur-smooth) var(--spring-smooth),
     width calc(var(--dur-snappy) * 0.9) var(--spring-snappy);
 }
@@ -287,7 +287,7 @@ html[data-nav] .ios-scroll {
    interaction"). */
 .ios-switch-knob {
   transition:
-    transform calc(var(--dur-snappy) * 0.7) var(--spring-snappy),
+    translate calc(var(--dur-snappy) * 0.7) var(--spring-snappy),
     scale var(--dur-smooth) var(--spring-smooth);
 }
 .ios-switch.is-moving .ios-switch-knob {
@@ -308,7 +308,7 @@ html[data-nav] .ios-scroll {
    change, but without a spring: only its position springs. */
 .ios-segment-thumb {
   transition:
-    transform calc(var(--dur-snappy) * 0.8) var(--spring-snappy),
+    translate calc(var(--dur-snappy) * 0.8) var(--spring-snappy),
     width calc(var(--dur-smooth) * 0.6) var(--spring-smooth),
     scale var(--dur-smooth) var(--spring-smooth);
 }
