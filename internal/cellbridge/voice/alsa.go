@@ -26,6 +26,20 @@ const (
 	SampleRate   = 8000
 	Channels     = 1
 	FrameSamples = SampleRate / 50
+
+	// ALSA runs on 20 ms periods with 200 ms of headroom. The old 128 ms
+	// periods delivered the downlink in bursts the browser could not
+	// smooth, and playback only started once a full second was queued.
+	alsaPeriod = FrameSamples
+	alsaBuffer = 10 * FrameSamples
+	// Playback starts once 60 ms is in the device.
+	alsaStartDelay = "60000"
+
+	// Uplink jitter buffer in front of aplay: wait for 60 ms after running
+	// dry, keep at most 300 ms, and cut a backlog back to 120 ms.
+	uplinkPrebuffer = 3 * FrameSamples
+	uplinkMax       = 15 * FrameSamples
+	uplinkKeep      = 6 * FrameSamples
 )
 
 var deviceNamePattern = regexp.MustCompile(`^[A-Za-z0-9_:,.=-]{1,80}$`)
@@ -51,8 +65,11 @@ type Audio struct {
 	tx        io.WriteCloser
 	txMu      sync.Mutex
 	primeStop chan struct{}
-	lastWrite time.Time
 	prime     bool
+	upMu      sync.Mutex
+	upQueue   []int16
+	upPrimed  bool
+	upErr     error
 	spawn     spawner
 	once      sync.Once
 	watch     sync.WaitGroup
@@ -203,11 +220,11 @@ func (audio *Audio) Start(ctx context.Context, callID string) error {
 		return err
 	}
 
-	capture, err := audio.spawn("arecord", "-q", "-D", audio.captureDevice, "-t", "raw", "-f", "S16_LE", "-r", fmt.Sprint(SampleRate), "-c", fmt.Sprint(Channels), "--buffer-size=8192", "--period-size=1024")
+	capture, err := audio.spawn("arecord", "-q", "-D", audio.captureDevice, "-t", "raw", "-f", "S16_LE", "-r", fmt.Sprint(SampleRate), "-c", fmt.Sprint(Channels), "--buffer-size="+fmt.Sprint(alsaBuffer), "--period-size="+fmt.Sprint(alsaPeriod))
 	if err != nil {
 		return abort(nil, nil, nil, nil, fmt.Errorf("create ALSA capture: %w", err))
 	}
-	playback, err := audio.spawn("aplay", "-q", "-D", audio.playbackDevice, "-t", "raw", "-f", "S16_LE", "-r", fmt.Sprint(SampleRate), "-c", fmt.Sprint(Channels), "--buffer-size=8192", "--period-size=1024")
+	playback, err := audio.spawn("aplay", "-q", "-D", audio.playbackDevice, "-t", "raw", "-f", "S16_LE", "-r", fmt.Sprint(SampleRate), "-c", fmt.Sprint(Channels), "--buffer-size="+fmt.Sprint(alsaBuffer), "--period-size="+fmt.Sprint(alsaPeriod), "--start-delay="+alsaStartDelay)
 	if err != nil {
 		return abort(nil, nil, nil, nil, fmt.Errorf("create ALSA playback: %w", err))
 	}
@@ -248,6 +265,9 @@ func (audio *Audio) Start(ctx context.Context, callID string) error {
 	if audio.prime {
 		primeStop = make(chan struct{})
 		audio.primeStop = primeStop
+		audio.upMu.Lock()
+		audio.upQueue, audio.upPrimed, audio.upErr = audio.upQueue[:0], false, nil
+		audio.upMu.Unlock()
 	}
 	proc, monitored := playback.(*execChild)
 	if monitored {
@@ -269,28 +289,68 @@ func (audio *Audio) Start(ctx context.Context, callID string) error {
 	return nil
 }
 
+// primeLoop is the only writer to aplay while prime is on. Every 20 ms of
+// wall clock it writes one frame: the next queued uplink frame, or silence.
+// The QDC507 needs playback fed without gaps from the moment the call
+// starts, and pacing here (instead of writing whenever the browser or SIP
+// client sends) means late or bunched packets cannot leave holes in the
+// uplink or stack silence between words.
 func (audio *Audio) primeLoop(callID string, stop chan struct{}) {
-	silence := make([]int16, FrameSamples)
-	ticker := time.NewTicker(20 * time.Millisecond)
+	const period = 20 * time.Millisecond
+	ticker := time.NewTicker(period)
 	defer ticker.Stop()
+	started := time.Now()
+	var written int64
 	for {
 		select {
 		case <-stop:
 			return
-		case <-ticker.C:
+		case now := <-ticker.C:
 			audio.mu.Lock()
 			active := audio.call == callID
-			last := audio.lastWrite
 			audio.mu.Unlock()
 			if !active {
 				return
 			}
-			if !last.IsZero() && time.Since(last) < 15*time.Millisecond {
-				continue
+			// Catch up on ticks the runtime dropped; after a long stall,
+			// start counting again instead of flooding the device.
+			due := int64(now.Sub(started)/period) - written
+			if due > 5 {
+				started = now
+				written = 0
+				due = 1
 			}
-			_ = audio.WritePCM(silence)
+			for ; due > 0; due-- {
+				if err := audio.writeNow(audio.nextUplinkFrame()); err != nil {
+					audio.upMu.Lock()
+					audio.upErr = err
+					audio.upMu.Unlock()
+					return
+				}
+				written++
+			}
 		}
 	}
+}
+
+// nextUplinkFrame takes one 20 ms frame from the uplink queue, or silence
+// while the queue refills.
+func (audio *Audio) nextUplinkFrame() []int16 {
+	frame := make([]int16, FrameSamples)
+	audio.upMu.Lock()
+	defer audio.upMu.Unlock()
+	if !audio.upPrimed {
+		if len(audio.upQueue) < uplinkPrebuffer {
+			return frame
+		}
+		audio.upPrimed = true
+	}
+	taken := copy(frame, audio.upQueue)
+	audio.upQueue = audio.upQueue[:copy(audio.upQueue, audio.upQueue[taken:])]
+	if taken < FrameSamples {
+		audio.upPrimed = false
+	}
+	return frame
 }
 
 func (audio *Audio) snapshot() (io.ReadCloser, io.WriteCloser, string) {
@@ -316,7 +376,8 @@ func (audio *Audio) ReadPCM(samples []int16) (int, error) {
 	return count / 2, err
 }
 
-// WritePCM writes signed little-endian samples to playback.
+// WritePCM queues signed samples for playback. With prime on, primeLoop
+// paces them into aplay; otherwise they are written straight through.
 func (audio *Audio) WritePCM(samples []int16) error {
 	_, tx, callID := audio.snapshot()
 	if callID == "" || tx == nil {
@@ -325,16 +386,44 @@ func (audio *Audio) WritePCM(samples []int16) error {
 	if len(samples) == 0 {
 		return nil
 	}
+	audio.mu.Lock()
+	paced := audio.primeStop != nil
+	audio.mu.Unlock()
+	if !paced {
+		return audio.writeNow(samples)
+	}
+	return audio.enqueueUplink(samples)
+}
+
+// enqueueUplink adds samples to the paced queue, cutting a backlog (a
+// sender clock running fast, or a burst after a stall) back to 120 ms.
+func (audio *Audio) enqueueUplink(samples []int16) error {
+	audio.upMu.Lock()
+	defer audio.upMu.Unlock()
+	if audio.upErr != nil {
+		return audio.upErr
+	}
+	audio.upQueue = append(audio.upQueue, samples...)
+	if len(audio.upQueue) > uplinkMax {
+		drop := len(audio.upQueue) - uplinkKeep
+		audio.upQueue = audio.upQueue[:copy(audio.upQueue, audio.upQueue[drop:])]
+	}
+	return nil
+}
+
+// writeNow writes samples to the aplay pipe.
+func (audio *Audio) writeNow(samples []int16) error {
+	_, tx, callID := audio.snapshot()
+	if callID == "" || tx == nil {
+		return errors.New("ALSA audio is not active")
+	}
 	buffer := make([]byte, len(samples)*2)
 	for index, sample := range samples {
 		binary.LittleEndian.PutUint16(buffer[index*2:], uint16(sample))
 	}
 	audio.txMu.Lock()
+	defer audio.txMu.Unlock()
 	_, err := tx.Write(buffer)
-	audio.mu.Lock()
-	audio.lastWrite = time.Now()
-	audio.mu.Unlock()
-	audio.txMu.Unlock()
 	return err
 }
 
