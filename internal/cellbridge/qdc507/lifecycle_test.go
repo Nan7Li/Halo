@@ -34,40 +34,41 @@ type fakeProc struct {
 // kill -TERM only from the stop script after that script's own starttime
 // and argv checks. A bare kill command is rejected.
 type fakeModule struct {
-	usb             string
-	transport       string
-	kernel          string
-	uid             string
-	cards           string
-	files           map[string]fakeFile
-	ownerFiles      map[string]string
-	procs           []fakeProc
-	nextPID         int
-	nextStart       int
-	routePID        string
-	calPID          string
-	pcm             bool
-	failEndpoints   bool
-	failReady       bool
-	lieStage        bool
-	routeLogOK      bool
-	audioEnable     string
-	pcmRunning      bool
-	calMode         string
-	routeMode       string
-	cancel          context.CancelFunc
-	before          func([]string)
-	beforeFinalStop func(string)
-	calls           [][]string
-	envs            [][]string
-	ctxErr          []error
-	pushed          []string
-	pushedBytes     [][]byte
-	pushDest        []string
-	insmod          []string
-	killed          []string
-	skipped         []string
-	removed         []string
+	usb              string
+	transport        string
+	kernel           string
+	uid              string
+	cards            string
+	cardsAfterInsmod string
+	files            map[string]fakeFile
+	ownerFiles       map[string]string
+	procs            []fakeProc
+	nextPID          int
+	nextStart        int
+	routePID         string
+	calPID           string
+	pcm              bool
+	failEndpoints    bool
+	failReady        bool
+	lieStage         bool
+	routeLogOK       bool
+	audioEnable      string
+	pcmRunning       bool
+	calMode          string
+	routeMode        string
+	cancel           context.CancelFunc
+	before           func([]string)
+	beforeFinalStop  func(string)
+	calls            [][]string
+	envs             [][]string
+	ctxErr           []error
+	pushed           []string
+	pushedBytes      [][]byte
+	pushDest         []string
+	insmod           []string
+	killed           []string
+	skipped          []string
+	removed          []string
 }
 
 func newFakeModule() *fakeModule {
@@ -168,6 +169,9 @@ func (f *fakeModule) shell(cmd string) (string, error) {
 	case "uname -r":
 		return f.kernel, nil
 	case "cat /proc/asound/cards":
+		if f.cardsAfterInsmod != "" && len(f.insmod) >= 2 {
+			return f.cardsAfterInsmod, nil
+		}
 		return f.cards, nil
 	case "cat /run/halo-cellbridge-route.pid":
 		if f.routePID == "" {

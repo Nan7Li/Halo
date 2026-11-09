@@ -38,6 +38,13 @@ const (
 	remoteVoiceModule = remoteRuntimeDir + "/qdc507_voice.ko"
 )
 
+// After insmod or a NAS reboot the module's ALSA nodes and card can lag the
+// ADB transport by seconds (upstream CellBridge waits a second per try).
+var (
+	pcmRetryDelay  = time.Second
+	cardRetryDelay = time.Second
+)
+
 type runtimeArtifact struct {
 	name string
 	mode string
@@ -210,8 +217,12 @@ func Prepare(ctx context.Context, cfg Config) (Status, error) {
 	}
 	// Every route uses hw:0,4. Verify card0 before either adopting an
 	// existing route or pushing/loading target-specific kernel modules.
-	if err := verifyCardZero(ctx, runner, frozen, transport); err != nil {
-		return Status{Reason: err.Error(), Transport: transport}, err
+	// A card 0 under another name is refused outright. No card 0 at all is
+	// normal on a fresh module until bootstrap loads the voice modules;
+	// bootstrap then waits for the card before touching hw:0,4.
+	cardErr := verifyCardZero(ctx, runner, frozen, transport)
+	if cardErr != nil && !errors.Is(cardErr, errCardZeroAbsent) {
+		return Status{Reason: cardErr.Error(), Transport: transport}, cardErr
 	}
 	state, err := classifyRoute(ctx, runner, frozen, transport)
 	if err != nil {
@@ -221,6 +232,9 @@ func Prepare(ctx context.Context, cfg Config) (Status, error) {
 	case routeForeign:
 		return Status{Reason: errForeignRoute.Error(), Transport: transport}, errForeignRoute
 	case routeOwned:
+		if cardErr != nil {
+			return Status{Reason: cardErr.Error(), Transport: transport}, cardErr
+		}
 		if err := verifyOwnedRemote(ctx, runner, frozen, transport, state.Proc); err != nil {
 			return Status{Reason: err.Error(), Transport: transport}, err
 		}
@@ -237,6 +251,9 @@ func Prepare(ctx context.Context, cfg Config) (Status, error) {
 	case routeNone:
 		if !frozen.Bootstrap {
 			reason := errors.New("QDC507 bootstrap 未启用，模块语音路由未由本程序建立")
+			if cardErr != nil {
+				reason = fmt.Errorf("%w；开启启动引导后会加载语音模块", cardErr)
+			}
 			return Status{Reason: reason.Error(), Transport: transport}, reason
 		}
 		if err := bootstrap(ctx, rt); err != nil {
@@ -299,15 +316,14 @@ func bootstrap(ctx context.Context, rt *Runtime) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(20 * time.Millisecond):
+		case <-time.After(pcmRetryDelay):
 		}
 	}
 	if err != nil || strings.TrimSpace(ready) != "ready" {
 		return fmt.Errorf("QDC507 VoLTE PCM 设备不可用: %v (%s)", err, strings.TrimSpace(ready))
 	}
-	card, err := runADB(ctx, rt.runner, rt.cfg, "-t", rt.transport, "shell", "cat /proc/asound/cards")
-	if err != nil || !strings.Contains(card, expectedCardName) {
-		return fmt.Errorf("QDC507 ALSA 声卡 %q 不可用: %v (%s)", expectedCardName, err, strings.TrimSpace(card))
+	if err := waitCardZero(ctx, rt); err != nil {
+		return err
 	}
 	if err := runTracked(ctx, rt, kindCalibration, calibrationScript); err != nil {
 		if errors.Is(err, errForeignRoute) {
