@@ -10,25 +10,37 @@
   <a href="docs/GUIDE.zh-TW.md">使用教程</a> ·
   <a href="docs/RELEASE_NOTES.zh-TW.md">1.2.0 版本說明</a> ·
   <a href="#尚未完成">尚未完成的功能</a> ·
-  <a href="#致謝">致謝</a> ·
-  <a href="docs/README.vocat.en.md">VoCat 原始說明（English）</a>
+  <a href="#致謝">致謝</a>
 </p>
-
-> **Halo 1.2.0** is a personal interface and release based on [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42 (`eba11d5`), by the Vocat Project Authors. The modem, IMS, WiFi Calling, eSIM, and proxy stack is their work. This branch keeps Halo's UI, branding, accent color, phone page, call history, recordings, and WireGuard tunnels, and includes the upstream fixes through that commit. The [Vocat Research & Evaluation License](LICENSE) still applies. See [ATTRIBUTION.md](ATTRIBUTION.md). CellBridge call audio is optional and documented in [docs/CellBridge.zh-CN.md](docs/CellBridge.zh-CN.md).
 
 ## Halo 是什麼
 
-Halo 是一套跑在家裡 NAS 上的「遠端手機」。SIM 卡和行動網路留在家裡，通話與簡訊透過網頁、iPhone App 或 SIP 軟電話帶到你身邊。
+Halo 是 [Nan7Li](https://github.com/Nan7Li) 開發的「遠端手機」系統，跑在家裡的 NAS 上。SIM 卡和行動網路留在家裡，通話與簡訊透過網頁、iPhone 或 SIP 軟電話帶到你身邊。
 
-它建立在 [VoCat](https://github.com/MengMengCode/VoCat) 之上：模組控制、IMS / Wi‑Fi Calling、簡訊、eSIM 和代理都是 VoCat 的成果。Halo 在此基礎上做了：
+Halo 把幾件原本分散的事做成一個產品：
 
-- **電話**：iOS 風格的撥號鍵盤、最近通話、通話錄音，瀏覽器直接接聽與通話（有抖動緩衝與高品質重取樣）。
-- **多種線路**：模組的 VoWiFi（IMS）、大疆 QDC507 模組的蜂窩語音（整合自 CellBridge）、SIM 讀卡器的 IMS 線路、裝了 AirSIM 的安卓手機。
-- **iPhone 聽筒**：Halo 扮演 AirSIM 的安卓端，iPhone 上的 AirSIM App 可以直接用 Halo 的號碼打電話、收簡訊。
-- **遠端連線**：內建 VPS 中繼（WireGuard）。家裡沒有公網 IP 也能從外面連回 Halo；也支援 Tailscale 和 AirSIM 雲端模式。
-- **SIP 閘道**：任何 SIP 軟電話都可以撥入 Halo，再從模組打出去。
-- **NAS 一鍵安裝與自動更新**：Debian 13 一行指令裝好，之後在無通話時自動更新，帳號與資料保留。
-- **全新介面**：仿 iOS 27 / macOS 的 Liquid Glass 介面，手機、平板、電腦都能用，透明度、強調色、動畫都可以調。
+- **電話**：iOS 風格的撥號鍵盤、最近通話、通話錄音，瀏覽器直接接聽與通話。音訊路徑是 Halo 自己寫的：AudioWorklet、抖動緩衝、帶限重取樣、定速的 ALSA 上行。
+- **一個介面管所有線路**：模組的 VoWiFi（IMS）、大疆 QDC507 模組的蜂窩語音、SIM 讀卡器的 IMS 線路、裝了 AirSIM 的安卓手機，全部在同一個電話頁裡選擇。
+- **iPhone 聽筒**：Halo 依 AirSIM 的協定自行實作了安卓端，iPhone 上的 AirSIM App 可以直接用 Halo 的號碼打電話、收簡訊。
+- **VPS 中繼**：內建 WireGuard 中繼。一鍵產生 VPS 安裝腳本與裝置設定，家裡沒有公網 IP 也能從外面連回 Halo，也能當成小火箭的節點用。
+- **SIP 閘道與 QDC507 語音**：整合 CellBridge，任何 SIP 軟電話都能撥入 Halo；QDC507 的聲卡初始化、語音模組載入與校驗由 Halo 自動處理。
+- **NAS 一鍵安裝與自動更新**：Debian 13 一行指令裝好，正式版 / 預覽版兩個通道，在沒有通話時自動更新，帳號與資料保留。
+- **全新介面**：依 Apple HIG 設計的 iOS 27 / macOS Liquid Glass 介面，手機、平板、電腦都能用，透明度、強調色、動畫都可以調。
+
+底層的模組控制、IMS / Wi‑Fi Calling、簡訊、eSIM 和代理使用 [VoCat](https://github.com/MengMengCode/VoCat)，詳見[架構](#架構)。
+
+## 架構
+
+```
+┌──────────────────────────── Halo ────────────────────────────┐
+│  介面（Liquid Glass）· 電話 / 最近通話 / 錄音 · 外觀設定       │
+│  瀏覽器通話音訊 · iPhone 聽筒（AirSIM 協定）· 安卓手機線路      │
+│  VPS 中繼（WireGuard）· NAS 安裝器 · 正式 / 預覽更新通道        │
+│  CellBridge 整合：SIP 閘道 · QDC507 蜂窩語音                   │
+├──────────────────────────────────────────────────────────────┤
+│  VoCat 核心：模組控制 · IMS / Wi‑Fi Calling · 簡訊 · eSIM · 代理 │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ## 介面
 
@@ -115,8 +127,10 @@ Halo 是站在很多人的肩膀上做出來的。謝謝這些專案的作者把
 
 完整的出處、授權與修改說明見 [ATTRIBUTION.md](ATTRIBUTION.md) 和 [NOTICE](NOTICE)。
 
-## 授權
+## 授權與出處
 
-Halo 是 VoCat 的衍生版本，整體適用 [Vocat Research & Evaluation License](LICENSE)：僅限非商業的研究、教育與個人硬體開發，並有地區、評估期與 SIM 卡使用上的限制，請在使用前完整閱讀。CellBridge 的部分另依 MIT，AirSIM 協定部分另依 PolyForm Noncommercial 1.0.0，見 [LICENSES/](LICENSES/)。
+> **Halo 1.2.0** is developed by Nan7Li and built on [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42 by the Vocat Project Authors, which provides the modem, IMS / WiFi Calling, SMS, eSIM, and proxy core. Halo's phone, call audio, CellBridge and AirSIM integration, VPS relay, installer, and interface are its own work. The [Vocat Research & Evaluation License](LICENSE) applies. See [ATTRIBUTION.md](ATTRIBUTION.md).
+
+Halo 的核心建立在 VoCat 之上，因此整體適用 [Vocat Research & Evaluation License](LICENSE)：僅限非商業的研究、教育與個人硬體開發，並有地區、評估期與 SIM 卡使用上的限制，請在使用前完整閱讀。CellBridge 的部分另依 MIT，AirSIM 協定部分另依 PolyForm Noncommercial 1.0.0，見 [LICENSES/](LICENSES/)。Halo 對 VoCat 做了哪些修改，記錄在 [ATTRIBUTION.md](ATTRIBUTION.md)；VoCat 原專案的說明在 [docs/README.vocat.en.md](docs/README.vocat.en.md)。
 
 Halo 不是 VoCat、CellBridge 或 AirSIM 的官方產品，也沒有得到它們的背書；各專案的名稱與標誌屬於原作者。

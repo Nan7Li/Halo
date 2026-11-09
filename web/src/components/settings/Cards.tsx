@@ -287,7 +287,7 @@ export function SystemInfoCard({
       </ListSection>
 
       <p className="px-4 ios-footnote text-label-2">
-        {t("Halo 是基于 VoCat 的个人界面与发行版。模组、IMS、WiFi Calling 等核心能力来自原项目。")}{" "}
+        {t("Halo 由 Nan7Li 开发。模组、IMS、WiFi Calling、短信、eSIM 和代理核心来自 VoCat，原作者 Vocat Project Authors。")}{" "}
         <a className="text-accent" href="https://github.com/MengMengCode/VoCat" target="_blank" rel="noreferrer">MengMengCode/VoCat</a>
       </p>
     </div>

@@ -1,6 +1,6 @@
 # Attribution
 
-Halo 1.2.0 is a personal interface and release. It is **based on VoCat**.
+Halo 1.2.0 is developed by Nan7Li. It is **built on VoCat**.
 
 - Upstream project: [MengMengCode/VoCat](https://github.com/MengMengCode/VoCat)
 - Synced through: VoCat v0.3.42
@@ -9,7 +9,7 @@ Halo 1.2.0 is a personal interface and release. It is **based on VoCat**.
 
 Halo does not replace VoCat and is not an official Vocat product. The Vocat name and marks stay with the original authors.
 
-## What this branch changes
+## What Halo adds and changes
 
 - Halo name and icon (so this build is not presented as official VoCat). The 1.2.0 icon is Halo's own artwork.
 - A different web UI and a user-selectable accent color

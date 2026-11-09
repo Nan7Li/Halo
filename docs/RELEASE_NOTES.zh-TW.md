@@ -1,6 +1,6 @@
 # Halo 1.2.0 正式版
 
-Halo 的第一個正式版。它把家裡的 NAS 變成一支電話：SIM 卡留在家，通話和簡訊透過網頁、iPhone 或 SIP 軟電話帶到你身邊。基於 VoCat v0.3.42。
+Halo 的第一個正式版。它把家裡的 NAS 變成一支電話：SIM 卡留在家，通話和簡訊透過網頁、iPhone 或 SIP 軟電話帶到你身邊。核心使用 VoCat v0.3.42。
 
 ## 重點
 
@@ -45,4 +45,4 @@ sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certifica
 
 ## 授權
 
-Halo 是 VoCat 的衍生版本，適用 [Vocat Research & Evaluation License](https://github.com/Nan7Li/VoCat/blob/halo/LICENSE)：僅限非商業的研究、教育與個人硬體開發，並有地區、評估期與 SIM 卡使用上的限制。CellBridge 部分另依 MIT，AirSIM 協定部分另依 PolyForm Noncommercial 1.0.0。Halo 不是上述任何專案的官方產品。
+Halo 的核心建立在 VoCat 之上，整體適用 [Vocat Research & Evaluation License](https://github.com/Nan7Li/VoCat/blob/halo/LICENSE)：僅限非商業的研究、教育與個人硬體開發，並有地區、評估期與 SIM 卡使用上的限制。CellBridge 部分另依 MIT，AirSIM 協定部分另依 PolyForm Noncommercial 1.0.0。Halo 不是上述任何專案的官方產品。
