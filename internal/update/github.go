@@ -43,7 +43,10 @@ type CheckResult struct {
 }
 
 const (
-	DefaultRepository  = "Nan7Li/VoCat"
+	DefaultRepository = "Nan7Li/Halo"
+	// LegacyRepository is the name Halo was published under before it was
+	// renamed. Installs that still carry it in VOCAT_REPO keep updating.
+	LegacyRepository   = "Nan7Li/VoCat"
 	UpstreamRepository = "MengMengCode/VoCat"
 	releasePageLimit   = 5
 )
@@ -109,6 +112,9 @@ func validateRepo(repo string) (string, error) {
 	}
 	if strings.Count(repo, "/") != 1 || strings.HasPrefix(repo, "/") || strings.HasSuffix(repo, "/") {
 		return "", fmt.Errorf("update: invalid repository %q (expected owner/name)", repo)
+	}
+	if strings.EqualFold(repo, LegacyRepository) {
+		return DefaultRepository, nil
 	}
 	return repo, nil
 }

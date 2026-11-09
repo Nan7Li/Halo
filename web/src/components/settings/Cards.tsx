@@ -264,7 +264,7 @@ export function SystemInfoCard({
           <>
             {upstream?.lastError ? <span className="block text-sys-red">{upstream.lastError}</span> : null}
             {!upstream?.available && upstream?.lastCheckAt ? <span className="block">{t("官方 VoCat 暂无更新于已同步版本之后")}</span> : null}
-            <span className="block">{t("跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/VoCat Releases 安装。")}</span>
+            <span className="block">{t("跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/Halo Releases 安装。")}</span>
           </>
         }
         bodyClassName="px-4"

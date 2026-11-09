@@ -2,7 +2,7 @@
 # One entry point: fetch a verified NAS package and invoke its installer.
 set -euo pipefail
 umask 077
-repository=Nan7Li/VoCat
+repository=Nan7Li/Halo
 release_tag=""
 runtime_dir=""
 check_only=0

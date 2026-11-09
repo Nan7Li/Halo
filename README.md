@@ -70,13 +70,13 @@ Halo 把幾件原本分散的事做成一個產品：
 Debian 13 / amd64 的 NAS（J3160、N5105 等）：
 
 ```bash
-sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/VoCat/halo/scripts/deploy-cellbridge-nas.sh | bash'
+sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/Halo/halo/scripts/deploy-cellbridge-nas.sh | bash'
 ```
 
 裝好後打開 `http://NAS的IP:7575`。安裝程式預設裝最新的正式版。想試最新的預覽版：
 
 ```bash
-sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/VoCat/halo/scripts/deploy-cellbridge-nas.sh | bash -s -- --preview'
+sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/Halo/halo/scripts/deploy-cellbridge-nas.sh | bash -s -- --preview'
 ```
 
 接下來怎麼接模組、打第一通電話、讓 iPhone 從外面連回來，請看 **[使用教程](docs/GUIDE.zh-TW.md)**。
@@ -100,7 +100,7 @@ sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certifica
 
 這些功能程式碼已經在 1.2.0 裡，但還沒有完成或沒有在真實硬體上驗證過。使用時請預期會遇到問題，並歡迎回報。
 
-1. **大疆 QDC507 蜂窩語音**：只用模擬裝置和單元測試驗證過，還沒有在真實模組上完成雙向通話。剛開機的模組要先載入語音模組才會出現聲卡（[#16](https://github.com/Nan7Li/VoCat/pull/16) 修正中）。廠商語音運行檔不在本倉庫，由安裝程式從 MaVo 下載並校驗。
+1. **大疆 QDC507 蜂窩語音**：只用模擬裝置和單元測試驗證過，還沒有在真實模組上完成雙向通話。剛開機的模組要先載入語音模組才會出現聲卡（[#16](https://github.com/Nan7Li/Halo/pull/16) 修正中）。廠商語音運行檔不在本倉庫，由安裝程式從 MaVo 下載並校驗。
 2. **SIP 閘道**：只支援 UDP（信令與 RTP），沒有 TCP / TLS；iPhone 鎖屏來電取決於你用的 SIP App。
 3. **iPhone 聽筒（AirSIM iOS）**：
    - 不支援 DTMF（通話中按鍵）和早期媒體（接通前的回鈴音 / 語音提示）。
@@ -111,7 +111,7 @@ sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certifica
 5. **VPS 中繼**：還沒在真實 VPS 上驗證；跨境使用時 WireGuard 可能被限速或阻斷，需要自己加混淆或改走代理節點。
 6. **瀏覽器通話音訊**：只在 Chromium 做過自動化驗證；Safari / iOS 瀏覽器需要實測。麥克風必須在 HTTPS 下才能用，否則只能聽。
 7. **eSIM**：部分後端只支援列出和切換 Profile，不支援下載、刪除、改名（沿用 VoCat 的限制）。
-8. **其他平台**：Windows 原生 WWAN（[#2](https://github.com/Nan7Li/VoCat/pull/2)）和桌面用戶端（halo-windows）仍是草稿；NAS 安裝包只提供 Debian 13 / amd64。
+8. **其他平台**：Windows 原生 WWAN（[#2](https://github.com/Nan7Li/Halo/pull/2)）和桌面用戶端（halo-windows）仍是草稿；NAS 安裝包只提供 Debian 13 / amd64。
 9. **VoWiFi 電信商相容性**：額外的 IKE DH 群組相容分支還沒合併，部分電信商可能連不上 ePDG。
 
 ## 致謝

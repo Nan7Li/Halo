@@ -271,7 +271,7 @@ Vocat reads an optional JSON configuration file from `VOCAT_CONFIG`, then applie
 | `VOCAT_MAX_REQUEST_BODY_BYTES` | `1048576` | Maximum API request body size. |
 | `VOCAT_MCP_ENABLED` | `true` | Serve the MCP endpoint at `/mcp` for AI agents. Set `false` to disable it. |
 | `VOCAT_PROBE_UNKNOWN_USB` | `false` | Opt in to probing unrecognized USB serial devices with AT commands. Probing changes serial settings and clears input; enable only when those ports are dedicated to modems. Verified modem identities are discovered automatically. JSON key: `probe_unknown_usb`. |
-| `VOCAT_REPO` | `Nan7Li/VoCat` | Trusted GitHub repository used by the self-updater, in `owner/name` form. |
+| `VOCAT_REPO` | `Nan7Li/Halo` | Trusted GitHub repository used by the self-updater, in `owner/name` form. |
 | `GITHUB_TOKEN` | empty | Optional GitHub token for private repositories or higher API limits. |
 
 User-supplied Apple carrier bundles can be converted into reviewable,
@@ -525,7 +525,7 @@ USSI dialog handling follows [3GPP TS 24.390](https://www.etsi.org/deliver/etsi_
 
 ## Updating
 
-Halo checks `Nan7Li/VoCat` by default and prefers `halo-linux-*` release assets, falling back to `vocat-linux-*`. In **Settings**, enable automatic checks (on by default) and optionally automatic install-and-restart. Manual CLI:
+Halo checks `Nan7Li/Halo` by default and prefers `halo-linux-*` release assets, falling back to `vocat-linux-*`. In **Settings**, enable automatic checks (on by default) and optionally automatic install-and-restart. Manual CLI:
 
 ```bash
 vocat update --check

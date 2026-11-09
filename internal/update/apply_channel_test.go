@@ -90,7 +90,7 @@ func TestApplyCellbridgeRejectsBadPayloadAndKeepsTarget(t *testing.T) {
 			ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
 			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 			_, err := ApplyLatest(ctx, logger, Options{
-				Repo: "Nan7Li/VoCat", Target: target, BeforeInstall: item.before,
+				Repo: "Nan7Li/Halo", Target: target, BeforeInstall: item.before,
 			}, false)
 			if err == nil || !strings.Contains(err.Error(), item.wantErr) {
 				t.Fatalf("error = %v", err)
@@ -132,7 +132,7 @@ func TestApplyCellbridgeInstallsMatchingBinary(t *testing.T) {
 	defer server.Close()
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	result, err := ApplyLatest(ctx, logger, Options{Repo: "Nan7Li/VoCat", Target: target}, false)
+	result, err := ApplyLatest(ctx, logger, Options{Repo: "Nan7Li/Halo", Target: target}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

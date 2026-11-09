@@ -222,7 +222,7 @@ Vocat 先从 `VOCAT_CONFIG` 读取可选的 JSON 配置文件，再应用 `VOCAT
 | `VOCAT_SECURE_COOKIES` | `false` | 可选：强制所有入口使用安全 Cookie；默认按 HTTP/HTTPS 入口自动适配。 |
 | `VOCAT_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭超时时间。 |
 | `VOCAT_MAX_REQUEST_BODY_BYTES` | `1048576` | API 请求体最大字节数。 |
-| `VOCAT_REPO` | `Nan7Li/VoCat` | 自更新器使用的受信任 GitHub 仓库，格式为 `owner/name`。 |
+| `VOCAT_REPO` | `Nan7Li/Halo` | 自更新器使用的受信任 GitHub 仓库，格式为 `owner/name`。 |
 | `GITHUB_TOKEN` | 空 | 可选的 GitHub token，用于私有仓库或更高的 API 限额。 |
 
 用户提供的 Apple 运营商配置包可通过 `vocat carrier import-ipcc` 转换为可审查、符合允许列表的运营商配置文件；参见 [docs/CARRIER_IPCC_IMPORT.md](CARRIER_IPCC_IMPORT.md)。
@@ -387,7 +387,7 @@ USSI 会话处理遵循 [3GPP TS 24.390](https://www.etsi.org/deliver/etsi_ts/12
 
 ## 更新
 
-Halo 默认检查 `Nan7Li/VoCat`，优先下载 `halo-linux-*`，没有时再回退到 `vocat-linux-*`。设置页可以打开自动检查（默认开启），也可以打开“发现新版本后自动安装并重启”。命令行：
+Halo 默认检查 `Nan7Li/Halo`，优先下载 `halo-linux-*`，没有时再回退到 `vocat-linux-*`。设置页可以打开自动检查（默认开启），也可以打开“发现新版本后自动安装并重启”。命令行：
 
 ```bash
 vocat update --check

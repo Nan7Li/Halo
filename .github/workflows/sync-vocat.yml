@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   sync:
-    if: github.repository == 'Nan7Li/VoCat'
+    if: github.repository == 'Nan7Li/Halo'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:

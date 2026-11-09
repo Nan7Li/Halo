@@ -34,7 +34,7 @@
 在 NAS 的終端機執行：
 
 ```bash
-sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/VoCat/halo/scripts/deploy-cellbridge-nas.sh | bash'
+sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certificates && curl -fsSL https://raw.githubusercontent.com/Nan7Li/Halo/halo/scripts/deploy-cellbridge-nas.sh | bash'
 ```
 
 安裝程式會：
@@ -103,7 +103,7 @@ sudo bash -o pipefail -c 'apt-get update && apt-get install -y curl ca-certifica
 1. 確認安裝時語音運行檔有下載成功：`/opt/halo/qdc507` 裡要有三個檔案。
 2. 在 NAS 上執行只讀檢查工具（不會改動任何東西），記下模組的聲卡名稱：
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/Nan7Li/VoCat/halo/scripts/check-cellbridge-nas.sh | bash
+   curl -fsSL https://raw.githubusercontent.com/Nan7Li/Halo/halo/scripts/check-cellbridge-nas.sh | bash
    ```
 3. 到「设置」→「通话桥」（「电话」頁也有同一個設定入口）：
    - 開啟「启用大疆通话音频」，在「蜂窝音频设备」選你的大疆模組。
