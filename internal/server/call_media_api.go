@@ -89,13 +89,17 @@ func (s *Server) openVoWiFiBrowserMedia(deviceID, callID string) func(context.Co
 }
 
 func (s *Server) serveBrowserPCM(w http.ResponseWriter, r *http.Request, config store.Device, callID string, open func(context.Context) (vowifi.CallMedia, func(), error)) bool {
-	releaseLease, err := s.acquireCallMediaLease(config.ID, callID, "browser")
+	// The browser holds the media until a handset (AirSIM's iPhone app)
+	// asks for it; leaseCtx ends the stream when that happens.
+	leaseCtx, stop := context.WithCancel(r.Context())
+	defer stop()
+	releaseLease, err := s.acquireCallMediaLeaseWith(config.ID, callID, "browser", stop, nil)
 	if err != nil {
 		writeError(w, http.StatusConflict, "call_media_busy", err.Error())
 		return true
 	}
 	defer releaseLease()
-	media, releaseMedia, err := open(r.Context())
+	media, releaseMedia, err := open(leaseCtx)
 	if releaseMedia != nil {
 		defer releaseMedia()
 	}
@@ -114,7 +118,7 @@ func (s *Server) serveBrowserPCM(w http.ResponseWriter, r *http.Request, config 
 		return true
 	}
 	connection.SetReadLimit(maxCallMediaMessage)
-	ctx, cancel := context.WithCancel(r.Context())
+	ctx, cancel := context.WithCancel(leaseCtx)
 	defer cancel()
 	defer connection.Close(websocket.StatusNormalClosure, "call media closed")
 

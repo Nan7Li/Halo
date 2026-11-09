@@ -37,6 +37,16 @@ function readWideNavigation(): WideNavigation {
 export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean; onToggleTheme: () => void }) {
   const wide = useMediaQuery("(min-width: 768px)");
   const [wideNav, setWideNav] = useState<WideNavigation>(readWideNavigation);
+  // The navigation being switched away from stays mounted while it plays its
+  // exit; the incoming one plays its entrance only after a switch.
+  const [leaving, setLeaving] = useState<WideNavigation | null>(null);
+  const [switched, setSwitched] = useState(false);
+  useEffect(() => {
+    if (!leaving) return;
+    // Fallback for when animationend never fires (hidden tab, motion off).
+    const timer = window.setTimeout(() => setLeaving(null), 900);
+    return () => window.clearTimeout(timer);
+  }, [leaving]);
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [developer, setDeveloper] = useState(false);
   const [badges, setBadges] = useState<Record<string, number>>({});
@@ -101,8 +111,16 @@ export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean;
     } catch {
       /* ignore */
     }
+    if (next === wideNav) return;
+    const motion = document.documentElement.dataset.motion;
+    const still = motion === "reduced" || motion === "off" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setLeaving(still ? null : wideNav);
+    setSwitched(!still);
     setWideNav(next);
   }
+  const endLeave = (name: string) => (event: React.AnimationEvent) => {
+    if (event.target === event.currentTarget && event.animationName === name) setLeaving(null);
+  };
 
   const shell = useMemo(
     () => ({ developer, extensions, isDark, onToggleTheme, onLogout, setBadge: (path: string, count: number) => setBadges((current) => (current[path] === count ? current : { ...current, [path]: count })) }),
@@ -117,11 +135,24 @@ export function AuthenticatedShell({ isDark, onToggleTheme }: { isDark: boolean;
         <CallProvider>
           <GlassFilters />
           <div className="ios-app">
-            {wide && wideNav === "sidebar" ? (
-              <Sidebar onHide={() => setNavigation("tabbar")} extensions={extensions} badges={badges} onLogout={onLogout} />
+            {wide && (wideNav === "sidebar" || leaving === "sidebar") ? (
+              <Sidebar
+                onHide={() => setNavigation("tabbar")}
+                extensions={extensions}
+                badges={badges}
+                onLogout={onLogout}
+                className={leaving === "sidebar" ? "is-leaving" : switched ? "is-entering" : undefined}
+                onAnimationEnd={leaving === "sidebar" ? endLeave("ios-sidebar-out") : undefined}
+              />
             ) : null}
-            {wide && wideNav === "tabbar" ? (
-              <TopTabBar items={[...PRIMARY_NAV, SECONDARY_NAV[0], SECONDARY_NAV[3]]} badges={badges} onShowSidebar={() => setNavigation("sidebar")} />
+            {wide && (wideNav === "tabbar" || leaving === "tabbar") ? (
+              <TopTabBar
+                items={[...PRIMARY_NAV, SECONDARY_NAV[0], SECONDARY_NAV[3]]}
+                badges={badges}
+                onShowSidebar={() => setNavigation("sidebar")}
+                className={leaving === "tabbar" ? "is-leaving" : switched ? "is-entering" : undefined}
+                onAnimationEnd={leaving === "tabbar" ? endLeave("ios-toptabs-out") : undefined}
+              />
             ) : null}
             <main ref={scrollRef} className={cx("ios-scroll", wide && wideNav === "tabbar" && "has-top-tabbar")}>
               <ErrorBoundary title={t("页面渲染失败")}>

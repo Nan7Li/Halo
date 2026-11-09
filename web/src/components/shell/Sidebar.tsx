@@ -24,11 +24,15 @@ export function Sidebar({
   extensions,
   badges = {},
   onLogout,
+  className,
+  onAnimationEnd,
 }: {
   onHide: () => void;
   extensions: NavItem[];
   badges?: Record<string, number>;
   onLogout: () => void;
+  className?: string;
+  onAnimationEnd?: React.AnimationEventHandler;
 }) {
   const { t } = useI18n();
   const { user } = useAuth();
@@ -61,7 +65,7 @@ export function Sidebar({
   };
 
   return (
-    <aside className={cx("ios-sidebar", glassClass("thick"))} aria-label={t("主导航")}>
+    <aside className={cx("ios-sidebar", glassClass("thick"), className)} aria-label={t("主导航")} onAnimationEnd={onAnimationEnd}>
       <div className="ios-sidebar-top flex h-[60px] shrink-0 items-center gap-2.5 px-4">
         <BrandLogo className="h-7 w-7 shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
