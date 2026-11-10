@@ -1,3 +1,4 @@
+/** Halo's mark: a halo ring around the line, with two radio arcs. */
 export function BrandLogo({ className }: { className?: string }) {
   return (
     <svg
@@ -7,10 +8,10 @@ export function BrandLogo({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <circle cx="32" cy="32" r="27" stroke="currentColor" strokeWidth="2.4" opacity="0.22" />
-      <circle cx="32" cy="32" r="19.5" stroke="currentColor" strokeWidth="2.8" opacity="0.5" />
-      <circle cx="32" cy="32" r="11.5" stroke="currentColor" strokeWidth="3.2" />
-      <circle cx="32" cy="32" r="5.2" fill="currentColor" />
+      <path d="M45.8 10A26 26 0 0 1 58 31.1" stroke="currentColor" strokeWidth="4" strokeLinecap="round" opacity="0.5" />
+      <path d="M18.2 54A26 26 0 0 1 6 32.9" stroke="currentColor" strokeWidth="4" strokeLinecap="round" opacity="0.5" />
+      <circle cx="32" cy="32" r="15" stroke="currentColor" strokeWidth="5" />
+      <circle cx="32" cy="32" r="6" fill="currentColor" />
     </svg>
   );
 }

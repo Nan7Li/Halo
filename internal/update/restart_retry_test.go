@@ -31,7 +31,7 @@ func TestRetryInstalledUpdatePreservesRollbackBinary(t *testing.T) {
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
 	checked := false
 	result, err := ApplyLatest(ctx, slog.New(slog.NewTextHandler(io.Discard, nil)), Options{
-		Repo: "Nan7Li/VoCat", Target: target,
+		Repo: "Nan7Li/Halo", Target: target,
 		BeforeInstall: func() error { checked = true; return nil },
 	}, false)
 	if err != nil || !result.Applied || !checked {

@@ -264,7 +264,7 @@ export function SystemInfoCard({
           <>
             {upstream?.lastError ? <span className="block text-sys-red">{upstream.lastError}</span> : null}
             {!upstream?.available && upstream?.lastCheckAt ? <span className="block">{t("官方 VoCat 暂无更新于已同步版本之后")}</span> : null}
-            <span className="block">{t("跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/VoCat Releases 安装。")}</span>
+            <span className="block">{t("跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/Halo Releases 安装。")}</span>
           </>
         }
         bodyClassName="px-4"
@@ -287,7 +287,7 @@ export function SystemInfoCard({
       </ListSection>
 
       <p className="px-4 ios-footnote text-label-2">
-        {t("Halo 是基于 VoCat 的个人界面与发行版。模组、IMS、WiFi Calling 等核心能力来自原项目。")}{" "}
+        {t("Halo 由 Nan7Li 开发。模组、IMS、WiFi Calling、短信、eSIM 和代理核心来自 VoCat，原作者 Vocat Project Authors。")}{" "}
         <a className="text-accent" href="https://github.com/MengMengCode/VoCat" target="_blank" rel="noreferrer">MengMengCode/VoCat</a>
       </p>
     </div>

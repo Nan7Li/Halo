@@ -22,7 +22,7 @@
   <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-Release-2088FF?style=flat-square&logo=githubactions&logoColor=white">
 </p>
 
-[English](../README.md) | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | **日本語**
+[English](README.vocat.en.md) | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | **日本語**
 
 Vocat は、Quectel EC20/EC25 クラスのセルラーモデム向けのオープンソース Web コントロールパネル兼エンジニアリングツールキットです。モデムの検出、ライブの無線ステータス、AT / USSD ターミナル、SMS、WiFi Calling、eSIM 管理、ネットワーク選択、プロキシルーティング、通知、監査ログ、リリース自動化を、自己完結型の単一サービスに統合しています。
 

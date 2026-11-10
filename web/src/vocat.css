@@ -161,8 +161,8 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
   color: var(--color-primary);
   animation: halo-breathe 1.8s ease-in-out infinite;
 }
-.vocat-boot-logo circle:nth-child(1) { animation: halo-ring 1.8s ease-in-out infinite; }
-.vocat-boot-logo circle:nth-child(2) { animation: halo-ring 1.8s ease-in-out 0.12s infinite; }
+.vocat-boot-logo path:nth-child(1) { animation: halo-ring 1.8s ease-in-out infinite; }
+.vocat-boot-logo path:nth-child(2) { animation: halo-ring 1.8s ease-in-out 0.12s infinite; }
 .vocat-boot-logo circle:nth-child(3) { animation: halo-ring 1.8s ease-in-out 0.24s infinite; }
 @keyframes halo-breathe {
   0%, 100% { transform: scale(0.96); opacity: 0.86; }
@@ -174,7 +174,8 @@ button, a, [role="button"], [role="tab"], [role="switch"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .vocat-boot-logo,
-  .vocat-boot-logo circle {
+  .vocat-boot-logo circle,
+  .vocat-boot-logo path {
     animation: none;
   }
 }

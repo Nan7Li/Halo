@@ -144,7 +144,7 @@ export default function LoginPage() {
         ) : null}
 
         <p className="vocat-enter vocat-enter-4 mt-7 text-center ios-caption text-label-3">
-          {t("基于 VoCat，原作者 Vocat Project Authors")}
+          {t("由 Nan7Li 开发")}
         </p>
       </div>
     </div>

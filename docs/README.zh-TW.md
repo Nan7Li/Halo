@@ -22,7 +22,7 @@
   <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-Release-2088FF?style=flat-square&logo=githubactions&logoColor=white">
 </p>
 
-[English](../README.md) | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
+[English](README.vocat.en.md) | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
 
 Vocat 是一款面向 Quectel EC20/EC25 系列行動通訊模組的開源 Web 控制面板與工程工具套件。它在單一自包含的服務中整合了模組探索、即時射頻狀態、AT 與 USSD 終端、簡訊、WiFi Calling（WiFi 通話）、eSIM 管理、網路選擇、代理路由、通知、稽核日誌以及發佈自動化。
 

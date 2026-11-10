@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 import {
   AlertRegular,
   ArrowDownloadRegular,
@@ -79,6 +79,7 @@ interface SettingsSection {
 
 export default function SettingsPage() {
   const { section } = useParams();
+  const location = useLocation();
   const { appearance } = useAppearance();
   const { lines } = useCalls();
   const { refresh } = useAuth();
@@ -641,6 +642,12 @@ export default function SettingsPage() {
     ...(systemInfo.developer ? [{ key: "developer", label: "开发者", icon: <WrenchRegular />, tint: "indigo" }] : []),
   ];
   const current = sections.find((item) => item.key === section);
+  const legacyParams = new URLSearchParams(location.search);
+  // Old bookmarks and server-side binding callbacks still target /settings.
+  // Keep their query/fragment until SSOCard consumes the callback notice.
+  if (!section && (legacyParams.get("tab") === "security" || legacyParams.has("sso_error") || legacyParams.has("sso_result") || location.hash === "#sso")) {
+    return <Navigate replace to={`/settings/security${location.search}${location.hash}`} />;
+  }
 
   if (!current) {
     return (

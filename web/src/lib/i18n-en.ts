@@ -549,8 +549,8 @@ export const EN_DICT: Record<string, string> = {
   "用于连接 API 服务器的 HTTP 代理。填写后优先于 WG 隧道。":
     "HTTP proxy used to reach the API. When set, it takes priority over the WG tunnel.",
   "VoCat 上游": "VoCat upstream",
-  "跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/VoCat Releases 安装。":
-    "Track official VoCat releases. Every 4 hours GitHub tries to merge a new official version into Halo and publish a build. Conflicts open an issue instead of overwriting Halo-specific changes. This device still installs from Nan7Li/VoCat Releases.",
+  "跟踪官方 VoCat 的新功能和说明。GitHub 每 4 小时尝试把官方新版本合进 Halo 并自动编译发布；冲突会开 Issue 而不会覆盖 Halo 自己的改动。本机程序仍从 Nan7Li/Halo Releases 安装。":
+    "Track official VoCat releases. Every 4 hours GitHub tries to merge a new official version into Halo and publish a build. Conflicts open an issue instead of overwriting Halo-specific changes. This device still installs from Nan7Li/Halo Releases.",
   "检查 VoCat": "Check VoCat",
   已同步: "Synced through",
   官方最新: "Official latest",
@@ -999,9 +999,9 @@ export const EN_DICT: Record<string, string> = {
   "[空响应]": "[Empty response]",
   "eUICC 安装 profile 时空间不足，请删除未使用的 profile 后重试。": "Insufficient space on the eUICC for this profile; delete unused profiles and retry.",
   "Halo 最终用户许可与免责声明": "Halo End User License Agreement & Disclaimer",
-  "基于 VoCat": "Based on VoCat",
-  "基于 VoCat，原作者 Vocat Project Authors": "Based on VoCat by the Vocat Project Authors",
-  "Halo 是基于 VoCat 的个人界面与发行版。模组、IMS、WiFi Calling 等核心能力来自原项目。": "Halo is a personal UI and release based on VoCat. The modem, IMS, and WiFi Calling stack comes from the original project.",
+  "远程手机": "Remote phone",
+  "由 Nan7Li 开发": "Made by Nan7Li",
+  "Halo 由 Nan7Li 开发。模组、IMS、WiFi Calling、短信、eSIM 和代理核心来自 VoCat，原作者 Vocat Project Authors。": "Halo is made by Nan7Li. The modem, IMS, WiFi Calling, SMS, eSIM, and proxy core comes from VoCat by the Vocat Project Authors.",
   "外观": "Appearance",
   "主色调": "Accent color",
   "显示模式": "Display mode",

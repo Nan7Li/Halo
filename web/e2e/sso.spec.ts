@@ -12,7 +12,7 @@ async function prepare(context: BrowserContext) {
 }
 
 /** Sign in through the real local login form and check the complete return destination. */
-async function passwordLogin(page: Page, target = "/settings") {
+async function passwordLogin(page: Page, target = "/settings/security") {
   await page.goto(`/login?${new URLSearchParams({ redirect: target })}`);
   await page.locator('input[autocomplete="username"]').fill("admin");
   await page.locator('input[autocomplete="current-password"]').fill(PASSWORD);
@@ -61,7 +61,7 @@ test.beforeEach(async ({ context, request }) => {
 });
 
 test("password login preserves the full target and rejects unsafe logged-in redirects", async ({ page }) => {
-  await passwordLogin(page, "/settings?tab=security#sso");
+  await passwordLogin(page, "/settings/security?tab=security#sso");
   await settings(page);
   await expect(card(page).getByLabel("VoCat public origin", { exact: true })).toHaveValue(APP);
   await expect(card(page).getByRole("switch", { name: "Enable SSO sign-in", exact: true })).toBeDisabled();
@@ -69,6 +69,18 @@ test("password login preserves the full target and rejects unsafe logged-in redi
     await page.goto(`/login?${new URLSearchParams({ redirect })}`);
     await expect(page).toHaveURL(APP + "/");
   }
+});
+
+test("legacy SSO return links open the account settings and keep callback notices visible", async ({ page }) => {
+  await passwordLogin(page);
+  await page.goto("/settings?tab=security#sso");
+  await expect(page).toHaveURL(APP + "/settings/security?tab=security#sso");
+  await settings(page);
+  await page.goto("/settings?sso_error=access_denied");
+  await expect(card(page).getByRole("alert")).toHaveText("Authentication was cancelled. You can try again.");
+  await expect(page).toHaveURL(APP + "/settings/security");
+  await page.reload();
+  await settings(page);
 });
 
 test("callback URL is available before creating the OIDC client and follows unsaved origin edits", async ({ page, context }) => {
@@ -145,7 +157,7 @@ test("cross-site Pocket ID binding, cancellation, SSO login and revocation keep 
   // A real navigation to a different site removes Strict main cookies from
   // the top-level callback. A separate Lax cookie proves browser association.
   const parallelTab = await context.newPage();
-  await parallelTab.goto(APP + "/settings");
+  await parallelTab.goto(APP + "/settings/security");
   await settings(parallelTab);
   const bindingRequest = page.waitForRequest((request) => request.url() === APP + "/api/auth/sso/bind" && request.method() === "POST");
   await card(page).getByRole("button", { name: "Bind external account", exact: true }).click();
@@ -155,15 +167,15 @@ test("cross-site Pocket ID binding, cancellation, SSO login and revocation keep 
   expect(pendingCookies).toHaveLength(2);
   expect(pendingCookies.every((cookie) => cookie.sameSite === "Lax" && cookie.httpOnly && cookie.secure && cookie.path === "/api/auth/sso")).toBe(true);
   await page.getByRole("button", { name: "Cancel authorization", exact: true }).click();
-  await expect(page).toHaveURL(APP + "/settings");
+  await expect(page).toHaveURL(APP + "/settings/security");
   await expect(card(page).getByRole("alert")).toHaveText("Authentication was cancelled. You can try again.");
   expect((await context.cookies(APP)).find((cookie) => cookie.name === "vocat_session")?.value).toBe(originalSession?.value);
 
   // Completing the other tab still works after the first flow was cancelled.
   await approve(parallelTab);
-  await expect(parallelTab).toHaveURL(APP + "/settings");
-  await page.goto(APP + "/settings");
-  await expect(page).toHaveURL(APP + "/settings");
+  await expect(parallelTab).toHaveURL(APP + "/settings/security");
+  await page.goto(APP + "/settings/security");
+  await expect(page).toHaveURL(APP + "/settings/security");
   await expect(card(page).getByText("Browser test administrator", { exact: true })).toBeVisible();
   for (const name of ["Bind external account", "Verify existing binding", "Replace account"]) {
     await expect(card(page).getByRole("button", { name, exact: true })).toHaveCount(0);
@@ -236,25 +248,25 @@ test("cross-site Pocket ID binding, cancellation, SSO login and revocation keep 
 
   // Saving from an SSO session is a successful operation that explicitly
   // revokes that session. The UI must display success before reauthentication.
-  await loginPage.goto(APP + "/settings");
+  await loginPage.goto(APP + "/settings/security");
   await settings(loginPage);
   await card(loginPage).getByLabel("Sign-in button label", { exact: true }).fill("Browser SSO");
   await save(loginPage, true);
-  await expect(loginPage).toHaveURL(APP + "/login?redirect=%2Fsettings");
+  await expect(loginPage).toHaveURL(APP + "/login?redirect=%2Fsettings%2Fsecurity");
   await expect(loginPage.getByRole("status").filter({ hasText: "SSO settings saved. Sign in again." })).toBeVisible();
   expect((await anonymous.cookies(APP)).find((cookie) => cookie.name === "vocat_session")).toBeUndefined();
   expect((await checkSession(page)).status).toBe(200);
 
   await loginPage.getByRole("link", { name: "Continue with Browser SSO", exact: true }).click();
   await approve(loginPage);
-  await expect(loginPage).toHaveURL(APP + "/settings");
+  await expect(loginPage).toHaveURL(APP + "/settings/security");
   await settings(loginPage);
   await card(loginPage).getByRole("button", { name: "Unbind account", exact: true }).click();
   const unboundResponse = loginPage.waitForResponse((response) => response.url() === APP + "/api/auth/sso/binding" && response.request().method() === "DELETE");
   await loginPage.getByRole("alertdialog").getByRole("button", { name: "Unbind account", exact: true }).click();
   const unbound = await unboundResponse;
   expect(unbound.status()).toBe(200);
-  await expect(loginPage).toHaveURL(APP + "/login?redirect=%2Fsettings");
+  await expect(loginPage).toHaveURL(APP + "/login?redirect=%2Fsettings%2Fsecurity");
   await expect(loginPage.getByRole("status").filter({ hasText: "External account unbound and SSO sign-in disabled." })).toBeVisible();
   await expect(loginPage.getByRole("link", { name: "Continue with Browser SSO", exact: true })).toHaveCount(0);
   expect((await checkSession(page)).status).toBe(200);
@@ -388,7 +400,7 @@ test("one saved HTTPS provider serves local HTTP and HTTPS browser logins automa
   await save(page);
   await card(page).getByRole("button", { name: "Bind external account", exact: true }).click();
   await approve(page);
-  await expect(page).toHaveURL(APP + "/settings");
+  await expect(page).toHaveURL(APP + "/settings/security");
   await expect(card(page).getByText("Browser test administrator", { exact: true })).toBeVisible();
   await settings(page);
   await card(page).getByRole("switch", { name: "Enable SSO sign-in", exact: true }).click();
@@ -491,7 +503,7 @@ test("HTTPS proxy password cookies stay Secure without enabling proxy-header tru
   }
   await page.goto("http://vocat.test:17477/login");
   expect((await checkSession(page)).status).toBe(401);
-  await page.goto(APP + "/settings");
+  await page.goto(APP + "/settings/security");
   expect((await checkSession(page)).status).toBe(200);
 });
 
@@ -507,7 +519,7 @@ test("upgrading an HTTP session to HTTPS protects both cookies and preserves the
   expect(original?.secure).toBe(false);
 
   // The fixture terminates TLS without enabling forwarded-header trust.
-  await page.goto(APP + "/settings");
+  await page.goto(APP + "/settings/security");
   expect((await checkSession(page)).status).toBe(200);
   for (const name of ["vocat_session", "vocat_csrf"]) {
     const cookie = (await context.cookies(APP)).find(c => c.name === name);
@@ -531,6 +543,6 @@ test("upgrading an HTTP session to HTTPS protects both cookies and preserves the
   await page.goto(httpOrigin + "/login");
   expect((await checkSession(page)).status).toBe(401);
   expect(await page.evaluate(async () => (await fetch("/api/settings/security")).status)).toBe(401);
-  await page.goto(APP + "/settings");
+  await page.goto(APP + "/settings/security");
   expect((await checkSession(page)).status).toBe(200);
 });

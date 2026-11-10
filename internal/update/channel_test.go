@@ -84,7 +84,7 @@ func TestCellbridgeSelectsNewestPreviewNotStable(t *testing.T) {
 	defer server.Close()
 
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
-	result, err := CheckLatest(ctx, "Nan7Li/VoCat", "", "1.1.14-cellbridge")
+	result, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.13-cellbridge")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestCellbridgeRefusesDowngradeToOlderPreviewOrStable(t *testing.T) {
 	})
 	defer server.Close()
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
-	result, err := CheckLatest(ctx, "Nan7Li/VoCat", "", "1.1.14-cellbridge-preview.10")
+	result, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.14-cellbridge-preview.10")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestCellbridgeRefusesDowngradeToOlderPreviewOrStable(t *testing.T) {
 	onlyStable := cellbridgeListServer(t, []Release{{TagName: "v1.1.14"}})
 	defer onlyStable.Close()
 	ctx = WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), onlyStable.URL, onlyStable.Client())
-	if _, err := CheckLatest(ctx, "Nan7Li/VoCat", "", "1.1.14-cellbridge"); err == nil || !strings.Contains(err.Error(), "no published cellbridge release") {
+	if _, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.14-cellbridge"); err == nil || !strings.Contains(err.Error(), "no published cellbridge release") {
 		t.Fatalf("stable-only list error = %v", err)
 	}
 }
@@ -137,7 +137,7 @@ func TestStableChannelIgnoresCellbridgePreview(t *testing.T) {
 	}))
 	defer server.Close()
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelStable), server.URL, server.Client())
-	result, err := CheckLatest(ctx, "Nan7Li/VoCat", "", "1.1.14")
+	result, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.14")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func TestStableChannelIgnoresCellbridgePreview(t *testing.T) {
 	}))
 	defer prerelease.Close()
 	ctx = WithGitHubForTest(WithChannel(context.Background(), ChannelStable), prerelease.URL, prerelease.Client())
-	if _, err := CheckLatest(ctx, "Nan7Li/VoCat", "", "1.1.14"); err == nil {
+	if _, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.14"); err == nil {
 		t.Fatal("stable channel accepted a prerelease")
 	}
 
@@ -159,7 +159,7 @@ func TestStableChannelIgnoresCellbridgePreview(t *testing.T) {
 	}))
 	defer fusion.Close()
 	ctx = WithGitHubForTest(WithChannel(context.Background(), ChannelStable), fusion.URL, fusion.Client())
-	if _, err := CheckLatest(ctx, "Nan7Li/VoCat", "", "1.1.14"); err == nil || !strings.Contains(err.Error(), "cellbridge") {
+	if _, err := CheckLatest(ctx, "Nan7Li/Halo", "", "1.1.14"); err == nil || !strings.Contains(err.Error(), "cellbridge") {
 		t.Fatalf("stable cellbridge latest error = %v", err)
 	}
 }
@@ -174,7 +174,7 @@ func TestForceRefusesDowngradeWithoutReplacingTarget(t *testing.T) {
 	}
 	ctx := WithGitHubForTest(WithChannel(context.Background(), ChannelCellbridge), server.URL, server.Client())
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	_, err := ApplyLatest(ctx, logger, Options{Repo: "Nan7Li/VoCat", Target: target, Force: true}, false)
+	_, err := ApplyLatest(ctx, logger, Options{Repo: "Nan7Li/Halo", Target: target, Force: true}, false)
 	if err == nil || !strings.Contains(err.Error(), "refusing downgrade") {
 		t.Fatalf("downgrade error = %v", err)
 	}

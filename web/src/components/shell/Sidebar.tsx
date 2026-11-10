@@ -70,7 +70,7 @@ export function Sidebar({
         <BrandLogo className="h-7 w-7 shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
           <div className="ios-headline leading-none text-label">Halo</div>
-          <div className="mt-1 ios-caption-2 text-label-2">{t("基于 VoCat")}</div>
+          <div className="mt-1 ios-caption-2 text-label-2">{t("远程手机")}</div>
         </div>
         <button
           type="button"

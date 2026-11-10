@@ -114,7 +114,7 @@ export function SSOCard() {
     notifyUnauthorized();
     // A document navigation also resets pending protected-page requests. A
     // client-only navigation can race RequireAuth and discard this result.
-    window.location.replace(`/login?${new URLSearchParams({ sso_result: result, redirect: "/settings" }).toString()}`);
+    window.location.replace(`/login?${new URLSearchParams({ sso_result: result, redirect: "/settings/security" }).toString()}`);
   }
 
   /** Confirm identity-source resets and submit writable settings against the saved revision. */

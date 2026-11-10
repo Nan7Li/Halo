@@ -555,7 +555,7 @@ Fetch the latest release from GitHub and replace this binary in place.
 Flags:
   --check            Report whether an update is available, then exit.
   --force            Reinstall even when already at the latest version.
-  --repo owner/name  GitHub repository (default: $VOCAT_REPO or Nan7Li/VoCat).
+  --repo owner/name  GitHub repository (default: $VOCAT_REPO or Nan7Li/Halo).
   --target path      Binary to replace (default: $VOCAT_UPDATE_TARGET, otherwise
                      the running executable).
   --token token      GitHub bearer token (default: $GITHUB_TOKEN).

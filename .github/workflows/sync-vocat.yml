@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   sync:
-    if: github.repository == 'Nan7Li/VoCat'
+    if: github.repository == 'Nan7Li/Halo'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -136,8 +136,8 @@ jobs:
 
           replace_once(
               "ATTRIBUTION.md",
-              rf"^Halo {re.escape(current)} is a personal interface and release\. It is \*\*based on VoCat\*\*\.$",
-              f"Halo {new} is a personal interface and release. It is **based on VoCat**.",
+              rf"^Halo {re.escape(current)} is developed by Nan7Li\. It is \*\*built on VoCat\*\*\.$",
+              f"Halo {new} is developed by Nan7Li. It is **built on VoCat**.",
           )
           replace_once(
               "ATTRIBUTION.md",
@@ -151,13 +151,13 @@ jobs:
           )
           replace_once(
               "README.md",
-              rf"^> \*\*Halo {re.escape(current)}\*\* is a personal interface and release based on.*$",
-              f"> **Halo {new}** is a personal interface and release based on [VoCat](https://github.com/MengMengCode/VoCat) v{latest} by the Vocat Project Authors. The modem, IMS, WiFi Calling, eSIM, and proxy stack is their work. This branch only adds a different UI, Halo branding, a customizable accent color, and a few local fixes. The [Vocat Research & Evaluation License](LICENSE) still applies. See [ATTRIBUTION.md](ATTRIBUTION.md).",
+              rf"^> \*\*Halo {re.escape(current)}\*\* is developed by Nan7Li and built on.*$",
+              f"> **Halo {new}** is developed by Nan7Li and built on [VoCat](https://github.com/MengMengCode/VoCat) v{latest} by the Vocat Project Authors, which provides the modem, IMS / WiFi Calling, SMS, eSIM, and proxy core. Halo's phone, call audio, CellBridge and AirSIM integration, VPS relay, installer, and interface are its own work. The [Vocat Research & Evaluation License](LICENSE) applies. See [ATTRIBUTION.md](ATTRIBUTION.md).",
           )
           replace_once(
               "docs/README.zh-CN.md",
-              rf"^> \*\*Halo {re.escape(current)}\*\* 是基于.*$",
-              f"> **Halo {new}** 是基于 [VoCat](https://github.com/MengMengCode/VoCat) v{latest} 的个人界面与发行版，原作者为 Vocat Project Authors。模组、IMS、WiFi Calling、eSIM 和代理等核心能力都是原项目的工作。本分支只改了界面、Halo 品牌、可自定义主色，以及少量本地修复。仍适用 [Vocat Research & Evaluation License](../LICENSE)。详见 [ATTRIBUTION.md](../ATTRIBUTION.md)。",
+              rf"^> \*\*Halo {re.escape(current)}\*\* 由 Nan7Li 开发.*$",
+              f"> **Halo {new}** 由 Nan7Li 开发，建立在 Vocat Project Authors 的 [VoCat](https://github.com/MengMengCode/VoCat) v{latest} 之上：模组、IMS / WiFi Calling、短信、eSIM 和代理核心来自 VoCat；电话、通话音频、CellBridge 与 AirSIM 整合、VPS 中继、安装器和界面是 Halo 自己的工作。适用 [Vocat Research & Evaluation License](../LICENSE)。详见 [ATTRIBUTION.md](../ATTRIBUTION.md)。下面是 VoCat 原项目的说明。",
           )
           PY
           sed -i "s/var Version = \"${current}\"/var Version = \"${new}\"/" internal/buildinfo/buildinfo.go

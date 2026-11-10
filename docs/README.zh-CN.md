@@ -22,9 +22,9 @@
   <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-Release-2088FF?style=flat-square&logo=githubactions&logoColor=white">
 </p>
 
-[English](../README.md) | [العربية](README.ar.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
+[English](README.vocat.en.md) | [العربية](README.ar.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Русский](README.ru.md) | [Español](README.es.md) | [日本語](README.ja.md)
 
-> **Halo 1.1.15** 是基于 [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42（`eba11d5`）的个人界面与发行版，原作者为 Vocat Project Authors。模组、IMS、WiFi Calling、eSIM 和代理等核心能力都是原项目的工作。本分支保留 Halo 界面、品牌、主色、电话页、通话历史与录音、WireGuard 隧道，并纳入该提交为止的上游修复。仍适用 [Vocat Research & Evaluation License](../LICENSE)。详见 [ATTRIBUTION.md](../ATTRIBUTION.md)。可选的 CellBridge 通话桥见 [CellBridge.zh-CN.md](CellBridge.zh-CN.md)。
+> **Halo 1.2.0** 由 Nan7Li 开发，建立在 Vocat Project Authors 的 [VoCat](https://github.com/MengMengCode/VoCat) v0.3.42 之上：模组、IMS / WiFi Calling、短信、eSIM 和代理核心来自 VoCat；电话、通话音频、CellBridge 与 AirSIM 整合、VPS 中继、安装器和界面是 Halo 自己的工作。适用 [Vocat Research & Evaluation License](../LICENSE)。详见 [ATTRIBUTION.md](../ATTRIBUTION.md)。下面是 VoCat 原项目的说明。
 
 Vocat 是一款面向 Quectel EC20/EC25 系列以及中国移动 ML307 系列蜂窝模组的开源 Web 控制面板与工程工具套件。它在一个自包含的服务中整合了模组发现、实时射频状态、AT 与 USSD 终端、短信、WiFi Calling（WiFi 通话）、eSIM 管理、网络选择、代理路由、通知、审计日志以及发布自动化。
 
@@ -222,7 +222,7 @@ Vocat 先从 `VOCAT_CONFIG` 读取可选的 JSON 配置文件，再应用 `VOCAT
 | `VOCAT_SECURE_COOKIES` | `false` | 可选：强制所有入口使用安全 Cookie；默认按 HTTP/HTTPS 入口自动适配。 |
 | `VOCAT_SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭超时时间。 |
 | `VOCAT_MAX_REQUEST_BODY_BYTES` | `1048576` | API 请求体最大字节数。 |
-| `VOCAT_REPO` | `Nan7Li/VoCat` | 自更新器使用的受信任 GitHub 仓库，格式为 `owner/name`。 |
+| `VOCAT_REPO` | `Nan7Li/Halo` | 自更新器使用的受信任 GitHub 仓库，格式为 `owner/name`。 |
 | `GITHUB_TOKEN` | 空 | 可选的 GitHub token，用于私有仓库或更高的 API 限额。 |
 
 用户提供的 Apple 运营商配置包可通过 `vocat carrier import-ipcc` 转换为可审查、符合允许列表的运营商配置文件；参见 [docs/CARRIER_IPCC_IMPORT.md](CARRIER_IPCC_IMPORT.md)。
@@ -387,7 +387,7 @@ USSI 会话处理遵循 [3GPP TS 24.390](https://www.etsi.org/deliver/etsi_ts/12
 
 ## 更新
 
-Halo 默认检查 `Nan7Li/VoCat`，优先下载 `halo-linux-*`，没有时再回退到 `vocat-linux-*`。设置页可以打开自动检查（默认开启），也可以打开“发现新版本后自动安装并重启”。命令行：
+Halo 默认检查 `Nan7Li/Halo`，优先下载 `halo-linux-*`，没有时再回退到 `vocat-linux-*`。设置页可以打开自动检查（默认开启），也可以打开“发现新版本后自动安装并重启”。命令行：
 
 ```bash
 vocat update --check
